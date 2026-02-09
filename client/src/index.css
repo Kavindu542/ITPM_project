@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --color-bg: #f6f7fb;
+  --color-text: #111827;
+  --color-surface: #ffffff;
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
+  --color-danger: #b91c1c;
+}
+
+body {
+  margin: 0;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Arial,
+    sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+a {
+  color: inherit;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.authCard {
+  max-width: 420px;
+  margin: 40px auto;
+}
+
+.cardTitle {
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+
+.row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.input:focus {
+  outline: 2px solid var(--color-text);
+  outline-offset: 1px;
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--color-danger);
+  outline-color: var(--color-danger);
+}
+
+.field {
+  margin-bottom: 12px;
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.helpText {
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.button {
+  padding: 10px 14px;
+  border: 1px solid var(--color-text);
+  background: var(--color-text);
+  color: var(--color-surface);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.button:focus {
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.button.secondary {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.error {
+  margin-top: 10px;
+  color: var(--color-danger);
+}
+
+.fieldError {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-danger);
+}
+
+.link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
