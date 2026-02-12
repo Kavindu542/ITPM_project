@@ -22,7 +22,7 @@ const requireAuth = async (req, res, next) => {
 
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(payload.sub).select(
-      "_id studentId name email avatarUrl",
+      "_id studentId name email avatarUrl role semester enrolledModules",
     );
     if (!user) {
       return res.status(401).json({ message: "Not authenticated" });

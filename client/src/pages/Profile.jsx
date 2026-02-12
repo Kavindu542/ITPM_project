@@ -29,6 +29,15 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
   const [name, setName] = React.useState(user?.name || '');
   const [avatarUrl, setAvatarUrl] = React.useState(user?.avatarUrl || '');
 
+  const [semester, setSemester] = React.useState(
+    user?.semester === null || user?.semester === undefined
+      ? ''
+      : String(user.semester)
+  );
+  const [enrolledModulesText, setEnrolledModulesText] = React.useState(
+    Array.isArray(user?.enrolledModules) ? user.enrolledModules.join(', ') : ''
+  );
+
   const [currentPassword, setCurrentPassword] = React.useState('');
   const [newPassword, setNewPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
@@ -42,6 +51,16 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
   React.useEffect(() => {
     setName(user?.name || '');
     setAvatarUrl(user?.avatarUrl || '');
+    setSemester(
+      user?.semester === null || user?.semester === undefined
+        ? ''
+        : String(user.semester)
+    );
+    setEnrolledModulesText(
+      Array.isArray(user?.enrolledModules)
+        ? user.enrolledModules.join(', ')
+        : ''
+    );
   }, [user?.name, user?.avatarUrl]);
 
   const doLogout = async () => {
@@ -88,7 +107,20 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
     setError('');
     setMessage('');
     try {
-      const res = await authService.updateProfile({ name, avatarUrl });
+      const enrolledModules = String(enrolledModulesText || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => s.toUpperCase());
+
+      const uniqueModules = Array.from(new Set(enrolledModules));
+
+      const res = await authService.updateProfile({
+        name,
+        avatarUrl,
+        semester: semester === '' ? null : Number(semester),
+        enrolledModules: uniqueModules,
+      });
       onUserUpdated?.(res?.user ?? user);
       setMessage('Profile updated.');
     } catch (e) {
@@ -277,11 +309,48 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                           <input
-                            value={user?.module ? `Admin (${user.module})` : 'Student'}
+                            value={user?.module ? `Admin (${user.module})` : (user?.role || 'student')}
                             readOnly
                             disabled
                             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-600"
                           />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
+                          <select
+                            value={semester}
+                            onChange={(e) => setSemester(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                          >
+                            <option value="">Not set</option>
+                            {Array.from({ length: 12 }).map((_, idx) => {
+                              const v = String(idx + 1);
+                              return (
+                                <option key={v} value={v}>
+                                  {v}
+                                </option>
+                              );
+                            })}
+                          </select>
+                          <div className="mt-1 text-xs text-gray-500">
+                            Used to unlock semester-restricted study materials.
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Enrolled modules</label>
+                          <input
+                            value={enrolledModulesText}
+                            onChange={(e) => setEnrolledModulesText(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="e.g. IT2020, SE3030"
+                          />
+                          <div className="mt-1 text-xs text-gray-500">
+                            Comma-separated module codes (used for module-restricted materials).
+                          </div>
                         </div>
                       </div>
 

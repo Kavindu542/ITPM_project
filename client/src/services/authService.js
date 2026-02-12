@@ -81,21 +81,33 @@ export const authService = {
   },
 
   async me() {
-    try {
-      const res = await api.get("/auth/me");
-      setHasSession(true);
-      return res.data;
-    } catch (err) {
-      if (!err?.response || err?.code === "ECONNABORTED") {
-        setHasSession(false);
-        return null;
+    if (!getHasSession()) return null;
+
+    // React 18 StrictMode mounts effects twice in dev, which can trigger
+    // two concurrent /me calls. Dedupe them to avoid duplicate 401s.
+    if (authService.__meInFlight) return authService.__meInFlight;
+
+    authService.__meInFlight = (async () => {
+      try {
+        const res = await api.get("/auth/me");
+        setHasSession(true);
+        return res.data;
+      } catch (err) {
+        if (!err?.response || err?.code === "ECONNABORTED") {
+          setHasSession(false);
+          return null;
+        }
+        if (err?.response?.status === 401) {
+          setHasSession(false);
+          return null;
+        }
+        throw err;
+      } finally {
+        authService.__meInFlight = null;
       }
-      if (err?.response?.status === 401) {
-        setHasSession(false);
-        return null;
-      }
-      throw err;
-    }
+    })();
+
+    return authService.__meInFlight;
   },
 
   async logout() {
@@ -104,8 +116,13 @@ export const authService = {
     return res.data;
   },
 
-  async updateProfile({ name, avatarUrl }) {
-    const res = await api.patch("/auth/profile", { name, avatarUrl });
+  async updateProfile({ name, avatarUrl, semester, enrolledModules }) {
+    const res = await api.patch("/auth/profile", {
+      name,
+      avatarUrl,
+      semester,
+      enrolledModules,
+    });
     return res.data;
   },
 
@@ -124,3 +141,6 @@ export const authService = {
     return res.data;
   },
 };
+
+// Internal: shared across module instances for deduping.
+authService.__meInFlight = null;

@@ -228,6 +228,11 @@ const verifyEmailOtp = async (req, res) => {
       name: user.name,
       email: user.email,
       avatarUrl: user.avatarUrl || "",
+      role: user.role || "student",
+      semester: user.semester ?? null,
+      enrolledModules: Array.isArray(user.enrolledModules)
+        ? user.enrolledModules
+        : [],
     },
   });
 };
@@ -410,6 +415,11 @@ const login = async (req, res) => {
       name: user.name,
       email: user.email,
       avatarUrl: user.avatarUrl || "",
+      role: user.role || "student",
+      semester: user.semester ?? null,
+      enrolledModules: Array.isArray(user.enrolledModules)
+        ? user.enrolledModules
+        : [],
     },
   });
 };
@@ -422,6 +432,11 @@ const me = async (req, res) => {
       name: req.user.name,
       email: req.user.email,
       avatarUrl: req.user.avatarUrl || "",
+      role: req.user.role || "student",
+      semester: req.user.semester ?? null,
+      enrolledModules: Array.isArray(req.user.enrolledModules)
+        ? req.user.enrolledModules
+        : [],
       module: req.auth?.module || null,
     },
   });
@@ -478,13 +493,18 @@ const moduleLogin = async (req, res) => {
       name: user.name,
       email: user.email,
       avatarUrl: user.avatarUrl || "",
+      role: user.role || "student",
+      semester: user.semester ?? null,
+      enrolledModules: Array.isArray(user.enrolledModules)
+        ? user.enrolledModules
+        : [],
       module: moduleName,
     },
   });
 };
 
 const updateProfile = async (req, res) => {
-  const { name, avatarUrl } = req.body || {};
+  const { name, avatarUrl, semester, enrolledModules } = req.body || {};
 
   const updates = {};
   if (name !== undefined) {
@@ -523,10 +543,39 @@ const updateProfile = async (req, res) => {
     updates.avatarUrl = value;
   }
 
+  if (semester !== undefined) {
+    if (semester === null || semester === "") {
+      updates.semester = null;
+    } else {
+      const sem = Number(semester);
+      if (!Number.isFinite(sem) || sem < 1 || sem > 12) {
+        return res.status(400).json({ message: "semester must be 1-12" });
+      }
+      updates.semester = sem;
+    }
+  }
+
+  if (enrolledModules !== undefined) {
+    const list = Array.isArray(enrolledModules)
+      ? enrolledModules
+      : String(enrolledModules || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+    if (list.length > 50) {
+      return res
+        .status(400)
+        .json({ message: "Too many enrolled modules (max 50)" });
+    }
+
+    updates.enrolledModules = list;
+  }
+
   const user = await User.findByIdAndUpdate(req.user._id, updates, {
     new: true,
     runValidators: true,
-    select: "_id studentId name email avatarUrl",
+    select: "_id studentId name email avatarUrl role semester enrolledModules",
   });
 
   return res.json({
@@ -536,6 +585,11 @@ const updateProfile = async (req, res) => {
       name: user.name,
       email: user.email,
       avatarUrl: user.avatarUrl || "",
+      role: user.role || "student",
+      semester: user.semester ?? null,
+      enrolledModules: Array.isArray(user.enrolledModules)
+        ? user.enrolledModules
+        : [],
       module: req.auth?.module || null,
     },
   });

@@ -33,6 +33,7 @@ async function upsertAdmin({ email, password, name }) {
         name: String(name || "Admin").trim(),
         passwordHash,
         isEmailVerified: true,
+        role: "admin",
         emailOtpHash: "",
         emailOtpExpiresAt: null,
         emailOtpSentAt: null,

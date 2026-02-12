@@ -66,6 +66,25 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    // Study material access control (optional)
+    role: {
+      type: String,
+      enum: ["student", "admin"],
+      default: "student",
+      index: true,
+    },
+    semester: {
+      type: Number,
+      default: null,
+      min: 1,
+      max: 12,
+      index: true,
+    },
+    enrolledModules: {
+      type: [String],
+      default: [],
+    },
   },
   { timestamps: true },
 );

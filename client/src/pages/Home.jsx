@@ -5,11 +5,7 @@ import UserMenu from '../components/UserMenu';
 import { 
   LogOut,
   BookOpen,
-  Home as HomeIcon,
-  Library,
-  Users,
   Bell,
-  Settings,
   ChevronRight,
   BookText,
   Building2,
@@ -22,7 +18,6 @@ export default function Home({ user, onLoggedOut }) {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState('');
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState('dashboard');
 
   const handleLogout = async () => {
     setError('');
@@ -130,8 +125,18 @@ export default function Home({ user, onLoggedOut }) {
     { id: 3, name: 'Sports Club', members: 200, category: 'Sports' },
   ];
 
+  const now = new Date();
+  const currentHour = now.getHours();
+  const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening';
+  const todayLabel = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  }).format(now);
+  const totalClubMembers = clubs.reduce((sum, club) => sum + club.members, 0);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 font-sans">
       {/* Background Pattern */}
       <div className="fixed inset-0 opacity-5 pointer-events-none">
         <div className="absolute inset-0" style={{
@@ -155,28 +160,6 @@ export default function Home({ user, onLoggedOut }) {
                     <h1 className="text-xl font-bold text-gray-900">CampusCore</h1>
                     <p className="text-xs text-gray-500">Student Dashboard</p>
                   </div>
-                </div>
-
-                {/* Navigation Tabs */}
-                <div className="hidden lg:flex items-center gap-1 ml-8">
-                  <button 
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'dashboard' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
-                    onClick={() => setActiveTab('dashboard')}
-                  >
-                    Dashboard
-                  </button>
-                  <button 
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'academics' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
-                    onClick={() => setActiveTab('academics')}
-                  >
-                    Academics
-                  </button>
-                  <button 
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'campus' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
-                    onClick={() => setActiveTab('campus')}
-                  >
-                    Campus Life
-                  </button>
                 </div>
               </div>
 
@@ -204,7 +187,7 @@ export default function Home({ user, onLoggedOut }) {
         <div className="p-6">
           {/* Welcome & Stats Banner */}
           <div className="mb-8">
-            <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white">
+            <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-6 lg:p-8 text-white shadow-xl shadow-blue-200/40">
               <div className="absolute right-0 top-0 bottom-0 w-1/3">
                 <div className="absolute inset-0 bg-gradient-to-l from-blue-600/50 to-transparent"></div>
                 <img 
@@ -213,23 +196,33 @@ export default function Home({ user, onLoggedOut }) {
                   className="w-full h-full object-cover opacity-20"
                 />
               </div>
-              <div className="relative flex flex-col lg:flex-row items-start lg:items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold mb-2">Welcome back, {user?.name || 'Student'}! 👋</h1>
-                  <p className="text-blue-100">Manage your campus life in one place</p>
+              <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                <div className="max-w-xl">
+                  <p className="text-blue-100 text-sm mb-2">{todayLabel}</p>
+                  <h1 className="text-3xl lg:text-4xl font-bold mb-2">{greeting}, {user?.name || 'Student'} 👋</h1>
+                  <p className="text-blue-100/95">Everything important for your campus day is organized here.</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="px-3 py-1 rounded-full bg-white/15 border border-white/20 text-xs font-medium">Smart Dashboard</span>
+                    <span className="px-3 py-1 rounded-full bg-white/15 border border-white/20 text-xs font-medium">Live Activity</span>
+                    <span className="px-3 py-1 rounded-full bg-white/15 border border-white/20 text-xs font-medium">Quick Access</span>
+                  </div>
                 </div>
-                <div className="mt-4 lg:mt-0 flex items-center gap-4">
-                  <div className="text-center">
+                <div className="grid grid-cols-2 gap-3 w-full lg:w-auto">
+                  <div className="rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-center">
                     <div className="text-2xl font-bold">92%</div>
-                    <div className="text-sm text-blue-200">Attendance</div>
+                    <div className="text-xs text-blue-100">Attendance</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">3</div>
-                    <div className="text-sm text-blue-200">Due Tasks</div>
+                  <div className="rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-center">
+                    <div className="text-2xl font-bold">{libraryStats.due}</div>
+                    <div className="text-xs text-blue-100">Due Soon</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">5</div>
-                    <div className="text-sm text-blue-200">Active Courses</div>
+                  <div className="rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-center">
+                    <div className="text-2xl font-bold">{studyMaterials.length}</div>
+                    <div className="text-xs text-blue-100">New Materials</div>
+                  </div>
+                  <div className="rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-center">
+                    <div className="text-2xl font-bold">{clubs.length}</div>
+                    <div className="text-xs text-blue-100">Active Clubs</div>
                   </div>
                 </div>
               </div>
@@ -238,12 +231,18 @@ export default function Home({ user, onLoggedOut }) {
 
           {/* Quick Actions Grid */}
           <div className="mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Access</h2>
+            <div className="flex items-end justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Quick Access</h2>
+                <p className="text-sm text-gray-500 mt-1">Open any campus module in one click</p>
+              </div>
+              <span className="hidden md:inline-flex px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100">Personalized for you</span>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {quickActions.map((action, index) => (
                 <button
                   key={index}
-                  className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-lg hover:border-blue-300 transition-all duration-300 text-left"
+                  className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-blue-300 transition-all duration-300 text-left"
                   onClick={() => navigate(action.path)}
                 >
                   <div className="relative h-40 overflow-hidden">
@@ -263,7 +262,7 @@ export default function Home({ user, onLoggedOut }) {
                     <h3 className="font-bold text-gray-900 text-lg mb-2">{action.label}</h3>
                     <p className="text-sm text-gray-600 mb-4">{action.description}</p>
                     <div className="flex items-center text-blue-600 font-medium text-sm">
-                      <span>Access Portal</span>
+                      <span>Open module</span>
                       <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
@@ -501,7 +500,7 @@ export default function Home({ user, onLoggedOut }) {
                           <div className="text-sm text-gray-500">{club.category}</div>
                         </div>
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 font-medium">
                         {club.members} members
                       </div>
                     </div>
@@ -517,7 +516,7 @@ export default function Home({ user, onLoggedOut }) {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Campus Highlights</h2>
-                  <p className="text-gray-600">Latest updates and upcoming events</p>
+                  <p className="text-gray-600">Latest updates and upcoming events • {totalClubMembers}+ active club members</p>
                 </div>
                 <button className="text-blue-600 hover:text-blue-700 font-medium">
                   View Calendar →
