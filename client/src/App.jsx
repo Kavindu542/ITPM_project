@@ -18,7 +18,13 @@ import RequireAuth from './components/RequireAuth.jsx';
 import RequireModuleAuth from './components/RequireModuleAuth.jsx';
 import { authService } from './services/authService';
 
-import StudyMaterialDashboard from './pages/admindashboard/StudyMaterialDashboard.jsx';
+import StudyMaterialAdminLayout from './pages/admindashboard/studyMaterial/StudyMaterialAdminLayout.jsx';
+import StudyMaterialAdminDashboardPage from './pages/admindashboard/studyMaterial/DashboardPage.jsx';
+import StudyMaterialAdminUploadDocumentsPage from './pages/admindashboard/studyMaterial/UploadDocumentsPage.jsx';
+import StudyMaterialAdminCentralUploadPage from './pages/admindashboard/studyMaterial/CentralUploadAndMaterialsPage.jsx';
+import StudyMaterialAdminModerationQueuePage from './pages/admindashboard/studyMaterial/ModerationQueuePage.jsx';
+import StudyMaterialAdminDownloadsHistoryPage from './pages/admindashboard/studyMaterial/DownloadsHistoryPage.jsx';
+import StudyMaterialAdminStudentUploadsPage from './pages/admindashboard/studyMaterial/StudentUploadsPage.jsx';
 import LibraryDashboard from './pages/admindashboard/LibraryDashboard.jsx';
 import ClubAndSocietyDashboard from './pages/admindashboard/ClubAndSocietyDashboard.jsx';
 import HostelWardenDashboard from './pages/admindashboard/HostelWardenDashboard.jsx';
@@ -70,7 +76,12 @@ export default function App() {
   if (loading) {
     return (
       <div className="container">
-        <div className="card">Loading...</div>
+        <div className="appLoadingWrap">
+          <div role="status" aria-live="polite" aria-busy="true">
+            <div className="appSpinner" aria-hidden="true" />
+            <span className="sr-only">Loading…</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -79,6 +90,14 @@ export default function App() {
     <Routes>
       <Route
         path="/materials"
+        element={
+          <RequireAuth user={user}>
+            <StudyMaterial user={user} onLoggedOut={() => setUser(null)} />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/materials/:section"
         element={
           <RequireAuth user={user}>
             <StudyMaterial user={user} onLoggedOut={() => setUser(null)} />
@@ -119,13 +138,21 @@ export default function App() {
       />
 
       <Route
-        path="/admin/study-material/dashboard"
+        path="/admin/study-material"
         element={
           <RequireModuleAuth user={user} moduleKey="study-material">
-            <StudyMaterialDashboard user={user} onLoggedOut={() => setUser(null)} />
+            <StudyMaterialAdminLayout user={user} onLoggedOut={() => setUser(null)} />
           </RequireModuleAuth>
         }
-      />
+      >
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<StudyMaterialAdminDashboardPage />} />
+        <Route path="upload-documents" element={<StudyMaterialAdminUploadDocumentsPage />} />
+        <Route path="student-uploads" element={<StudyMaterialAdminStudentUploadsPage />} />
+        <Route path="central-upload" element={<StudyMaterialAdminCentralUploadPage />} />
+        <Route path="moderation-queue" element={<StudyMaterialAdminModerationQueuePage />} />
+        <Route path="downloads-history" element={<StudyMaterialAdminDownloadsHistoryPage />} />
+      </Route>
       <Route
         path="/admin/library/dashboard"
         element={

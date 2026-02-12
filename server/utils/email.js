@@ -22,6 +22,54 @@ function getTransport() {
   });
 }
 
+function chunkArray(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+async function sendBulkEmail({
+  subject,
+  text,
+  html,
+  bcc = [],
+  chunkSize = 50,
+}) {
+  const from = requireEnv("SMTP_FROM");
+  const transporter = getTransport();
+
+  const list = Array.from(
+    new Set(
+      (Array.isArray(bcc) ? bcc : [])
+        .map((e) =>
+          String(e || "")
+            .trim()
+            .toLowerCase(),
+        )
+        .filter(Boolean),
+    ),
+  );
+
+  if (!list.length) return { sent: 0 };
+
+  const chunks = chunkArray(list, Math.max(1, Number(chunkSize) || 50));
+  let sent = 0;
+
+  for (const c of chunks) {
+    await transporter.sendMail({
+      from,
+      to: from,
+      bcc: c,
+      subject,
+      text,
+      html,
+    });
+    sent += c.length;
+  }
+
+  return { sent };
+}
+
 async function sendEmailOtp({ to, otp, ttlMinutes = 10 }) {
   const from = requireEnv("SMTP_FROM");
   const appName = process.env.APP_NAME || "CampusCore";
@@ -126,4 +174,5 @@ module.exports = {
   sendEmailOtp,
   sendPasswordResetOtp,
   sendPasswordResetEmail,
+  sendBulkEmail,
 };

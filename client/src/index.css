@@ -140,3 +140,114 @@ a {
   align-items: center;
   margin-bottom: 16px;
 }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.appLoadingWrap {
+  min-height: calc(100vh - 48px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.appLoadingCard {
+  width: min(560px, 100%);
+}
+
+.appLoadingHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.appLoadingTitle {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.appLoadingSub {
+  margin-top: 4px;
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.appSpinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  border: 2px solid var(--color-border-strong);
+  border-top-color: var(--color-text);
+  animation: appSpin 0.9s linear infinite;
+  flex: none;
+  margin-top: 2px;
+}
+
+@keyframes appSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.appSkeleton {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.appSkeletonLine {
+  height: 10px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    var(--color-border) 25%,
+    var(--color-bg) 37%,
+    var(--color-border) 63%
+  );
+  background-size: 400% 100%;
+  animation: appShimmer 1.2s ease-in-out infinite;
+}
+
+.appSkeletonSpacer {
+  height: 2px;
+}
+
+.appSkeletonRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.appSkeletonChip {
+  width: 92px;
+  height: 28px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    var(--color-border) 25%,
+    var(--color-bg) 37%,
+    var(--color-border) 63%
+  );
+  background-size: 400% 100%;
+  animation: appShimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes appShimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}

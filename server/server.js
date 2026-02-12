@@ -6,6 +6,7 @@ const morgan = require("morgan");
 
 const { connectDB } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
+const studyMaterialRoutes = require("./routes/studyMaterialRoutes");
 const { errorHandler } = require("./middleware/errorMiddleware");
 
 dotenv.config();
@@ -52,6 +53,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/study-material", studyMaterialRoutes);
 
 app.use(errorHandler);
 
