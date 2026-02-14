@@ -170,7 +170,6 @@ export default function Home({ user, onLoggedOut }) {
                 {/* Notifications */}
                 <button className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors">
                   <Bell className="h-5 w-5 text-gray-600" />
-                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-white"></span>
                 </button>
 
                 <UserMenu
@@ -208,24 +207,8 @@ export default function Home({ user, onLoggedOut }) {
                     <span className="px-3 py-1 rounded-full bg-white/15 border border-white/20 text-xs font-medium">Quick Access</span>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3 w-full lg:w-auto">
-                  <div className="rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-center">
-                    <div className="text-2xl font-bold">92%</div>
-                    <div className="text-xs text-blue-100">Attendance</div>
-                  </div>
-                  <div className="rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-center">
-                    <div className="text-2xl font-bold">{libraryStats.due}</div>
-                    <div className="text-xs text-blue-100">Due Soon</div>
-                  </div>
-                  <div className="rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-center">
-                    <div className="text-2xl font-bold">{studyMaterials.length}</div>
-                    <div className="text-xs text-blue-100">New Materials</div>
-                  </div>
-                  <div className="rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-center">
-                    <div className="text-2xl font-bold">{clubs.length}</div>
-                    <div className="text-xs text-blue-100">Active Clubs</div>
-                  </div>
-                </div>
+               
+                
               </div>
             </div>
           </div>
