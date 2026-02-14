@@ -6,6 +6,8 @@ import {
   Clock,
   Download,
   FolderOpen,
+  MessageSquare,
+  MessagesSquare,
   Search,
   Star,
   UploadCloud,
@@ -308,7 +310,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
         {/* Header */}
         <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white/80 backdrop-blur shadow-sm">
           <div className="p-6 sm:p-8 flex items-start gap-4">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg">
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-600 to-[#25f194] shadow-lg">
               <BookOpen className="h-6 w-6 text-white" />
             </div>
 
@@ -326,13 +328,14 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   <Clock className="h-3.5 w-3.5" />
                   Preview before downloading
                 </span>
+                {/* Removed 'Missing resource requests' and 'Academic support forum' buttons as requested */}
               </div>
             </div>
 
             <div className="hidden sm:flex flex-col items-end gap-2">
               <button
                 type="button"
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md"
                 onClick={() => navigate('/materials/contribute')}
               >
                 <UploadCloud className="h-4 w-4" />
@@ -415,6 +418,51 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                     </>
                   )}
                 </NavLink>
+                <NavLink
+                  to="/materials/requests"
+                  className={({ isActive }) =>
+                    `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
+                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <MessageSquare className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
+                      <span className={isActive ? 'text-white' : 'text-gray-800'}>Missing resource requests</span>
+                    </>
+                  )}
+                </NavLink>
+                <NavLink
+                  to="/materials/reviews"
+                  className={({ isActive }) =>
+                    `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
+                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <Star className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
+                      <span className={isActive ? 'text-white' : 'text-gray-800'}>Ratings & reviews</span>
+                    </>
+                  )}
+                </NavLink>
+                <NavLink
+                  to="/materials/forum"
+                  className={({ isActive }) =>
+                    `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
+                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <MessagesSquare className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
+                      <span className={isActive ? 'text-white' : 'text-gray-800'}>Academic support forum</span>
+                    </>
+                  )}
+                </NavLink>
               </div>
             </div>
           </div>
@@ -434,7 +482,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
               {tab !== 'contribute' ? (
                 <button
                   type="button"
-                  className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md"
+                  className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md"
                   onClick={() => navigate('/materials/contribute')}
                 >
                   <UploadCloud className="h-4 w-4" />
@@ -545,7 +593,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                                 </button>
                                 <button
                                   type="button"
-                                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-semibold"
+                                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-sm font-semibold"
                                   onClick={() => downloadFile(m)}
                                 >
                                   <Download className="h-4 w-4" />
@@ -689,7 +737,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                         </button>
                         <button
                           type="button"
-                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-semibold"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-sm font-semibold"
                           onClick={() => downloadFile(m)}
                         >
                           <Download className="h-4 w-4" />
@@ -764,7 +812,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md disabled:opacity-60"
+                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md disabled:opacity-60"
                       onClick={() => setUploadModalOpen(true)}
                       disabled={loading}
                     >
@@ -927,7 +975,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md disabled:opacity-60"
                 disabled={loading}
               >
                 <UploadCloud className="h-4 w-4" />

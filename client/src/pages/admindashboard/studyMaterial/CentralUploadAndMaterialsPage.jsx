@@ -231,7 +231,7 @@ export default function CentralUploadAndMaterialsPage() {
           <button
             type="button"
             onClick={() => setIsUploadOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold disabled:opacity-60"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-[#25f194] text-white rounded-xl font-semibold disabled:opacity-60"
             disabled={loading}
           >
             <UploadCloud className="h-4 w-4" />
@@ -337,7 +337,7 @@ export default function CentralUploadAndMaterialsPage() {
                   </div>
                   <button
                     type="submit"
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold disabled:opacity-60"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-[#25f194] text-white rounded-xl font-semibold disabled:opacity-60"
                     disabled={loading}
                   >
                     <UploadCloud className="h-4 w-4" />
@@ -454,7 +454,7 @@ export default function CentralUploadAndMaterialsPage() {
                   </button>
                   <button
                     type="submit"
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold disabled:opacity-60"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-[#25f194] text-white rounded-xl font-semibold disabled:opacity-60"
                     disabled={loading}
                   >
                     <Pencil className="h-4 w-4" />
@@ -530,7 +530,7 @@ export default function CentralUploadAndMaterialsPage() {
                           href={downloadUrl(m)}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white text-sm font-semibold"
                         >
                           <Download className="h-4 w-4" />
                           Download

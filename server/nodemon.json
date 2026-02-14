@@ -1,0 +1,18 @@
+{
+  "watch": [
+    "server.js",
+    "config",
+    "controllers",
+    "middleware",
+    "models",
+    "routes",
+    "utils",
+    "scripts"
+  ],
+  "ignore": ["uploads/**", "node_modules/**", "*.log"],
+  "ext": "js,mjs,cjs,json",
+  "delay": "500",
+  "events": {
+    "restart": "node scripts/freePort.js 5000"
+  }
+}

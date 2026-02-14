@@ -3,6 +3,7 @@ const path = require("path");
 const StudyMaterial = require("../models/StudyMaterial");
 const StudyMaterialDownload = require("../models/StudyMaterialDownload");
 const StudyMaterialBookmark = require("../models/StudyMaterialBookmark");
+const StudyMaterialReview = require("../models/StudyMaterialReview");
 const User = require("../models/User");
 const { sendBulkEmail } = require("../utils/email");
 
@@ -200,6 +201,9 @@ const listMaterials = async (req, res) => {
       ? String(req.query.uploaderRole).trim()
       : "";
   const uploaderRole = uploaderRoleRaw ? uploaderRoleRaw.toLowerCase() : "";
+  const sortBy = String(req.query.sortBy || "")
+    .trim()
+    .toLowerCase();
 
   const query = {};
 
@@ -251,6 +255,34 @@ const listMaterials = async (req, res) => {
     ? adminItems
     : items.filter((m) => matchesAccess(user, m));
 
+  const materialIds = filtered.map((m) => m._id);
+  const reviewStats = materialIds.length
+    ? await StudyMaterialReview.aggregate([
+        {
+          $match: {
+            materialId: { $in: materialIds },
+            "moderation.status": { $ne: "removed" },
+          },
+        },
+        {
+          $group: {
+            _id: "$materialId",
+            avgRating: { $avg: "$rating" },
+            reviewCount: { $sum: 1 },
+          },
+        },
+      ])
+    : [];
+  const ratingMap = new Map(
+    reviewStats.map((s) => [
+      String(s._id),
+      {
+        avgRating: Number(s.avgRating || 0),
+        reviewCount: Number(s.reviewCount || 0),
+      },
+    ]),
+  );
+
   const bookmarks = await StudyMaterialBookmark.find({ userId: req.user._id })
     .select("materialId")
     .lean();
@@ -274,6 +306,11 @@ const listMaterials = async (req, res) => {
             role: m.uploadedBy.role,
           }
         : null;
+
+    const rating = ratingMap.get(String(m._id)) || {
+      avgRating: 0,
+      reviewCount: 0,
+    };
 
     return {
       id: m._id,
@@ -302,10 +339,25 @@ const listMaterials = async (req, res) => {
           }
         : null,
       bookmarked: bookmarkedIds.has(String(m._id)),
+      avgRating: Number(rating.avgRating.toFixed(2)),
+      reviewCount: rating.reviewCount,
+      highRated: rating.reviewCount > 0 && rating.avgRating >= 4,
     };
   });
 
-  return res.json({ items: withFlags });
+  const sorted =
+    sortBy === "rating_desc"
+      ? [...withFlags].sort(
+          (a, b) => b.avgRating - a.avgRating || b.reviewCount - a.reviewCount,
+        )
+      : sortBy === "rating_asc"
+        ? [...withFlags].sort(
+            (a, b) =>
+              a.avgRating - b.avgRating || b.reviewCount - a.reviewCount,
+          )
+        : withFlags;
+
+  return res.json({ items: sorted });
 };
 
 const adminDownloadsHistory = async (req, res) => {
@@ -375,6 +427,23 @@ const getMaterial = async (req, res) => {
       return res.status(403).json({ message: "Forbidden" });
   }
 
+  const reviewSummary = await StudyMaterialReview.aggregate([
+    {
+      $match: {
+        materialId: material._id,
+        "moderation.status": { $ne: "removed" },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        avgRating: { $avg: "$rating" },
+        reviewCount: { $sum: 1 },
+      },
+    },
+  ]);
+  const summary = reviewSummary[0] || { avgRating: 0, reviewCount: 0 };
+
   return res.json({
     material: {
       id: material._id,
@@ -400,6 +469,11 @@ const getMaterial = async (req, res) => {
       currentVersionId: material.currentVersionId,
       access: material.access,
       moderation: material.moderation,
+      avgRating: Number(Number(summary.avgRating || 0).toFixed(2)),
+      reviewCount: Number(summary.reviewCount || 0),
+      highRated:
+        Number(summary.reviewCount || 0) > 0 &&
+        Number(summary.avgRating || 0) >= 4,
       createdAt: material.createdAt,
       updatedAt: material.updatedAt,
     },
@@ -1056,6 +1130,43 @@ const adminAnalytics = async (req, res) => {
     .populate("materialId", "_id title moduleCode")
     .lean();
 
+  const reviewStats = await StudyMaterialReview.aggregate([
+    { $match: { "moderation.status": { $ne: "removed" } } },
+    {
+      $group: {
+        _id: "$materialId",
+        avgRating: { $avg: "$rating" },
+        reviewCount: { $sum: 1 },
+      },
+    },
+    { $sort: { avgRating: -1, reviewCount: -1 } },
+    { $limit: 10 },
+  ]);
+  const ratedMaterialIds = reviewStats.map((r) => r._id);
+  const ratedMaterials = await StudyMaterial.find({
+    _id: { $in: ratedMaterialIds },
+  })
+    .select("title moduleCode")
+    .lean();
+  const ratedMaterialMap = new Map(
+    ratedMaterials.map((m) => [String(m._id), m]),
+  );
+
+  const reviewTrends = await StudyMaterialReview.aggregate([
+    { $match: { "moderation.status": { $ne: "removed" } } },
+    {
+      $group: {
+        _id: {
+          year: { $year: "$createdAt" },
+          month: { $month: "$createdAt" },
+        },
+        avgRating: { $avg: "$rating" },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { "_id.year": 1, "_id.month": 1 } },
+  ]);
+
   return res.json({
     moderationQueuePendingCount: pendingModerationCount,
     topMaterials,
@@ -1069,6 +1180,24 @@ const adminAnalytics = async (req, res) => {
       user: d.userId,
       material: d.materialId,
     })),
+    reviewInsights: {
+      topRated: reviewStats.map((s) => {
+        const material = ratedMaterialMap.get(String(s._id));
+        return {
+          materialId: s._id,
+          title: material?.title || "Unknown",
+          moduleCode: material?.moduleCode || "",
+          avgRating: Number(Number(s.avgRating || 0).toFixed(2)),
+          reviewCount: Number(s.reviewCount || 0),
+        };
+      }),
+      trends: reviewTrends.map((t) => ({
+        year: t._id.year,
+        month: t._id.month,
+        avgRating: Number(Number(t.avgRating || 0).toFixed(2)),
+        reviewCount: Number(t.count || 0),
+      })),
+    },
   });
 };
 

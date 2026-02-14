@@ -4,10 +4,13 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronRight,
+  MessageSquare,
+  MessagesSquare,
   Download,
   FileUp,
   Layers,
   ShieldCheck,
+  Star,
   Users,
 } from 'lucide-react';
 
@@ -21,6 +24,9 @@ const navItems = [
   { to: '/admin/study-material/central-upload', label: 'Central upload & materials', icon: Layers },
   { to: '/admin/study-material/moderation-queue', label: 'Moderation Queue', icon: ShieldCheck },
   { to: '/admin/study-material/downloads-history', label: 'Downloads history', icon: Download },
+  { to: '/admin/study-material/requests', label: 'Request management', icon: MessageSquare },
+  { to: '/admin/study-material/reviews', label: 'Review management', icon: Star },
+  { to: '/admin/study-material/forum', label: 'Forum management', icon: MessagesSquare },
 ];
 
 export default function StudyMaterialAdminLayout({ user, onLoggedOut }) {
@@ -49,7 +55,7 @@ export default function StudyMaterialAdminLayout({ user, onLoggedOut }) {
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl">
+                <div className="p-2 bg-gradient-to-br from-blue-600 to-[#25f194] rounded-xl">
                   <Layers className="h-6 w-6 text-white" />
                 </div>
                 <div>
