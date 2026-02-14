@@ -305,7 +305,7 @@ export default function App() {
         path="/admin/hostel/warden/signin"
         element={
           user ? (
-            <Navigate to="/admin/hostel" replace />
+            <Navigate to="/admin/hostel/warden/dashboard" replace />
           ) : (
             <AdminModuleSignIn title="Warden" moduleKey="hostel-warden" onSignedIn={(u) => setUser(u)} />
           )
