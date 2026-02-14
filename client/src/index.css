@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 * {
   box-sizing: border-box;
@@ -11,6 +12,15 @@
   --color-border: #e5e7eb;
   --color-border-strong: #d1d5db;
   --color-danger: #b91c1c;
+}
+
+:root.dark {
+  --color-bg: #0b1220;
+  --color-text: #e5e7eb;
+  --color-surface: #111827;
+  --color-border: #1f2937;
+  --color-border-strong: #334155;
+  --color-danger: #f87171;
 }
 
 body {

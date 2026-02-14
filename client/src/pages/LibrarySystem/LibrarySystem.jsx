@@ -37,8 +37,8 @@ export default function LibrarySystem({ user, onLoggedOut }) {
 
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <div className="p-6 border-b border-gray-200 flex items-center gap-3">
-            <div className="p-2 bg-purple-50 rounded-lg">
-              <Library className="h-5 w-5 text-purple-600" />
+            <div className="p-2 bg-[#25f194] rounded-lg">
+              <Library className="h-5 w-5 text-[#25f194]" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Library</h1>

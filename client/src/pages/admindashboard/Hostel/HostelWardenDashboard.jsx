@@ -1,19 +1,19 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../../services/authService';
-import UserMenu from '../../components/UserMenu';
+import { authService } from '../../../services/authService';
+import UserMenu from '../../../components/UserMenu';
 
-export default function LibraryDashboard({ user, onLoggedOut }) {
+export default function HostelWardenDashboard({ user, onLoggedOut }) {
   const navigate = useNavigate();
 
   const logout = async () => {
     await authService.logout();
     onLoggedOut?.();
-    navigate('/admin/signin', { replace: true });
+    navigate('/admin/hostel', { replace: true });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-purple-600 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-[#25f194] font-sans">
       <header className="sticky top-0 z-10 border-b border-white/10 bg-white/10 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
@@ -31,16 +31,16 @@ export default function LibraryDashboard({ user, onLoggedOut }) {
               </div>
             </div>
             <div className="text-white">
-              <div className="text-sm font-semibold">Library</div>
+              <div className="text-sm font-semibold">Hostel (Warden)</div>
               <div className="text-xs text-white/80">Dashboard</div>
             </div>
           </div>
 
           <UserMenu
             user={user}
-             onProfile={() => navigate('/profile')}
+            onProfile={() => navigate('/profile')}
             onLogout={logout}
-            theme="dark"
+            theme="light"
             idLabel="ID"
           />
         </div>
@@ -56,7 +56,7 @@ export default function LibraryDashboard({ user, onLoggedOut }) {
           <div className="bg-white rounded-2xl p-8 shadow-xl">
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
               <div className="text-sm font-semibold text-gray-900">Module</div>
-              <div className="mt-1 text-sm text-gray-600">You are logged into the Library module.</div>
+              <div className="mt-1 text-sm text-gray-600">You are logged into the Hostel (Warden) module.</div>
             </div>
           </div>
         </div>

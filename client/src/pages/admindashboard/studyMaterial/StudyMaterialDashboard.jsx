@@ -212,7 +212,7 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
                 href={downloadUrl(m)}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white text-sm font-semibold"
               >
                 <Download className="h-4 w-4" />
                 Download
@@ -267,7 +267,7 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
                         href={studyMaterialService.fileUrl(m.id, { versionId: v.id, disposition: 'attachment' })}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white text-sm font-semibold"
                       >
                         <Download className="h-4 w-4" />
                         Download
@@ -302,7 +302,7 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl">
+                <div className="p-2 bg-gradient-to-br from-blue-600 to-[#25f194] rounded-xl">
                   <BookOpen className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -345,8 +345,8 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
                   <p className="text-sm text-gray-500">Top downloads (sum)</p>
                   <p className="text-3xl font-bold text-gray-900 mt-2">{totalDownloads.toLocaleString()}</p>
                 </div>
-                <div className="p-3 bg-purple-500/20 rounded-xl">
-                  <Download className="h-6 w-6 text-purple-600" />
+                <div className="p-3 bg-[#25f194]/20 rounded-xl">
+                  <Download className="h-6 w-6 text-[#25f194]" />
                 </div>
               </div>
             </div>
@@ -486,7 +486,7 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
                       </div>
                       <button
                         type="submit"
-                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold disabled:opacity-60"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-[#25f194] text-white rounded-xl font-semibold disabled:opacity-60"
                         disabled={loading}
                       >
                         <UploadCloud className="h-4 w-4" />

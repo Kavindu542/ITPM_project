@@ -1,4 +1,5 @@
 import React from 'react';
+import { Moon, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import UserMenu from '../components/UserMenu';
@@ -83,7 +84,7 @@ export default function Home({ user, onLoggedOut }) {
       icon: GraduationCap, 
       image: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
       label: 'Library', 
-      color: 'from-purple-500 to-purple-600', 
+      color: 'from-[#25f194] to-[#25f194]', 
       path: '/library',
       description: 'Browse books, reserve, and check due dates'
     },
@@ -136,7 +137,7 @@ export default function Home({ user, onLoggedOut }) {
   const totalClubMembers = clubs.reduce((sum, club) => sum + club.members, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950 font-sans">
       {/* Background Pattern */}
       <div className="fixed inset-0 opacity-5 pointer-events-none">
         <div className="absolute inset-0" style={{
@@ -147,24 +148,25 @@ export default function Home({ user, onLoggedOut }) {
       {/* Main Layout */}
       <div className="relative">
         {/* Top Navigation */}
-        <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200">
+        <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-slate-700">
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               {/* Left: Brand */}
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl shadow-lg">
+                  <div className="p-2 bg-gradient-to-br from-blue-600 to-[#25f194] rounded-xl shadow-lg">
                     <BookOpen className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-xl font-bold text-gray-900">CampusCore</h1>
-                    <p className="text-xs text-gray-500">Student Dashboard</p>
+                    <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">CampusCore</h1>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Student Dashboard</p>
                   </div>
                 </div>
               </div>
 
               {/* Right: User & Actions */}
               <div className="flex items-center gap-4">
+                {/* Removed dark mode toggle button */}
                 {/* Notifications */}
                 <button className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors">
                   <Bell className="h-5 w-5 text-gray-600" />
@@ -175,7 +177,6 @@ export default function Home({ user, onLoggedOut }) {
                   user={user}
                   onProfile={() => navigate('/profile')}
                   onLogout={() => setShowLogoutConfirm(true)}
-                  theme="light"
                   idLabel="ID"
                 />
               </div>
@@ -187,7 +188,7 @@ export default function Home({ user, onLoggedOut }) {
         <div className="p-6">
           {/* Welcome & Stats Banner */}
           <div className="mb-8">
-            <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-6 lg:p-8 text-white shadow-xl shadow-blue-200/40">
+            <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-[#25f194] to-[#25f194] rounded-3xl p-6 lg:p-8 text-white shadow-xl shadow-blue-200/40">
               <div className="absolute right-0 top-0 bottom-0 w-1/3">
                 <div className="absolute inset-0 bg-gradient-to-l from-blue-600/50 to-transparent"></div>
                 <img 
@@ -395,15 +396,15 @@ export default function Home({ user, onLoggedOut }) {
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-50 rounded-lg">
-                      <GraduationCap className="h-5 w-5 text-purple-600" />
+                    <div className="p-2 bg-[#25f194] rounded-lg">
+                      <GraduationCap className="h-5 w-5 text-[#25f194]" />
                     </div>
                     <div>
                       <h2 className="text-xl font-bold text-gray-900">Library</h2>
                       <p className="text-sm text-gray-500">Books & Resources</p>
                     </div>
                   </div>
-                  <button className="text-purple-600 hover:text-purple-700 font-medium text-sm">
+                  <button className="text-[#25f194] hover:text-[#25f194] font-medium text-sm">
                     Visit Library →
                   </button>
                 </div>
@@ -512,7 +513,7 @@ export default function Home({ user, onLoggedOut }) {
 
           {/* Recent Activity */}
           <div className="mt-8">
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-100">
+            <div className="bg-gradient-to-r from-blue-50 to-[#25f194] rounded-2xl p-8 border border-blue-100">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Campus Highlights</h2>
@@ -534,7 +535,7 @@ export default function Home({ user, onLoggedOut }) {
                   <div className="text-sm text-gray-600">Main Ground</div>
                 </div>
                 <div className="bg-white rounded-xl p-4 border border-gray-200">
-                  <div className="text-sm text-purple-600 font-medium mb-2">Oct 20 • 6 PM</div>
+                  <div className="text-sm text-[#25f194] font-medium mb-2">Oct 20 • 6 PM</div>
                   <div className="font-bold text-gray-900 mb-2">Cultural Fest</div>
                   <div className="text-sm text-gray-600">Auditorium</div>
                 </div>

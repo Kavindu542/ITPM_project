@@ -14,8 +14,11 @@ export default function UserMenu({
   const avatarUrl = user?.avatarUrl || '';
   const [avatarBroken, setAvatarBroken] = React.useState(false);
 
-  const nameClass = theme === 'dark' ? 'text-white' : 'text-gray-900';
-  const idClass = theme === 'dark' ? 'text-gray-400' : 'text-gray-500';
+  const nameClass = 'text-gray-900';
+  const idClass = 'text-gray-500';
+  const menuClass = 'absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50';
+  const itemClass = 'w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2';
+  const logoutClass = 'w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2';
 
   return (
     <div className="relative group">
@@ -28,7 +31,7 @@ export default function UserMenu({
             <p className={`text-xs ${idClass}`}> </p>
           )}
         </div>
-        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold cursor-pointer overflow-hidden">
+        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-[#25f194] flex items-center justify-center text-white font-semibold cursor-pointer overflow-hidden">
           {avatarUrl && !avatarBroken ? (
             <img
               src={avatarUrl}
@@ -42,11 +45,11 @@ export default function UserMenu({
         </div>
       </button>
 
-      <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+      <div className={menuClass}>
         {onProfile ? (
           <button
             type="button"
-            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+            className={itemClass}
             onClick={onProfile}
           >
             <User className="h-4 w-4" />
@@ -56,7 +59,7 @@ export default function UserMenu({
         {onSettings ? (
           <button
             type="button"
-            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+            className={itemClass}
             onClick={onSettings}
           >
             <Settings className="h-4 w-4" />
@@ -65,7 +68,7 @@ export default function UserMenu({
         ) : null}
         <button
           type="button"
-          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+          className={logoutClass}
           onClick={onLogout}
         >
           <LogOut className="h-4 w-4" />

@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const { requireAuth } = require("../middleware/authMiddleware");
 const { requireModuleAdmin } = require("../middleware/moduleAuthMiddleware");
 const controller = require("../controllers/studyMaterialController");
+const community = require("../controllers/studyMaterialCommunityController");
 
 const router = express.Router();
 
@@ -42,6 +43,57 @@ router.get("/me/uploads", requireAuth, controller.listMyUploads);
 router.get("/me/bookmarks", requireAuth, controller.listBookmarks);
 router.get("/me/history", requireAuth, controller.listHistory);
 
+// Missing resource requests (student)
+router.get("/requests", requireAuth, community.listRequests);
+router.post("/requests", requireAuth, community.createRequest);
+router.post("/requests/:id/upvote", requireAuth, community.toggleRequestUpvote);
+
+// Reviews (student)
+router.get(
+  "/materials/:materialId/reviews",
+  requireAuth,
+  community.listMaterialReviews,
+);
+router.post(
+  "/materials/:materialId/reviews",
+  requireAuth,
+  community.createOrUpdateReview,
+);
+router.post("/reviews/:reviewId/vote", requireAuth, community.voteReview);
+router.patch("/reviews/:reviewId", requireAuth, community.updateOwnReview);
+router.delete("/reviews/:reviewId", requireAuth, community.deleteOwnReview);
+
+// Forum (student)
+router.get("/forum/categories", requireAuth, community.listForumCategories);
+router.get("/forum/threads", requireAuth, community.listForumThreads);
+router.post("/forum/threads", requireAuth, community.createForumThread);
+router.get("/forum/threads/:threadId", requireAuth, community.getForumThread);
+router.post(
+  "/forum/threads/:threadId/replies",
+  requireAuth,
+  community.addForumReply,
+);
+router.post(
+  "/forum/threads/:threadId/upvote",
+  requireAuth,
+  community.toggleThreadUpvote,
+);
+router.post(
+  "/forum/replies/:replyId/upvote",
+  requireAuth,
+  community.toggleReplyUpvote,
+);
+router.post(
+  "/forum/replies/:replyId/accept",
+  requireAuth,
+  community.acceptReply,
+);
+router.post(
+  "/forum/threads/:threadId/subscribe",
+  requireAuth,
+  community.toggleThreadSubscription,
+);
+
 // Admin endpoints (study-material module)
 router.post(
   "/admin/materials",
@@ -75,6 +127,98 @@ router.get(
   requireModuleAdmin("study-material"),
   controller.listMaterials,
 );
+
+// Missing resource requests (admin)
+router.get(
+  "/admin/requests",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  community.listRequests,
+);
+router.post(
+  "/admin/requests/:id/in-progress",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  community.adminMarkRequestInProgress,
+);
+router.post(
+  "/admin/requests/:id/fulfill",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  upload.single("file"),
+  community.adminFulfillRequest,
+);
+router.post(
+  "/admin/requests/:id/reject",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  community.adminRejectRequest,
+);
+
+// Reviews (admin)
+router.get(
+  "/admin/reviews",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  community.adminListReviews,
+);
+router.post(
+  "/admin/reviews/:reviewId/moderate",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  community.adminModerateReview,
+);
+router.post(
+  "/admin/reviews/:reviewId/respond",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  community.adminRespondReview,
+);
+router.get(
+  "/admin/reviews/analytics",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  community.adminReviewAnalytics,
+);
+
+// Forum (admin)
+router.post(
+  "/admin/forum/categories",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  community.adminCreateForumCategory,
+);
+router.patch(
+  "/admin/forum/threads/:threadId",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  community.adminUpdateForumThread,
+);
+router.patch(
+  "/admin/forum/replies/:replyId",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  community.adminUpdateForumReply,
+);
+router.post(
+  "/admin/forum/users/:userId/ban",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  community.adminBanForumUser,
+);
+router.delete(
+  "/admin/forum/users/:userId/ban",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  community.adminUnbanForumUser,
+);
+router.get(
+  "/admin/forum/top-contributors",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  community.adminForumTopContributors,
+);
+
 router.get(
   "/admin/downloads",
   requireAuth,

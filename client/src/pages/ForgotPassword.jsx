@@ -1,4 +1,5 @@
 import React from 'react';
+import { Moon, Sun } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { authService } from '../services/authService';
@@ -6,7 +7,7 @@ import { authService } from '../services/authService';
 export default function ForgotPassword() {
   const navigate = useNavigate();
   const bgImageUrl =
-    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRMCRQyVSlJQ6KJGV8swWe-NB9s5wwNp2_YcQ&s';
+    'https://img.freepik.com/free-photo/students-studying-street_23-2147860544.jpg?w=1060';
 
   const [email, setEmail] = React.useState('');
   const [busy, setBusy] = React.useState(false);
@@ -42,15 +43,16 @@ export default function ForgotPassword() {
     <div
       className="min-h-screen font-sans relative overflow-hidden"
       style={{
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('${bgImageUrl}')`,
+        backgroundImage: `url('${bgImageUrl}')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
       }}
     >
+      {/* Removed dark mode toggle button */}
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-xl rounded-3xl shadow-xl overflow-hidden">
-          <div className="p-8 md:p-10 bg-white/80 backdrop-blur-xl">
+          <div className="p-8 md:p-10 bg-white/20 border border-white/20">
             <h1 className="text-3xl font-bold text-gray-900 text-center">Forgot password</h1>
             <p className="mt-2 text-center text-sm text-gray-600">
               Enter your email and we’ll send a 6-digit reset code (OTP).
@@ -89,7 +91,7 @@ export default function ForgotPassword() {
               <button
                 type="submit"
                 disabled={busy}
-                className="w-full mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-md hover:from-purple-500 hover:to-blue-500 disabled:opacity-60"
+                className="w-full mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#25f194] to-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-md hover:from-[#25f194] hover:to-blue-500 disabled:opacity-60"
               >
                 {busy ? (
                   <>
