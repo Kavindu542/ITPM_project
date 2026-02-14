@@ -58,12 +58,18 @@ export default function SignIn({ onSignedIn }) {
 		setFieldErrors(errs);
 		if (hasErrors(errs)) return;
 
+		console.log('Sign-in form submitted');
+		console.log('Email:', email);
+		console.log('Password:', password);
+
 		setBusy(true);
 		try {
 			const data = await authService.login({ email: email.trim(), password });
+			console.log('Login successful:', data);
 			onSignedIn?.(data.user);
 			navigate('/', { replace: true });
 		} catch (err) {
+			console.error('Login error:', err);
 			setError(err?.response?.data?.message || 'Sign in failed');
 		} finally {
 			setBusy(false);
