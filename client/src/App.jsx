@@ -34,6 +34,7 @@ import ForumManagementPage from './pages/admindashboard/studyMaterial/ForumManag
 import LibraryDashboard from './pages/admindashboard/LibraryM/LibraryDashboard.jsx';
 import ClubAndSocietyDashboard from './pages/admindashboard/Club/ClubAndSocietyDashboard.jsx';
 import HostelWardenDashboard from './pages/admindashboard/Hostel/HostelWardenDashboard.jsx';
+import HostelTermsAndConditions from './pages/Hostel/TermsAndConditions.jsx';
 
 export default function App() {
   const [theme, setTheme] = React.useState(() => {
@@ -200,9 +201,15 @@ export default function App() {
             <Hostel
               user={user}
               onLoggedOut={() => setUser(null)}
-              theme={theme}
-              onToggleTheme={toggleTheme}
             />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/hostel/terms"
+        element={
+          <RequireAuth user={user}>
+            <HostelTermsAndConditions />
           </RequireAuth>
         }
       />
