@@ -2,6 +2,7 @@ import React from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
+import { clubService } from '../services/clubService';
 import UserMenu from '../components/UserMenu';
 import { 
   LogOut,
@@ -136,6 +137,34 @@ export default function Home({ user, onLoggedOut }) {
   }).format(now);
   const totalClubMembers = clubs.reduce((sum, club) => sum + club.members, 0);
 
+  const [myMeetings, setMyMeetings] = React.useState([]);
+  const [publicEvents, setPublicEvents] = React.useState([]);
+  const [feedLoading, setFeedLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setFeedLoading(true);
+      try {
+        const [mm, pe] = await Promise.allSettled([
+          clubService.myMeetings(),
+          clubService.publicEvents(),
+        ]);
+        if (cancelled) return;
+        const meetings = mm.status === 'fulfilled' ? (mm.value?.meetings || []) : [];
+        const events = pe.status === 'fulfilled' ? (pe.value?.events || []) : [];
+        setMyMeetings(meetings);
+        setPublicEvents(events);
+      } finally {
+        if (!cancelled) setFeedLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950 font-sans">
       {/* Background Pattern */}
@@ -171,6 +200,17 @@ export default function Home({ user, onLoggedOut }) {
                 <button className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors">
                   <Bell className="h-5 w-5 text-gray-600" />
                 </button>
+                {user?.role === 'club_leader' ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/leader/dashboard')}
+                    className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-indigo-200 bg-white text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+                    title="Leader Dashboard"
+                  >
+                    Leader Dashboard
+                    <span aria-hidden="true">→</span>
+                  </button>
+                ) : null}
 
                 <UserMenu
                   user={user}
@@ -209,6 +249,72 @@ export default function Home({ user, onLoggedOut }) {
                 </div>
                
                 
+              </div>
+            </div>
+          </div>
+
+          {/* Club Updates */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-50 rounded-lg">
+                    <Users2 className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">My Club Meetings</h2>
+                    <p className="text-sm text-gray-500">Upcoming meetings for your clubs</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6">
+                {feedLoading ? (
+                  <div className="text-gray-500">Loading…</div>
+                ) : myMeetings.length === 0 ? (
+                  <div className="text-gray-500 text-sm">No meetings scheduled.</div>
+                ) : (
+                  <ul className="divide-y divide-gray-200">
+                    {myMeetings.slice(0, 3).map((m) => (
+                      <li key={m.id} className="py-3">
+                        <div className="font-medium text-gray-900">{m.title}</div>
+                        <div className="text-xs text-gray-600">
+                          {new Date(m.date).toLocaleString()} • {m.venue || 'TBD'} • {m.club?.name || 'Club'}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-pink-50 rounded-lg">
+                    <Users2 className="h-5 w-5 text-pink-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">Campus Club Events</h2>
+                    <p className="text-sm text-gray-500">Public events open to everyone</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6">
+                {feedLoading ? (
+                  <div className="text-gray-500">Loading…</div>
+                ) : publicEvents.length === 0 ? (
+                  <div className="text-gray-500 text-sm">No public events yet.</div>
+                ) : (
+                  <ul className="divide-y divide-gray-200">
+                    {publicEvents.slice(0, 3).map((e) => (
+                      <li key={e.id} className="py-3">
+                        <div className="font-medium text-gray-900">{e.name}</div>
+                        <div className="text-xs text-gray-600">
+                          {new Date(e.date).toLocaleString()} • {e.venue || 'TBD'} • {e.club?.name || 'Club'}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           </div>

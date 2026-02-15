@@ -32,10 +32,7 @@ const userSchema = new mongoose.Schema(
     avatarUrl: {
       type: String,
       default: "",
-      trim: true,
-      maxlength: 2000000,
     },
-
     isEmailVerified: {
       type: Boolean,
       default: false,
@@ -67,13 +64,36 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    // Study material access control (optional)
     role: {
       type: String,
-      enum: ["student", "admin"],
+      enum: ["student", "admin", "club_leader"],
       default: "student",
       index: true,
     },
+    department: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    year: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    registrationDate: {
+      type: Date,
+      default: Date.now,
+    },
+    club: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Club',
+      default: null, // if user is a leader
+    },
+    clubs: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Club',
+      default: [], // memberships
+    }],
     semester: {
       type: Number,
       default: null,

@@ -1,0 +1,503 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Users, CalendarDays, PlusCircle } from 'lucide-react';
+import UserMenu from '../../components/UserMenu';
+import { authService } from '../../services/authService';
+import { clubService } from '../../services/clubService';
+
+export default function LeaderDashboard({ user, onLoggedOut }) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = React.useState(true);
+  const [club, setClub] = React.useState(null);
+  const [members, setMembers] = React.useState([]);
+  const [showAddMember, setShowAddMember] = React.useState(false);
+  const [eligible, setEligible] = React.useState([]);
+  const [eligibleLoading, setEligibleLoading] = React.useState(false);
+  const [search, setSearch] = React.useState('');
+  const [selectedStudentId, setSelectedStudentId] = React.useState('');
+  const [meetings, setMeetings] = React.useState([]);
+  const [events, setEvents] = React.useState([]);
+  const [showAddMeeting, setShowAddMeeting] = React.useState(false);
+  const [meetingForm, setMeetingForm] = React.useState({ title: '', date: '', venue: '', description: '' });
+  const [showAddEvent, setShowAddEvent] = React.useState(false);
+  const [eventForm, setEventForm] = React.useState({ name: '', date: '', venue: '', type: 'Public' });
+
+  const logout = async () => {
+    await authService.logout();
+    onLoggedOut?.();
+    navigate('/signin', { replace: true });
+  };
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const data = await clubService.leaderGetMyClub();
+        if (cancelled) return;
+        const c = data?.club || null;
+        setClub(c);
+        setMembers(Array.isArray(c?.members) ? c.members : []);
+        try {
+          const m = await clubService.leaderListMeetings();
+          setMeetings(Array.isArray(m?.meetings) ? m.meetings : []);
+        } catch { setMeetings([]); }
+        try {
+          const e = await clubService.leaderListEvents();
+          setEvents(Array.isArray(e?.events) ? e.events : []);
+        } catch { setEvents([]); }
+      } catch {
+        if (!cancelled) {
+          setClub(null);
+          setMembers([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const openAddMember = async () => {
+    setShowAddMember(true);
+    setEligibleLoading(true);
+    setEligible([]);
+    setSelectedStudentId('');
+    setSearch('');
+    try {
+      const data = await clubService.leaderEligibleStudents();
+      const list = Array.isArray(data?.students) ? data.students : [];
+      setEligible(list);
+    } catch {
+      setEligible([]);
+    } finally {
+      setEligibleLoading(false);
+    }
+  };
+
+  const addMember = async (e) => {
+    e?.preventDefault?.();
+    if (!selectedStudentId) return;
+    try {
+      const res = await clubService.leaderAddMember(selectedStudentId);
+      const m = res?.member;
+      if (m) {
+        setMembers((prev) => {
+          if (prev.some((x) => String(x.id) === String(m.id))) return prev;
+          return [...prev, m];
+        });
+      }
+      setShowAddMember(false);
+      setSelectedStudentId('');
+      setSearch('');
+      alert(res?.message || 'Member added');
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Failed to add member');
+    }
+  };
+
+  const createMeeting = async (e) => {
+    e?.preventDefault?.();
+    if (!meetingForm.title.trim() || !meetingForm.date) {
+      alert('Title and date are required');
+      return;
+    }
+    try {
+      const res = await clubService.leaderCreateMeeting(meetingForm);
+      const m = res?.meeting;
+      if (m) setMeetings(prev => [...prev, m]);
+      setShowAddMeeting(false);
+      setMeetingForm({ title: '', date: '', venue: '', description: '' });
+      alert(res?.message || 'Meeting created');
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Failed to create meeting');
+    }
+  };
+
+  const createEvent = async (e) => {
+    e?.preventDefault?.();
+    if (!eventForm.name.trim() || !eventForm.date) {
+      alert('Name and date are required');
+      return;
+    }
+    try {
+      const res = await clubService.leaderCreateEvent(eventForm);
+      const ev = res?.event;
+      if (ev) setEvents(prev => [...prev, ev]);
+      setShowAddEvent(false);
+      setEventForm({ name: '', date: '', venue: '', type: 'Public' });
+      alert(res?.message || 'Event created');
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Failed to create event');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-[#25f194]">
+      <header className="sticky top-0 z-10 border-b border-white/10 bg-white/10 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="inline-flex items-center gap-2 text-white/90 hover:text-white transition"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span className="text-sm font-medium">Back to Home</span>
+            </button>
+            <div className="rounded-2xl bg-white px-3 py-2 shadow-sm ml-4">
+              <div className="flex items-center gap-2">
+                <svg className="h-5 w-5 text-indigo-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <div>
+                  <div className="text-sm font-bold text-gray-900">CampusCore</div>
+                  <div className="text-xs font-medium text-gray-500">Leader</div>
+                </div>
+              </div>
+            </div>
+            <div className="text-white">
+              <div className="text-sm font-semibold">Leader Dashboard</div>
+              <div className="text-xs text-white/80">Welcome, {user?.name}</div>
+            </div>
+          </div>
+          <UserMenu
+            user={user}
+            onProfile={() => navigate('/profile')}
+            onLogout={logout}
+            theme="light"
+            idLabel="ID"
+          />
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+        {loading ? (
+          <div className="text-white/90">Loading...</div>
+        ) : !club ? (
+          <div className="bg-white rounded-2xl p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">No club assigned</h2>
+            <p className="text-gray-600">You are not a club leader or do not have a club assigned yet.</p>
+          </div>
+        ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white rounded-2xl p-6 shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">{club?.name || 'My Club'}</h2>
+                <p className="text-sm text-gray-500">Manage your members and events</p>
+              </div>
+              <div className="p-3 rounded-xl bg-indigo-50">
+                <Users className="h-6 w-6 text-indigo-600" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-900">Members ({members.length})</h3>
+                <button
+                  type="button"
+                  onClick={openAddMember}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-indigo-200 bg-white text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Add Member
+                </button>
+              </div>
+              <ul className="mt-3 divide-y divide-gray-200">
+                {members.length === 0 ? (
+                  <li className="py-3 text-sm text-gray-500">No members yet.</li>
+                ) : (
+                  members.map((m) => (
+                    <li key={m.id} className="py-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{m.name}</div>
+                          <div className="text-xs text-gray-500">{m.email}</div>
+                        </div>
+                        <div className="text-xs text-gray-500">{[m.department, m.year].filter(Boolean).join(' ')}</div>
+                      </div>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-xl md:col-span-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Meetings & Events</h2>
+                <p className="text-sm text-gray-500">Create and manage your club schedule</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddMeeting(true)}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-200 bg-white text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+                >
+                  <CalendarDays className="h-4 w-4" />
+                  Add Meeting
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddEvent(true)}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-pink-200 bg-white text-sm font-semibold text-pink-700 hover:bg-pink-50"
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Add Event
+                </button>
+              </div>
+            </div>
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Upcoming Meetings</h3>
+                {meetings.length === 0 ? (
+                  <div className="text-sm text-gray-500">No meetings scheduled.</div>
+                ) : (
+                  <ul className="divide-y divide-gray-200">
+                    {meetings.map((m) => (
+                      <li key={m.id} className="py-3">
+                        <div className="font-medium text-gray-900">{m.title}</div>
+                        <div className="text-xs text-gray-600">{new Date(m.date).toLocaleString()} • {m.venue || 'TBD'}</div>
+                        {m.description ? <div className="text-xs text-gray-500 mt-1">{m.description}</div> : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Club Events</h3>
+                {events.length === 0 ? (
+                  <div className="text-sm text-gray-500">No events yet.</div>
+                ) : (
+                  <ul className="divide-y divide-gray-200">
+                    {events.map((ev) => (
+                      <li key={ev.id} className="py-3">
+                        <div className="font-medium text-gray-900">{ev.name}</div>
+                        <div className="text-xs text-gray-600">{new Date(ev.date).toLocaleString()} • {ev.venue || 'TBD'}</div>
+                        <div className="text-xs text-gray-500 mt-1">{ev.type}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
+      </main>
+
+      {/* Add Meeting Modal */}
+      {showAddMeeting && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="px-6 py-4 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">Add Meeting</h3>
+            </div>
+            <form onSubmit={createMeeting} className="px-6 py-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                <input
+                  type="text"
+                  value={meetingForm.title}
+                  onChange={(e) => setMeetingForm({ ...meetingForm, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g., Weekly Standup"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time *</label>
+                <input
+                  type="datetime-local"
+                  value={meetingForm.date}
+                  onChange={(e) => setMeetingForm({ ...meetingForm, date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Venue</label>
+                <input
+                  type="text"
+                  value={meetingForm.venue}
+                  onChange={(e) => setMeetingForm({ ...meetingForm, venue: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g., Room A101"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  rows="3"
+                  value={meetingForm.description}
+                  onChange={(e) => setMeetingForm({ ...meetingForm, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Optional details"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddMeeting(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                >
+                  Add Meeting
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Event Modal */}
+      {showAddEvent && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="px-6 py-4 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">Add Event</h3>
+            </div>
+            <form onSubmit={createEvent} className="px-6 py-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <input
+                  type="text"
+                  value={eventForm.name}
+                  onChange={(e) => setEventForm({ ...eventForm, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g., Annual Showcase"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time *</label>
+                <input
+                  type="datetime-local"
+                  value={eventForm.date}
+                  onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Venue</label>
+                <input
+                  type="text"
+                  value={eventForm.venue}
+                  onChange={(e) => setEventForm({ ...eventForm, venue: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g., Main Hall"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
+                <select
+                  value={eventForm.type}
+                  onChange={(e) => setEventForm({ ...eventForm, type: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="Public">Public (visible to all)</option>
+                  <option value="Members-only">Members-only (visible to club members)</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddEvent(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition"
+                >
+                  Add Event
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showAddMember && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="px-6 py-4 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">Add Member to {club?.name || 'Club'}</h3>
+            </div>
+            <form onSubmit={addMember} className="px-6 py-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name, email, department, year"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Student</label>
+                <div className="relative">
+                  <select
+                    value={selectedStudentId}
+                    onChange={(e) => setSelectedStudentId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    disabled={eligibleLoading}
+                  >
+                    <option value="">
+                      {eligibleLoading ? 'Loading students...' : eligible.length ? '-- Select a student --' : 'No students available'}
+                    </option>
+                    {eligible
+                      .filter((s) => {
+                        const q = search.trim().toLowerCase();
+                        if (!q) return true;
+                        const label = `${s.name} ${s.email} ${s.department || ''} ${s.year || ''}`.toLowerCase();
+                        return label.includes(q);
+                      })
+                      .map((s) => {
+                        const meta = [s.email, [s.department, s.year].filter(Boolean).join(' ')].filter(Boolean).join(' - ');
+                        return (
+                          <option key={s.id} value={s.id}>
+                            {s.name}{meta ? ` (${meta})` : ''}
+                          </option>
+                        );
+                      })}
+                  </select>
+                  {eligibleLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-lg text-sm text-gray-600">
+                      Loading…
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{eligible.length} students available</p>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddMember(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!selectedStudentId || eligibleLoading}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:bg-gray-400"
+                >
+                  Add Member
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
