@@ -16,6 +16,7 @@ import {
 import { authService } from '../../services/authService';
 import UserMenu from '../../components/UserMenu';
 import { studyMaterialService } from '../../services/studyMaterialService';
+import { exportMaterialsListPdf, exportImagesToPdf } from '../../utils/pdfExport';
 
 export default function StudyMaterial({ user, onLoggedOut }) {
   const navigate = useNavigate();
@@ -49,6 +50,39 @@ export default function StudyMaterial({ user, onLoggedOut }) {
   const [myUploads, setMyUploads] = React.useState([]);
 
   const [uploadModalOpen, setUploadModalOpen] = React.useState(false);
+  const [aiOpen, setAiOpen] = React.useState(false);
+  const [aiBusy, setAiBusy] = React.useState(false);
+  const [aiInput, setAiInput] = React.useState('');
+  const [aiItems, setAiItems] = React.useState([]);
+  const [aiQueried, setAiQueried] = React.useState(false);
+  const [aiLastQuery, setAiLastQuery] = React.useState('');
+  const [aiHasMore, setAiHasMore] = React.useState(false);
+  const [aiLimit, setAiLimit] = React.useState(50);
+  const [aiSort, setAiSort] = React.useState('relevance'); // relevance|downloads|semester
+  const [aiCategory, setAiCategory] = React.useState('all');
+
+  const categoriesInResults = React.useMemo(() => {
+    const s = new Set();
+    (aiItems || []).forEach((m) => {
+      if (m?.category) s.add(m.category);
+    });
+    return ['all', ...Array.from(s)];
+  }, [aiItems]);
+
+  const viewItems = React.useMemo(() => {
+    let out = Array.isArray(aiItems) ? [...aiItems] : [];
+    if (aiCategory !== 'all') {
+      out = out.filter((m) => m?.category === aiCategory);
+    }
+    if (aiSort === 'downloads') {
+      out.sort((a, b) => (b?.downloadCount || 0) - (a?.downloadCount || 0));
+    } else if (aiSort === 'semester') {
+      out.sort((a, b) => (a?.semester || 99) - (b?.semester || 99));
+    }
+    return out;
+  }, [aiItems, aiSort, aiCategory]);
+
+  // No auto-load — results only after user submits a prompt
 
   const [expandedId, setExpandedId] = React.useState(null);
   const [detailsById, setDetailsById] = React.useState({});
@@ -342,6 +376,16 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                 <UploadCloud className="h-4 w-4" />
                 Contribute
               </button>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                onClick={async () => {
+                  setAiOpen(true);
+                }}
+              >
+                <Search className="h-4 w-4" />
+                AI Assistant
+              </button>
               <p className="text-xs text-gray-500">Uploads go for admin approval</p>
             </div>
           </div>
@@ -363,7 +407,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   to="/materials/all"
                   className={({ isActive }) =>
                     `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`
                   }
                 >
@@ -378,7 +422,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   to="/materials/favs"
                   className={({ isActive }) =>
                     `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`
                   }
                 >
@@ -393,7 +437,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   to="/materials/history"
                   className={({ isActive }) =>
                     `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`
                   }
                 >
@@ -408,7 +452,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   to="/materials/contribute"
                   className={({ isActive }) =>
                     `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`
                   }
                 >
@@ -423,7 +467,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   to="/materials/requests"
                   className={({ isActive }) =>
                     `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`
                   }
                 >
@@ -438,7 +482,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   to="/materials/reviews"
                   className={({ isActive }) =>
                     `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`
                   }
                 >
@@ -453,7 +497,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   to="/materials/forum"
                   className={({ isActive }) =>
                     `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`
                   }
                 >
@@ -886,13 +930,13 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
     {uploadModalOpen ? (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
         role="dialog"
         aria-modal="true"
         aria-label="Upload study material"
       >
-        <div className="absolute inset-0 bg-black/40" onClick={() => setUploadModalOpen(false)} />
-        <div className="relative w-full max-w-5xl rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden flex flex-col max-h-[calc(100vh-2rem)]">
+        <div className="absolute inset-0" onClick={() => setUploadModalOpen(false)} />
+        <div className="relative w-full max-w-5xl rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-md shadow-xl overflow-hidden flex flex-col max-h-[calc(100vh-2rem)]">
           <div className="p-5 border-b border-gray-200 bg-white flex items-start justify-between gap-4">
             <div>
               <div className="text-sm font-bold text-gray-900">Upload new material</div>
@@ -987,6 +1031,185 @@ export default function StudyMaterial({ user, onLoggedOut }) {
         </div>
       </div>
     ) : null}
+
+    {aiOpen ? (
+      <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-sm">
+        <div className="h-full w-full max-w-md bg-white/90 backdrop-blur-md border-l border-gray-200 shadow-xl flex flex-col">
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="text-sm font-bold text-gray-900">Study Assistant</div>
+              <div className="ml-auto" />
+              <input
+                id="imagesToPdfInput"
+                type="file"
+                className="hidden"
+                accept="image/*"
+                multiple
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (!files.length) return;
+                  try {
+                    await exportImagesToPdf({ files, title: 'Handwritten Notes', filenameBase: 'handwritten_notes' });
+                  } finally {
+                    e.target.value = '';
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="mr-2 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-800 hover:bg-gray-50"
+                onClick={() => document.getElementById('imagesToPdfInput')?.click()}
+              >
+                Images → PDF
+              </button>
+              <button
+                type="button"
+                className="mr-2 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-800 hover:bg-gray-50"
+                onClick={() => {
+                  const mapped = (viewItems || []).map((it) => ({
+                    ...it,
+                    previewUrl: studyMaterialService.fileUrl(it.id, { versionId: it.currentVersionId, disposition: 'inline' }),
+                  }));
+                  exportMaterialsListPdf({ items: mapped, title: 'Recommended materials (A4)' });
+                }}
+                disabled={!viewItems.length}
+              >
+                Export PDF (A4)
+              </button>
+            <button
+              type="button"
+              className="h-10 w-10 inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white hover:bg-gray-50"
+              onClick={() => setAiOpen(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+          <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-3">
+            <div className="text-xs text-gray-600">
+              {aiQueried ? `Results for “${aiLastQuery}” — ${aiItems.length} item(s)` : 'Enter a prompt to search materials'}
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <select
+                className="text-xs rounded-lg border border-gray-200 bg-white px-2 py-1 text-gray-800"
+                value={aiSort}
+                onChange={(e) => setAiSort(e.target.value)}
+              >
+                <option value="relevance">Sort: Relevance</option>
+                <option value="downloads">Sort: Downloads</option>
+                <option value="semester">Sort: Semester</option>
+              </select>
+              <select
+                className="text-xs rounded-lg border border-gray-200 bg-white px-2 py-1 text-gray-800"
+                value={aiCategory}
+                onChange={(e) => setAiCategory(e.target.value)}
+              >
+                {categoriesInResults.map((c) => (
+                  <option key={c} value={c}>{c === 'all' ? 'All categories' : c}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {!aiQueried && !aiBusy ? (
+              <div className="text-sm text-gray-600">Type a prompt and press Send to see matching materials.</div>
+            ) : null}
+            {aiQueried && !aiBusy && !aiItems.length ? (
+              <div className="text-sm text-gray-600">No matching materials for “{aiLastQuery}”. Try another keyword or module code.</div>
+            ) : null}
+            {(viewItems || []).map((it) => (
+              <div key={it.id} className="rounded-xl border border-gray-200 bg-white flex items-center justify-between px-3 py-2">
+                <div>
+                  <div className="text-sm font-semibold text-gray-900">{it.title}</div>
+                  <div className="text-xs text-gray-500">{it.moduleCode || '—'} {it.semester ? `• Semester ${it.semester}` : ''}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-xs font-semibold text-gray-800 hover:bg-gray-50"
+                    onClick={() => window.open(studyMaterialService.fileUrl(it.id, { versionId: it.currentVersionId, disposition: 'inline' }), '_blank', 'noopener,noreferrer')}
+                  >
+                    Preview
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-xs font-semibold"
+                    onClick={() => window.open(studyMaterialService.fileUrl(it.id, { versionId: it.currentVersionId, disposition: 'attachment' }), '_blank', 'noopener,noreferrer')}
+                  >
+                    <Download className="h-4 w-4" />
+                    Download
+                  </button>
+                </div>
+              </div>
+            ))}
+            {aiBusy ? <div className="text-xs text-gray-500">Thinking…</div> : null}
+            {!aiBusy && aiHasMore ? (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                  onClick={async () => {
+                    const next = Math.min(aiLimit + 50, 200);
+                    setAiBusy(true);
+                    try {
+                      const res = await studyMaterialService.aiChat(aiLastQuery || '', { limit: next });
+                      setAiItems(Array.isArray(res?.items) ? res.items : []);
+                      setAiHasMore(Boolean(res?.hasMore));
+                      setAiLimit(next);
+                    } catch {
+                    } finally {
+                      setAiBusy(false);
+                    }
+                  }}
+                >
+                  Load more
+                </button>
+              </div>
+            ) : null}
+          </div>
+          <div className="p-3 border-t border-gray-200">
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const msg = aiInput.trim();
+                if (!msg) return;
+                setAiQueried(true);
+                setAiLastQuery(msg);
+                setAiInput('');
+                setAiBusy(true);
+                try {
+                  const res = await studyMaterialService.aiChat(msg, { limit: aiLimit });
+                  setAiItems(Array.isArray(res?.items) ? res.items : []);
+                  setAiHasMore(Boolean(res?.hasMore));
+                } catch {
+                  setAiItems([]);
+                  setAiHasMore(false);
+                } finally {
+                  setAiBusy(false);
+                }
+              }}
+              className="flex items-center gap-2"
+            >
+              <input
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
+                placeholder="Ask about topics, modules, or exams…"
+                className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={aiBusy}
+                className="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
+              >
+                Send
+              </button>
+            </form>
+          </div>
+        </div>
+        <div className="flex-1" onClick={() => setAiOpen(false)} />
+      </div>
+    ) : null}
+
+    {aiOpen ? null : null}
     </>
   );
 }

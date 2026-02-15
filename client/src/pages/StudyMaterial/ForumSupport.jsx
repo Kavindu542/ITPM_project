@@ -112,6 +112,16 @@ export default function ForumSupport({ user, onLoggedOut }) {
     }
   };
 
+  const deleteOwnThread = async (threadId) => {
+    setError('');
+    try {
+      await studyMaterialService.deleteOwnForumThread(threadId);
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.message || e?.message || 'Failed to delete thread');
+    }
+  };
+
   const upvoteThread = async (threadId) => {
     setError('');
     try {
@@ -318,8 +328,8 @@ export default function ForumSupport({ user, onLoggedOut }) {
                 </button>
               </div>
               {showThreadModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                  <div className="bg-white rounded-2xl border border-gray-200 p-8 w-full max-w-xl shadow-xl relative">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+                  <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-gray-200 p-8 w-full max-w-xl shadow-xl relative">
                     <button
                       type="button"
                       className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
@@ -397,44 +407,56 @@ export default function ForumSupport({ user, onLoggedOut }) {
                     <div className="flex items-center gap-2">
                       <button type="button" onClick={() => upvoteThread(t.id)} className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700">Upvote ({t.upvoteCount || 0})</button>
                       <button type="button" onClick={() => subscribe(t.id)} className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700">{t.subscribed ? 'Subscribed' : 'Subscribe'}</button>
+                    {t.isMine ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm('Delete this thread?')) deleteOwnThread(t.id);
+                        }}
+                        className="px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-xs font-semibold text-red-700"
+                      >
+                        Delete
+                      </button>
+                    ) : null}
                     </div>
                   </div>
                   <p className="mt-2 text-sm text-gray-700">{t.body}</p>
-                  <div className="mt-3 space-y-2">
-                    {(t.replies || []).filter((r) => !r.removed).map((r) => (
-                      <div key={r.id} className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="text-sm text-gray-800">{r.body}</div>
-                          <div className="flex items-center gap-2">
-                            {r.accepted ? <span className="px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-700 text-xs font-semibold">Accepted</span> : null}
-                            <button type="button" onClick={() => upvoteReply(r.id)} className="px-2.5 py-1 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700">Upvote ({r.upvoteCount || 0})</button>
-                            {t.isMine && !r.accepted ? (
-                              <button type="button" onClick={() => acceptReply(r.id)} className="px-2.5 py-1 rounded-lg border border-green-200 bg-green-50 text-xs font-semibold text-green-700">Accept</button>
-                            ) : null}
-                          </div>
-                        </div>
-                        <div className="mt-1 text-[11px] text-gray-500 flex items-center gap-2">
+                <div className="mt-3 space-y-2">
+                  {(t.replies || []).filter((r) => !r.removed).map((r) => {
+                    const isMine = !!r.isMine;
+                    const avatar =
+                      r.createdBy?.avatarUrl && String(r.createdBy.avatarUrl).trim() !== ''
+                        ? r.createdBy.avatarUrl
+                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(r.createdBy?.name || 'Student')}&background=random`;
+                    return (
+                      <div key={r.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`flex items-end gap-2 max-w-[85%] ${isMine ? 'flex-row-reverse' : ''}`}>
                           <img
-                            src={
-                              (user && r.createdBy && user.id === r.createdBy.id && user.profilePicture && user.profilePicture.trim() !== "")
-                                ? user.profilePicture
-                                : (r.createdBy?.profilePicture && r.createdBy.profilePicture.trim() !== "")
-                                  ? r.createdBy.profilePicture
-                                  : `https://ui-avatars.com/api/?name=${encodeURIComponent(r.createdBy?.name || "Student")}&background=random`
-                            }
+                            src={avatar}
                             alt={r.createdBy?.name || 'Student'}
-                            className="w-8 h-8 rounded-full border-2 border-blue-200 shadow-sm object-cover bg-white"
-                            style={{ minWidth: 32, minHeight: 32, objectFit: 'cover', backgroundColor: '#fff' }}
-                            onError={e => {
+                            className="w-8 h-8 rounded-full object-cover"
+                            onError={(e) => {
                               e.target.onerror = null;
-                              e.target.src = "/default-avatar.png";
+                              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.createdBy?.name || 'Student')}&background=random`;
                             }}
                           />
-                          <span>by {r.createdBy?.name || 'Student'} • {new Date(r.createdAt).toLocaleString()}</span>
+                          <div className={`rounded-2xl px-3 py-2 border text-sm ${isMine ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-800 border-gray-200'}`}>
+                            <div>{r.body}</div>
+                            <div className={`mt-1 text-[11px] ${isMine ? 'text-blue-100' : 'text-gray-500'}`}>
+                              {r.accepted ? 'Accepted • ' : ''}{r.createdBy?.name || 'Student'} • {new Date(r.createdAt).toLocaleString()}
+                            </div>
+                            <div className="mt-1 flex items-center gap-2">
+                              <button type="button" onClick={() => upvoteReply(r.id)} className={`px-2.5 py-1 rounded-lg border text-xs font-semibold ${isMine ? 'border-blue-500/40 bg-blue-500/20 text-white' : 'border-gray-200 bg-white text-gray-700'}`}>Upvote ({r.upvoteCount || 0})</button>
+                              {t.isMine && !r.accepted ? (
+                                <button type="button" onClick={() => acceptReply(r.id)} className="px-2.5 py-1 rounded-lg border border-green-200 bg-green-50 text-xs font-semibold text-green-700">Accept</button>
+                              ) : null}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
+                </div>
                   {!t.locked ? (
                     <div className="mt-3 flex items-center gap-2">
                       <input

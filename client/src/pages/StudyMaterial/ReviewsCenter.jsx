@@ -31,6 +31,7 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
   const [reviewSort, setReviewSort] = React.useState('highest');
 
   const [reviewForm, setReviewForm] = React.useState({ rating: 5, reviewText: '' });
+  const [reviewModalOpen, setReviewModalOpen] = React.useState(false);
 
   const logout = async () => {
     await authService.logout();
@@ -131,6 +132,7 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
   const myReview = reviews.find((r) => r.isMine);
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans">
       <div className="fixed inset-0 opacity-5 pointer-events-none">
         <div
@@ -261,62 +263,16 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <h1 className="text-2xl font-bold text-gray-900">Ratings & Reviews</h1>
               <p className="text-sm text-gray-600 mt-1">Rate materials, write reviews, and vote helpful/unhelpful feedback.</p>
-              <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-700">
-                  Materials: Downloaded only
-                </div>
-                <select
-                  value={selectedMaterialId}
-                  onChange={(e) => setSelectedMaterialId(e.target.value)}
-                  className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm md:col-span-2"
-                >
-                  <option value="">Select material</option>
-                  {materials.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.title}{m.moduleCode ? ` (${m.moduleCode})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {!loading && materials.length === 0 ? (
-                <div className="mt-3 text-sm text-amber-700">No downloaded materials found. Download a material first to add a review.</div>
-              ) : null}
-              <form className="mt-4 space-y-3" onSubmit={submitReview}>
-                <div className="flex items-center gap-3">
-                  <label className="text-sm font-semibold text-gray-700">Your rating</label>
-                  <select
-                    value={reviewForm.rating}
-                    onChange={(e) => setReviewForm((p) => ({ ...p, rating: Number(e.target.value) }))}
-                    className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-                  >
-                    {[5, 4, 3, 2, 1].map((n) => (
-                      <option key={n} value={n}>{n} Star{n > 1 ? 's' : ''}</option>
-                    ))}
-                  </select>
-                </div>
-                <textarea
-                  value={reviewForm.reviewText}
-                  onChange={(e) => setReviewForm((p) => ({ ...p, reviewText: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm min-h-24"
-                  placeholder="Write your review"
-                />
+              <div className="mt-5 flex items-center justify-between gap-3 flex-wrap">
+                <div className="text-sm text-gray-600">Write a review for a material you downloaded.</div>
                 <button
-                  type="submit"
-                  disabled={loading || !selectedMaterialId}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
+                  type="button"
+                  onClick={() => setReviewModalOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white px-4 py-2 text-sm font-semibold"
                 >
-                  Submit Review
+                  Write a review
                 </button>
-                {myReview ? (
-                  <button
-                    type="button"
-                    onClick={() => deleteReview(myReview.id)}
-                    className="ml-2 inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-2 text-sm font-semibold"
-                  >
-                    Delete My Review
-                  </button>
-                ) : null}
-              </form>
+              </div>
             </div>
             <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mt-6">
               <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
@@ -374,5 +330,87 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
         </div>
       </div>
     </div>
+    {reviewModalOpen ? (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Write review">
+        <div className="absolute inset-0" onClick={() => setReviewModalOpen(false)} />
+        <div className="relative w-full max-w-2xl rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-md shadow-xl overflow-hidden">
+          <div className="p-5 border-b border-gray-200 flex items-start justify-between gap-4">
+            <div>
+              <div className="text-sm font-bold text-gray-900">Write a review</div>
+              <div className="text-xs text-gray-500 mt-1">Only downloaded materials are eligible.</div>
+            </div>
+            <button
+              type="button"
+              className="h-10 w-10 inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white hover:bg-gray-50"
+              onClick={() => setReviewModalOpen(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+          <div className="p-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-700">
+                Materials: Downloaded only
+              </div>
+              <select
+                value={selectedMaterialId}
+                onChange={(e) => setSelectedMaterialId(e.target.value)}
+                className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm md:col-span-2"
+              >
+                <option value="">Select material</option>
+                {materials.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.title}{m.moduleCode ? ` (${m.moduleCode})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {!loading && materials.length === 0 ? (
+              <div className="mt-3 text-sm text-amber-700">No downloaded materials found. Download a material first to add a review.</div>
+            ) : null}
+            <form className="mt-4 space-y-3" onSubmit={(e)=>{submitReview(e); setReviewModalOpen(false);}}>
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-semibold text-gray-700">Your rating</label>
+                <select
+                  value={reviewForm.rating}
+                  onChange={(e) => setReviewForm((p) => ({ ...p, rating: Number(e.target.value) }))}
+                  className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
+                >
+                  {[5, 4, 3, 2, 1].map((n) => (
+                    <option key={n} value={n}>{n} Star{n > 1 ? 's' : ''}</option>
+                  ))}
+                </select>
+              </div>
+              <textarea
+                value={reviewForm.reviewText}
+                onChange={(e) => setReviewForm((p) => ({ ...p, reviewText: e.target.value }))}
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm min-h-24"
+                placeholder="Write your review"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  type="submit"
+                  disabled={loading || !selectedMaterialId}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
+                >
+                  Submit Review
+                </button>
+                {myReview ? (
+                  <button
+                    type="button"
+                    onClick={() => { deleteReview(myReview.id); setReviewModalOpen(false); }}
+                    className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-2 text-sm font-semibold"
+                  >
+                    Delete My Review
+                  </button>
+                ) : null}
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }

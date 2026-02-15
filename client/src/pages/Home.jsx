@@ -226,7 +226,7 @@ export default function Home({ user, onLoggedOut }) {
               {quickActions.map((action, index) => (
                 <button
                   key={index}
-                  className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-blue-300 transition-all duration-300 text-left"
+                  className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-blue-300 ring-1 ring-gray-100 hover:ring-blue-200 transition-all duration-300 text-left"
                   onClick={() => navigate(action.path)}
                 >
                   <div className="relative h-40 overflow-hidden">

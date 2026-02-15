@@ -7,6 +7,7 @@ const { requireAuth } = require("../middleware/authMiddleware");
 const { requireModuleAdmin } = require("../middleware/moduleAuthMiddleware");
 const controller = require("../controllers/studyMaterialController");
 const community = require("../controllers/studyMaterialCommunityController");
+const ai = require("../controllers/studyMaterialAIController");
 
 const router = express.Router();
 
@@ -42,6 +43,8 @@ router.post("/materials/:id/bookmark", requireAuth, controller.toggleBookmark);
 router.get("/me/uploads", requireAuth, controller.listMyUploads);
 router.get("/me/bookmarks", requireAuth, controller.listBookmarks);
 router.get("/me/history", requireAuth, controller.listHistory);
+
+router.post("/ai/chat", requireAuth, ai.aiChat);
 
 // Missing resource requests (student)
 router.get("/requests", requireAuth, community.listRequests);
@@ -188,6 +191,12 @@ router.post(
   requireModuleAdmin("study-material"),
   community.adminCreateForumCategory,
 );
+router.delete(
+  "/admin/forum/categories/:slug",
+  requireAuth,
+  requireModuleAdmin("study-material"),
+  community.adminDeleteForumCategory,
+);
 router.patch(
   "/admin/forum/threads/:threadId",
   requireAuth,
@@ -217,6 +226,13 @@ router.get(
   requireAuth,
   requireModuleAdmin("study-material"),
   community.adminForumTopContributors,
+);
+
+// Forum (user/owner)
+router.delete(
+  "/forum/threads/:threadId",
+  requireAuth,
+  community.deleteOwnForumThread,
 );
 
 router.get(

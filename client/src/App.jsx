@@ -37,15 +37,6 @@ import HostelWardenDashboard from './pages/admindashboard/Hostel/HostelWardenDas
 import HostelTermsAndConditions from './pages/Hostel/TermsAndConditions.jsx';
 
 export default function App() {
-  const [theme, setTheme] = React.useState(() => {
-    if (typeof window === 'undefined') return 'light';
-
-    const stored = window.localStorage.getItem('campuscore-theme');
-    if (stored === 'light' || stored === 'dark') return stored;
-
-    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
-
   const [user, setUser] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
 
@@ -59,17 +50,6 @@ export default function App() {
       'hostel-meals-shop': '/admin/hostel/meals-shop/dashboard',
     };
     return map[moduleKey] || '/admin/signin';
-  }, []);
-
-  React.useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle('dark', theme === 'dark');
-    root.style.colorScheme = theme;
-    window.localStorage.setItem('campuscore-theme', theme);
-  }, [theme]);
-
-  const toggleTheme = React.useCallback(() => {
-    setTheme((previous) => (previous === 'dark' ? 'light' : 'dark'));
   }, []);
 
   React.useEffect(() => {
@@ -122,8 +102,6 @@ export default function App() {
             <StudyMaterial
               user={user}
               onLoggedOut={() => setUser(null)}
-              theme={theme}
-              onToggleTheme={toggleTheme}
             />
           </RequireAuth>
         }
@@ -135,8 +113,6 @@ export default function App() {
             <StudyMaterial
               user={user}
               onLoggedOut={() => setUser(null)}
-              theme={theme}
-              onToggleTheme={toggleTheme}
             />
           </RequireAuth>
         }
@@ -148,8 +124,6 @@ export default function App() {
             <RequestsCenter
               user={user}
               onLoggedOut={() => setUser(null)}
-              theme={theme}
-              onToggleTheme={toggleTheme}
             />
           </RequireAuth>
         }
@@ -161,8 +135,6 @@ export default function App() {
             <ReviewsCenter
               user={user}
               onLoggedOut={() => setUser(null)}
-              theme={theme}
-              onToggleTheme={toggleTheme}
             />
           </RequireAuth>
         }
@@ -174,8 +146,6 @@ export default function App() {
             <ForumSupport
               user={user}
               onLoggedOut={() => setUser(null)}
-              theme={theme}
-              onToggleTheme={toggleTheme}
             />
           </RequireAuth>
         }
@@ -188,8 +158,6 @@ export default function App() {
               user={user}
               onUserUpdated={setUser}
               onLoggedOut={() => setUser(null)}
-              theme={theme}
-              onToggleTheme={toggleTheme}
             />
           </RequireAuth>
         }
@@ -220,8 +188,6 @@ export default function App() {
             <LibrarySystem
               user={user}
               onLoggedOut={() => setUser(null)}
-              theme={theme}
-              onToggleTheme={toggleTheme}
             />
           </RequireAuth>
         }
@@ -233,8 +199,6 @@ export default function App() {
             <Clubs
               user={user}
               onLoggedOut={() => setUser(null)}
-              theme={theme}
-              onToggleTheme={toggleTheme}
             />
           </RequireAuth>
         }
@@ -391,8 +355,6 @@ export default function App() {
               <Home
                 user={user}
                 onLoggedOut={() => setUser(null)}
-                theme={theme}
-                onToggleTheme={toggleTheme}
               />
             </RequireAuth>
           )

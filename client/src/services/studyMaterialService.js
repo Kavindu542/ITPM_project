@@ -244,6 +244,12 @@ export const studyMaterialService = {
     );
     return res.data;
   },
+  async adminDeleteForumCategory(slug) {
+    const res = await api.delete(
+      `/study-material/admin/forum/categories/${encodeURIComponent(slug)}`,
+    );
+    return res.data;
+  },
 
   async listForumThreads(params = {}) {
     const res = await api.get("/study-material/forum/threads", { params });
@@ -295,6 +301,12 @@ export const studyMaterialService = {
     );
     return res.data;
   },
+  async deleteOwnForumThread(threadId) {
+    const res = await api.delete(
+      `/study-material/forum/threads/${threadId}`,
+    );
+    return res.data;
+  },
 
   async adminUpdateForumThread(threadId, payload) {
     const res = await api.patch(
@@ -329,6 +341,13 @@ export const studyMaterialService = {
 
   async adminForumTopContributors() {
     const res = await api.get("/study-material/admin/forum/top-contributors");
+    return res.data;
+  },
+
+  async aiChat(message, opts = {}) {
+    const payload = { message };
+    if (opts?.limit) payload.limit = opts.limit;
+    const res = await api.post("/study-material/ai/chat", payload);
     return res.data;
   },
 };

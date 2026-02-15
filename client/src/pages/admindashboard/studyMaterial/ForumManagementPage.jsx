@@ -57,6 +57,18 @@ export default function ForumManagementPage() {
     }
   };
 
+  const deleteCategory = async (slug) => {
+    if (!slug) return;
+    if (!window.confirm(`Delete category "${slug}"? Threads will be moved to General Queries.`)) return;
+    setError('');
+    try {
+      await studyMaterialService.adminDeleteForumCategory(slug);
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.message || e?.message || 'Failed to delete category');
+    }
+  };
+
   const updateThread = async (threadId) => {
     const thread = threads.find((item) => item.id === threadId);
     const action = threadActionById[threadId] || 'update';
@@ -167,9 +179,20 @@ export default function ForumManagementPage() {
 
           <div className="mt-4 space-y-2">
             {categories.map((c) => (
-              <div key={c._id || c.slug} className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
-                <div className="font-semibold text-gray-900">{c.name}</div>
-                <div className="text-xs text-gray-600">{c.slug}</div>
+              <div key={c._id || c.slug} className="rounded-lg border border-gray-200 px-3 py-2 text-sm flex items-center justify-between gap-3">
+                <div>
+                  <div className="font-semibold text-gray-900">{c.name}</div>
+                  <div className="text-xs text-gray-600">{c.slug}</div>
+                </div>
+                {c.slug !== 'general-queries' ? (
+                  <button
+                    type="button"
+                    onClick={() => deleteCategory(c.slug)}
+                    className="px-2.5 py-1 rounded-lg border border-red-200 bg-red-50 text-xs font-semibold text-red-700"
+                  >
+                    Remove
+                  </button>
+                ) : null}
               </div>
             ))}
           </div>
@@ -277,6 +300,18 @@ export default function ForumManagementPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setThreadActionById((p) => ({ ...p, [t.id]: 'remove' }));
+                    updateThread(t.id);
+                  }}
+                  className="px-2.5 py-1 rounded-lg border border-red-200 bg-red-50 text-xs font-semibold text-red-700"
+                >
+                  Remove Thread
+                </button>
               </div>
             </div>
           ))}

@@ -37,6 +37,7 @@ export default function RequestsCenter({ user, onLoggedOut }) {
     courseCode: '',
     syllabusLink: '',
   });
+  const [requestModalOpen, setRequestModalOpen] = React.useState(false);
 
   const logout = async () => {
     await authService.logout();
@@ -132,6 +133,7 @@ export default function RequestsCenter({ user, onLoggedOut }) {
   };
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans">
       <div className="fixed inset-0 opacity-5 pointer-events-none">
         <div
@@ -262,47 +264,16 @@ export default function RequestsCenter({ user, onLoggedOut }) {
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <h1 className="text-2xl font-bold text-gray-900">Request Missing Resources</h1>
               <p className="text-sm text-gray-600 mt-1">Submit what is missing, upvote similar requests, and track status updates.</p>
-              <form className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={submit}>
-                <input
-                  value={form.title}
-                  onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-                  className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-                  placeholder="Request title"
-                />
-                <input
-                  value={form.moduleCode}
-                  onChange={(e) => setForm((p) => ({ ...p, moduleCode: e.target.value }))}
-                  className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-                  placeholder="Module code (optional)"
-                />
-                <input
-                  value={form.courseCode}
-                  onChange={(e) => setForm((p) => ({ ...p, courseCode: e.target.value }))}
-                  className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-                  placeholder="Course code (optional)"
-                />
-                <input
-                  value={form.syllabusLink}
-                  onChange={(e) => setForm((p) => ({ ...p, syllabusLink: e.target.value }))}
-                  className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-                  placeholder="Syllabus link (optional)"
-                />
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                  className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm min-h-24"
-                  placeholder="Describe the missing material"
-                />
-                <div className="md:col-span-2">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
-                  >
-                    Submit Request
-                  </button>
-                </div>
-              </form>
+              <div className="mt-5 flex items-center justify-between gap-3 flex-wrap">
+                <div className="text-sm text-gray-600">Create a request; others can upvote it.</div>
+                <button
+                  type="button"
+                  onClick={() => setRequestModalOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white px-4 py-2 text-sm font-semibold"
+                >
+                  New request
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
               <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -410,5 +381,70 @@ export default function RequestsCenter({ user, onLoggedOut }) {
         </div>
       </div>
     </div>
+    {requestModalOpen ? (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Submit missing resource request">
+        <div className="absolute inset-0" onClick={() => setRequestModalOpen(false)} />
+        <div className="relative w-full max-w-3xl rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-md shadow-xl overflow-hidden">
+          <div className="p-5 border-b border-gray-200 flex items-start justify-between gap-4">
+            <div>
+              <div className="text-sm font-bold text-gray-900">New request</div>
+              <div className="text-xs text-gray-500 mt-1">Be specific so others can find and upvote it.</div>
+            </div>
+            <button
+              type="button"
+              className="h-10 w-10 inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white hover:bg-gray-50"
+              onClick={() => setRequestModalOpen(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+          <div className="p-5">
+            <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={(e)=>{submit(e); setRequestModalOpen(false);}}>
+              <input
+                value={form.title}
+                onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
+                placeholder="Request title"
+              />
+              <input
+                value={form.moduleCode}
+                onChange={(e) => setForm((p) => ({ ...p, moduleCode: e.target.value }))}
+                className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
+                placeholder="Module code (optional)"
+              />
+              <input
+                value={form.courseCode}
+                onChange={(e) => setForm((p) => ({ ...p, courseCode: e.target.value }))}
+                className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
+                placeholder="Course code (optional)"
+              />
+              <input
+                value={form.syllabusLink}
+                onChange={(e) => setForm((p) => ({ ...p, syllabusLink: e.target.value }))}
+                className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
+                placeholder="Syllabus link (optional)"
+              />
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm min-h-24"
+                placeholder="Describe the missing material"
+              />
+              <div className="md:col-span-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
+                >
+                  Submit Request
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }
