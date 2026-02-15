@@ -9,7 +9,7 @@ const { connectDB } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const studyMaterialRoutes = require("./routes/studyMaterialRoutes");
 
-// ✅ All routes merged properly
+// ✅ All routes (merged correctly)
 const adminClubRoutes = require("./routes/adminClubRoutes");
 const leaderClubRoutes = require("./routes/leaderClubRoutes");
 const clubFeedRoutes = require("./routes/clubFeedRoutes");
@@ -60,7 +60,6 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/study-material", studyMaterialRoutes);
 
-// ✅ Register routes once only
 app.use("/api/admin", adminClubRoutes);
 app.use("/api/leader", leaderClubRoutes);
 app.use("/api/club-feed", clubFeedRoutes);
@@ -138,9 +137,7 @@ const startListening = () => {
 };
 
 connectDB(process.env.MONGODB_URI)
-  .then(() => {
-    startListening();
-  })
+  .then(() => startListening())
   .catch((err) => {
     console.error("Failed to start server:", err.message);
     process.exit(1);
