@@ -9,7 +9,7 @@ const { connectDB } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const studyMaterialRoutes = require("./routes/studyMaterialRoutes");
 
-// ✅ Keep ALL routes (merged properly)
+// ✅ All routes merged properly
 const adminClubRoutes = require("./routes/adminClubRoutes");
 const leaderClubRoutes = require("./routes/leaderClubRoutes");
 const clubFeedRoutes = require("./routes/clubFeedRoutes");
@@ -37,6 +37,7 @@ const isLocalDevOrigin = (origin) =>
 
 if (!allowedOrigins.includes("http://localhost:5173"))
   allowedOrigins.push("http://localhost:5173");
+
 if (!allowedOrigins.includes("http://127.0.0.1:5173"))
   allowedOrigins.push("http://127.0.0.1:5173");
 
@@ -49,7 +50,7 @@ app.use(
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
-  }),
+  })
 );
 
 app.get("/api/health", (req, res) => {
@@ -59,7 +60,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/study-material", studyMaterialRoutes);
 
-// ✅ Keep ALL route usages
+// ✅ Register routes once only
 app.use("/api/admin", adminClubRoutes);
 app.use("/api/leader", leaderClubRoutes);
 app.use("/api/club-feed", clubFeedRoutes);
@@ -105,17 +106,11 @@ const shutdown = async ({ signal, exitCode, relaySignal } = {}) => {
   process.exit(exitCode ?? 0);
 };
 
-process.once("SIGINT", () => {
-  shutdown({ signal: "SIGINT", exitCode: 0 });
-});
-
-process.once("SIGTERM", () => {
-  shutdown({ signal: "SIGTERM", exitCode: 0 });
-});
-
-process.once("SIGUSR2", () => {
-  shutdown({ signal: "SIGUSR2", relaySignal: "SIGUSR2" });
-});
+process.once("SIGINT", () => shutdown({ signal: "SIGINT", exitCode: 0 }));
+process.once("SIGTERM", () => shutdown({ signal: "SIGTERM", exitCode: 0 }));
+process.once("SIGUSR2", () =>
+  shutdown({ signal: "SIGUSR2", relaySignal: "SIGUSR2" })
+);
 
 const startListening = () => {
   const server = app.listen(port, () => {
@@ -130,7 +125,7 @@ const startListening = () => {
       const retryDelay = listenRetryBaseDelayMs * listenAttempts;
 
       console.warn(
-        `Port ${port} is busy during restart. Retry ${listenAttempts}/${listenRetryLimit} in ${retryDelay}ms...`,
+        `Port ${port} busy. Retry ${listenAttempts}/${listenRetryLimit} in ${retryDelay}ms...`
       );
 
       setTimeout(startListening, retryDelay);
