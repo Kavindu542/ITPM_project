@@ -14,6 +14,7 @@ import ForumSupport from './pages/StudyMaterial/ForumSupport.jsx';
 import Hostel from './pages/Hostel/Hostel.jsx';
 import LibrarySystem from './pages/LibrarySystem/LibrarySystem.jsx';
 import Clubs from './pages/Clubs/Clubs.jsx';
+import LeaderDashboard from './pages/Leader/LeaderDashboard.jsx';
 import AdminSignIn from './pages/admin/AdminSignIn.jsx';
 import AdminModuleSignIn from './pages/admin/AdminModuleSignIn.jsx';
 import HostelAdmins from './pages/admin/HostelAdmins.jsx';
@@ -233,6 +234,18 @@ export default function App() {
         }
       />
 
+      <Route
+        path="/leader/dashboard"
+        element={
+          <RequireAuth user={user}>
+            {user?.role === 'club_leader' ? (
+              <LeaderDashboard user={user} onLoggedOut={() => setUser(null)} />
+            ) : (
+              <Navigate to="/" replace />
+            )}
+          </RequireAuth>
+        }
+      />
       <Route
         path="/admin/study-material"
         element={

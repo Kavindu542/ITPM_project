@@ -8,6 +8,9 @@ const mongoose = require("mongoose");
 const { connectDB } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const studyMaterialRoutes = require("./routes/studyMaterialRoutes");
+const adminClubRoutes = require("./routes/adminClubRoutes");
+const leaderClubRoutes = require("./routes/leaderClubRoutes");
+const clubFeedRoutes = require("./routes/clubFeedRoutes");
 const { errorHandler } = require("./middleware/errorMiddleware");
 
 dotenv.config();
@@ -55,6 +58,9 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/study-material", studyMaterialRoutes);
+app.use("/api/admin", adminClubRoutes);
+app.use("/api/leader", leaderClubRoutes);
+app.use("/api/club-feed", clubFeedRoutes);
 
 app.use(errorHandler);
 
