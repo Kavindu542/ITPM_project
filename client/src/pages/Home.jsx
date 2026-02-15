@@ -78,7 +78,7 @@ export default function Home({ user, onLoggedOut }) {
       image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
       label: 'Hostel Portal', 
       color: 'from-emerald-500 to-emerald-600', 
-      path: '/hostel',
+      path: '/hostel?view=apply',
       description: 'Manage accommodation, complaints, and facilities'
     },
     { 
@@ -432,7 +432,7 @@ export default function Home({ user, onLoggedOut }) {
                       <p className="text-sm text-gray-500">Your accommodation details</p>
                     </div>
                   </div>
-                  <button className="text-emerald-600 hover:text-emerald-700 font-medium text-sm">
+                  <button className="text-emerald-600 hover:text-emerald-700 font-medium text-sm" onClick={() => navigate('/hostel?view=apply')}>
                     Portal →
                   </button>
                 </div>

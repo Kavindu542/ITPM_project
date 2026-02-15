@@ -9,7 +9,7 @@ const { connectDB } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const studyMaterialRoutes = require("./routes/studyMaterialRoutes");
 
-// ✅ All routes (merged correctly)
+// All routes (merged correctly)
 const adminClubRoutes = require("./routes/adminClubRoutes");
 const leaderClubRoutes = require("./routes/leaderClubRoutes");
 const clubFeedRoutes = require("./routes/clubFeedRoutes");
@@ -105,8 +105,14 @@ const shutdown = async ({ signal, exitCode, relaySignal } = {}) => {
   process.exit(exitCode ?? 0);
 };
 
-process.once("SIGINT", () => shutdown({ signal: "SIGINT", exitCode: 0 }));
-process.once("SIGTERM", () => shutdown({ signal: "SIGTERM", exitCode: 0 }));
+process.once("SIGINT", () =>
+  shutdown({ signal: "SIGINT", exitCode: 0 })
+);
+
+process.once("SIGTERM", () =>
+  shutdown({ signal: "SIGTERM", exitCode: 0 })
+);
+
 process.once("SIGUSR2", () =>
   shutdown({ signal: "SIGUSR2", relaySignal: "SIGUSR2" })
 );

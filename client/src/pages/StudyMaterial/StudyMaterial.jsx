@@ -6,6 +6,7 @@ import {
   Clock,
   Download,
   FolderOpen,
+  Heart,
   MessageSquare,
   MessagesSquare,
   Search,
@@ -383,7 +384,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                 >
                   {({ isActive }) => (
                     <>
-                      <Star className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
+                      <Heart className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
                       <span className={isActive ? 'text-white' : 'text-gray-800'}>Favourites</span>
                     </>
                   )}

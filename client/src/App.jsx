@@ -35,6 +35,7 @@ import ForumManagementPage from './pages/admindashboard/studyMaterial/ForumManag
 import LibraryDashboard from './pages/admindashboard/LibraryM/LibraryDashboard.jsx';
 import ClubAndSocietyDashboard from './pages/admindashboard/Club/ClubAndSocietyDashboard.jsx';
 import HostelWardenDashboard from './pages/admindashboard/Hostel/HostelWardenDashboard.jsx';
+import HostelTermsAndConditions from './pages/Hostel/TermsAndConditions.jsx';
 
 export default function App() {
   const [theme, setTheme] = React.useState(() => {
@@ -201,9 +202,15 @@ export default function App() {
             <Hostel
               user={user}
               onLoggedOut={() => setUser(null)}
-              theme={theme}
-              onToggleTheme={toggleTheme}
             />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/hostel/terms"
+        element={
+          <RequireAuth user={user}>
+            <HostelTermsAndConditions />
           </RequireAuth>
         }
       />
@@ -311,7 +318,7 @@ export default function App() {
         path="/admin/hostel/warden/signin"
         element={
           user ? (
-            <Navigate to="/admin/hostel" replace />
+            <Navigate to="/admin/hostel/warden/dashboard" replace />
           ) : (
             <AdminModuleSignIn title="Warden" moduleKey="hostel-warden" onSignedIn={(u) => setUser(u)} />
           )
