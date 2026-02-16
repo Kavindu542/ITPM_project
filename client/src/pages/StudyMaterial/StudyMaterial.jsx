@@ -16,6 +16,7 @@ import {
 import { authService } from '../../services/authService';
 import UserMenu from '../../components/UserMenu';
 import { studyMaterialService } from '../../services/studyMaterialService';
+// Removed AI PDF export utilities
 
 export default function StudyMaterial({ user, onLoggedOut }) {
   const navigate = useNavigate();
@@ -49,6 +50,10 @@ export default function StudyMaterial({ user, onLoggedOut }) {
   const [myUploads, setMyUploads] = React.useState([]);
 
   const [uploadModalOpen, setUploadModalOpen] = React.useState(false);
+
+  // AI assistant removed
+
+  // No auto-load — results only after user submits a prompt
 
   const [expandedId, setExpandedId] = React.useState(null);
   const [detailsById, setDetailsById] = React.useState({});
@@ -363,7 +368,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   to="/materials/all"
                   className={({ isActive }) =>
                     `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`
                   }
                 >
@@ -378,7 +383,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   to="/materials/favs"
                   className={({ isActive }) =>
                     `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`
                   }
                 >
@@ -393,7 +398,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   to="/materials/history"
                   className={({ isActive }) =>
                     `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`
                   }
                 >
@@ -408,7 +413,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   to="/materials/contribute"
                   className={({ isActive }) =>
                     `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`
                   }
                 >
@@ -423,7 +428,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   to="/materials/requests"
                   className={({ isActive }) =>
                     `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`
                   }
                 >
@@ -438,7 +443,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   to="/materials/reviews"
                   className={({ isActive }) =>
                     `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`
                   }
                 >
@@ -453,7 +458,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   to="/materials/forum"
                   className={({ isActive }) =>
                     `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gray-900 border-gray-900' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
                     }`
                   }
                 >
@@ -886,13 +891,13 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
     {uploadModalOpen ? (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
         role="dialog"
         aria-modal="true"
         aria-label="Upload study material"
       >
-        <div className="absolute inset-0 bg-black/40" onClick={() => setUploadModalOpen(false)} />
-        <div className="relative w-full max-w-5xl rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden flex flex-col max-h-[calc(100vh-2rem)]">
+        <div className="absolute inset-0" onClick={() => setUploadModalOpen(false)} />
+        <div className="relative w-full max-w-5xl rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-md shadow-xl overflow-hidden flex flex-col max-h-[calc(100vh-2rem)]">
           <div className="p-5 border-b border-gray-200 bg-white flex items-start justify-between gap-4">
             <div>
               <div className="text-sm font-bold text-gray-900">Upload new material</div>
@@ -987,6 +992,8 @@ export default function StudyMaterial({ user, onLoggedOut }) {
         </div>
       </div>
     ) : null}
+
+    {/* AI assistant removed */}
     </>
   );
 }

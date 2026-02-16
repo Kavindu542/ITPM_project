@@ -728,6 +728,28 @@ const adminCreateForumCategory = async (req, res) => {
     .json({ id: created._id, name: created.name, slug: created.slug });
 };
 
+const adminDeleteForumCategory = async (req, res) => {
+  await ensureDefaultForumCategories();
+  const slug = String(req.params.slug || "").trim().toLowerCase();
+  if (!slug) return res.status(400).json({ message: "slug is required" });
+  if (["general-queries"].includes(slug)) {
+    return res.status(400).json({ message: "Cannot delete default category" });
+  }
+
+  const cat = await StudyMaterialForumCategory.findOne({ slug }).lean();
+  if (!cat) return res.status(404).json({ message: "Not found" });
+
+  // Move existing threads to general-queries
+  await ensureDefaultForumCategories();
+  await StudyMaterialForumThread.updateMany(
+    { categorySlug: slug },
+    { $set: { movedFromCategory: slug, categorySlug: "general-queries" } },
+  );
+
+  await StudyMaterialForumCategory.deleteOne({ slug });
+  return res.json({ slug, deleted: true, movedThreadsTo: "general-queries" });
+};
+
 const listForumThreads = async (req, res) => {
   await ensureDefaultForumCategories();
 
@@ -743,8 +765,8 @@ const listForumThreads = async (req, res) => {
   const rows = await StudyMaterialForumThread.find(query)
     .sort({ sticky: -1, announcement: -1, updatedAt: -1 })
     .limit(200)
-    .populate("createdBy", "_id studentId name")
-    .populate("replies.createdBy", "_id studentId name")
+    .populate("createdBy", "_id studentId name avatarUrl")
+    .populate("replies.createdBy", "_id studentId name avatarUrl")
     .lean();
 
   return res.json({ items: rows.map((t) => mapThread(t, req.user._id)) });
@@ -752,8 +774,8 @@ const listForumThreads = async (req, res) => {
 
 const getForumThread = async (req, res) => {
   const thread = await StudyMaterialForumThread.findById(req.params.threadId)
-    .populate("createdBy", "_id studentId name")
-    .populate("replies.createdBy", "_id studentId name")
+    .populate("createdBy", "_id studentId name avatarUrl")
+    .populate("replies.createdBy", "_id studentId name avatarUrl")
     .lean();
   if (!thread || thread.status !== "active") {
     return res.status(404).json({ message: "Not found" });
@@ -802,7 +824,7 @@ const createForumThread = async (req, res) => {
   });
 
   const populated = await StudyMaterialForumThread.findById(created._id)
-    .populate("createdBy", "_id studentId name")
+    .populate("createdBy", "_id studentId name avatarUrl")
     .lean();
   return res.status(201).json({ item: mapThread(populated, req.user._id) });
 };
@@ -839,8 +861,8 @@ const addForumReply = async (req, res) => {
   });
 
   const populated = await StudyMaterialForumThread.findById(thread._id)
-    .populate("createdBy", "_id studentId name")
-    .populate("replies.createdBy", "_id studentId name")
+    .populate("createdBy", "_id studentId name avatarUrl")
+    .populate("replies.createdBy", "_id studentId name avatarUrl")
     .lean();
 
   return res.status(201).json({ item: mapThread(populated, req.user._id) });
@@ -1102,6 +1124,18 @@ const adminForumTopContributors = async (req, res) => {
   });
 };
 
+const deleteOwnForumThread = async (req, res) => {
+  const thread = await StudyMaterialForumThread.findById(req.params.threadId);
+  if (!thread) return res.status(404).json({ message: "Not found" });
+  const isOwner = String(thread.createdBy) === String(req.user._id);
+  if (!isOwner && !isAdmin(req)) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  thread.status = "removed";
+  await thread.save();
+  return res.json({ id: thread._id, status: "removed" });
+};
+
 module.exports = {
   listRequests,
   createRequest,
@@ -1120,6 +1154,7 @@ module.exports = {
   adminReviewAnalytics,
   listForumCategories,
   adminCreateForumCategory,
+  adminDeleteForumCategory,
   listForumThreads,
   getForumThread,
   createForumThread,
@@ -1133,4 +1168,5 @@ module.exports = {
   adminBanForumUser,
   adminUnbanForumUser,
   adminForumTopContributors,
+  deleteOwnForumThread,
 };

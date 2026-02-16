@@ -175,22 +175,14 @@ export default function Home({ user, onLoggedOut }) {
       </div>
 
       {/* Main Layout */}
-      <div className="relative">
+      <div className="container mx-auto px-4">
         {/* Top Navigation */}
         <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-slate-700">
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               {/* Left: Brand */}
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gradient-to-br from-blue-600 to-[#25f194] rounded-xl shadow-lg">
-                    <BookOpen className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">CampusCore</h1>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Student Dashboard</p>
-                  </div>
-                </div>
+              <div className="flex items-center gap-3">
+                <img src="/campuscore-logo.png" alt="CampusCore" className="h-30 w-auto " />
               </div>
 
               {/* Right: User & Actions */}
@@ -332,7 +324,7 @@ export default function Home({ user, onLoggedOut }) {
               {quickActions.map((action, index) => (
                 <button
                   key={index}
-                  className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-blue-300 transition-all duration-300 text-left"
+                  className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-blue-300 ring-1 ring-gray-100 hover:ring-blue-200 transition-all duration-300 text-left"
                   onClick={() => navigate(action.path)}
                 >
                   <div className="relative h-40 overflow-hidden">

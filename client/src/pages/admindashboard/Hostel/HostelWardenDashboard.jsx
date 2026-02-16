@@ -52,15 +52,8 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
           <div className="flex items-center gap-3">
             <div className="rounded-2xl bg-white px-3 py-2 shadow-sm">
               <div className="flex items-center gap-2">
-                <svg className="h-5 w-5 text-indigo-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <div>
-                  <div className="text-sm font-bold text-gray-900">CampusCore</div>
-                  <div className="text-xs font-medium text-gray-500">Admin</div>
-                </div>
+                <img src="/campuscore-logo.png" alt="CampusCore" className="h-10 w-auto object-contain" />
+                <div className="text-xs font-medium text-gray-500">Admin</div>
               </div>
             </div>
             <div className="text-white">
