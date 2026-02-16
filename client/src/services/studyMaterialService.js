@@ -344,10 +344,5 @@ export const studyMaterialService = {
     return res.data;
   },
 
-  async aiChat(message, opts = {}) {
-    const payload = { message };
-    if (opts?.limit) payload.limit = opts.limit;
-    const res = await api.post("/study-material/ai/chat", payload);
-    return res.data;
-  },
+  // AI chatbot removed
 };

@@ -7,7 +7,7 @@ const { requireAuth } = require("../middleware/authMiddleware");
 const { requireModuleAdmin } = require("../middleware/moduleAuthMiddleware");
 const controller = require("../controllers/studyMaterialController");
 const community = require("../controllers/studyMaterialCommunityController");
-const ai = require("../controllers/studyMaterialAIController");
+// AI chatbot removed
 
 const router = express.Router();
 
@@ -44,7 +44,7 @@ router.get("/me/uploads", requireAuth, controller.listMyUploads);
 router.get("/me/bookmarks", requireAuth, controller.listBookmarks);
 router.get("/me/history", requireAuth, controller.listHistory);
 
-router.post("/ai/chat", requireAuth, ai.aiChat);
+// AI endpoints removed
 
 // Missing resource requests (student)
 router.get("/requests", requireAuth, community.listRequests);
@@ -118,6 +118,7 @@ router.patch(
   requireModuleAdmin("study-material"),
   controller.adminUpdateMaterial,
 );
+// Vector reindex endpoint removed
 router.delete(
   "/admin/materials/:id",
   requireAuth,

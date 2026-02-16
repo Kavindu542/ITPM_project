@@ -30,10 +30,9 @@ export default function AuthShell({ children }) {
               </div>
               <div className="absolute inset-0 z-10 flex items-center justify-center p-8">
                 <div className="w-full max-w-sm rounded-3xl bg-slate-500/20 px-8 py-10 text-center shadow-xl">
-                  <div className="mx-auto mb-5 h-16 w-16 rounded-2xl bg-gradient-to-br from-slate-500 to-gray-600 flex items-center justify-center text-white font-extrabold text-lg shadow-md">
-                    CC
+                  <div className="mx-auto mb-5 h-35 w-auto">
+                    <img src="/campuscore-logo.png" alt="CampusCore" className="mx-auto h-50 w-auto object-contain" />
                   </div>
-                  <div className="text-white text-4xl font-extrabold tracking-tight">CampusCore</div>
                   <div className="mt-2 text-slate-100 text-sm font-medium tracking-wide">Smart Campus Portal</div>
                 </div>
               </div>
