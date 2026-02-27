@@ -530,6 +530,7 @@ export default function CentralUploadAndMaterialsPage() {
                           href={downloadUrl(m)}
                           target="_blank"
                           rel="noreferrer"
+                          download
                           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white text-sm font-semibold"
                         >
                           <Download className="h-4 w-4" />

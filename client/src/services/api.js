@@ -1,21 +1,35 @@
 import axios from "axios";
 
-// Use an explicit VITE_API_URL when provided.
-// Otherwise, match the browser hostname (localhost vs 127.0.0.1) so auth cookies
-// remain same-site and are sent with XHR requests.
-const defaultBase = (() => {
-  if (typeof window === "undefined") return "http://127.0.0.1:5000";
-  return `${window.location.protocol}//${window.location.hostname}:5000`;
-})();
-
-const base = import.meta.env.VITE_API_URL || defaultBase;
+const getApiBase = () => {
+  try {
+    if (import.meta.env?.VITE_API_URL) {
+      const base = String(import.meta.env.VITE_API_URL).replace(/\/+$/, "");
+      return `${base}/api`;
+    }
+    if (typeof window !== "undefined") {
+      const proto = window.location.protocol || "http:";
+      const host = window.location.hostname || "localhost";
+      return `${proto}//${host}:5000/api`;
+    }
+  } catch {
+    // ignore
+  }
+  return "http://127.0.0.1:5000/api";
+};
 
 export const api = axios.create({
-  baseURL: `${base}/api`,
+  baseURL: getApiBase(),
   withCredentials: true,
-  timeout: 20000,
-  timeoutErrorMessage: "Request timed out",
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
+
+api.interceptors.request.use((config) => {
+  const token =
+    localStorage.getItem("token") ||
+    localStorage.getItem("accessToken") ||
+    localStorage.getItem("moduleToken");
+
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+export default api;

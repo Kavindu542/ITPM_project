@@ -71,11 +71,17 @@ export const authService = {
   },
 
   async moduleLogin({ module, email, password }) {
-    const res = await api.post("/auth/module-login", {
-      module,
-      email,
-      password,
-    });
+    const payload = { module, email, password };
+
+    const res = await api.post("/auth/module-login", payload);
+
+    const token =
+      res?.data?.token ||
+      res?.data?.accessToken ||
+      res?.data?.data?.token;
+
+    if (token) localStorage.setItem("token", token);
+
     setHasSession(true);
     return res.data;
   },
