@@ -137,7 +137,6 @@ export default function Home({ user, onLoggedOut }) {
   }).format(now);
   const totalClubMembers = clubs.reduce((sum, club) => sum + club.members, 0);
 
-  const [myMeetings, setMyMeetings] = React.useState([]);
   const [publicEvents, setPublicEvents] = React.useState([]);
   const [feedLoading, setFeedLoading] = React.useState(false);
 
@@ -146,15 +145,9 @@ export default function Home({ user, onLoggedOut }) {
     const load = async () => {
       setFeedLoading(true);
       try {
-        const [mm, pe] = await Promise.allSettled([
-          clubService.myMeetings(),
-          clubService.publicEvents(),
-        ]);
+        const pe = await clubService.publicEvents();
         if (cancelled) return;
-        const meetings = mm.status === 'fulfilled' ? (mm.value?.meetings || []) : [];
-        const events = pe.status === 'fulfilled' ? (pe.value?.events || []) : [];
-        setMyMeetings(meetings);
-        setPublicEvents(events);
+        setPublicEvents(pe?.events || []);
       } finally {
         if (!cancelled) setFeedLoading(false);
       }
@@ -254,38 +247,7 @@ export default function Home({ user, onLoggedOut }) {
           </div>
 
           {/* Club Updates */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-50 rounded-lg">
-                    <Users2 className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900">My Club Meetings</h2>
-                    <p className="text-sm text-gray-500">Upcoming meetings for your clubs</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-6">
-                {feedLoading ? (
-                  <div className="text-gray-500">Loading…</div>
-                ) : myMeetings.length === 0 ? (
-                  <div className="text-gray-500 text-sm">No meetings scheduled.</div>
-                ) : (
-                  <ul className="divide-y divide-gray-200">
-                    {myMeetings.slice(0, 3).map((m) => (
-                      <li key={m.id} className="py-3">
-                        <div className="font-medium text-gray-900">{m.title}</div>
-                        <div className="text-xs text-gray-600">
-                          {new Date(m.date).toLocaleString()} • {m.venue || 'TBD'} • {m.club?.name || 'Club'}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
+          <div className="grid grid-cols-1 gap-6 mb-8">
             <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
               <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
