@@ -90,47 +90,8 @@ function HeroSection({ user, navigate }) {
             </div>
           </div>
 
-          {/* RIGHT — Glassmorphism card */}
-          <div className="hidden lg:flex justify-end">
-            <div
-              className="w-80 rounded-3xl overflow-hidden border border-white/15 shadow-2xl"
-              style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(24px)' }}
-            >
-              <div className="p-6 border-b border-white/10">
-                <p className="text-white/50 text-xs uppercase tracking-widest font-semibold mb-1">Quick Access</p>
-                <h3 className="text-white font-bold text-lg">Campus Modules</h3>
-              </div>
-              <div className="p-4 space-y-2">
-                {[
-                  { icon: BookText, label: 'Study Materials', sub: 'Notes & PDFs', color: 'bg-blue-500', path: '/materials' },
-                  { icon: Building2, label: 'Hostel Portal', sub: 'Room & Facilities', color: 'bg-emerald-500', path: '/hostel?view=apply' },
-                  { icon: GraduationCap, label: 'Library', sub: 'Books & Reserves', color: 'bg-violet-500', path: '/library' },
-                  { icon: Users2, label: 'Clubs & Events', sub: 'Join & Participate', color: 'bg-pink-500', path: '/clubs' },
-                ].map((item, i) => (
-                  <button
-                    key={i}
-                    onClick={() => navigate(item.path)}
-                    className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-white/10 transition-colors group text-left"
-                  >
-                    <div className={`${item.color} p-2 rounded-xl flex-shrink-0`}>
-                      <item.icon className="h-4 w-4 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-white font-semibold text-sm">{item.label}</div>
-                      <div className="text-white/40 text-xs">{item.sub}</div>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-white/30 group-hover:text-white/60 transition-colors" />
-                  </button>
-                ))}
-              </div>
-              <div className="p-4 border-t border-white/10">
-                <div className="flex items-center gap-2 px-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-                  <span className="text-white/50 text-xs">Dashboard is live and synced</span>
-                </div>
-              </div>
-            </div>
-          </div>
+ 
+          
         </div>
       </div>
 
