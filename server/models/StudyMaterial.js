@@ -74,6 +74,13 @@ const studyMaterialSchema = new mongoose.Schema(
     versions: { type: [versionSchema], default: [] },
     currentVersionId: { type: mongoose.Schema.Types.ObjectId, default: null },
 
+    extractedText: { type: String, default: "" },
+    extractedAt: { type: Date, default: null },
+    extractedFromVersionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+    },
+
     downloadCount: { type: Number, default: 0, index: true },
     lastDownloadedAt: { type: Date, default: null },
   },

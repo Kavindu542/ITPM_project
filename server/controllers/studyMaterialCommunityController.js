@@ -9,8 +9,29 @@ const StudyMaterialForumCategory = require("../models/StudyMaterialForumCategory
 const StudyMaterialForumThread = require("../models/StudyMaterialForumThread");
 const StudyMaterialForumBan = require("../models/StudyMaterialForumBan");
 const { sendBulkEmail } = require("../utils/email");
+const pdfParse = require("pdf-parse");
 
 const isAdmin = (req) => req.auth?.module === "study-material";
+
+const normalizeFsPath = (value) => String(value || "").replace(/\\/g, "/");
+
+const safeAttachmentName = (name) =>
+  String(name || "file")
+    .replace(/\r|\n/g, " ")
+    .replace(/"/g, "'")
+    .slice(0, 200);
+
+const resolveUploadedFilePath = (relativePath) => {
+  const root = path.resolve(path.join(__dirname, ".."));
+  const uploadsRoot = path.resolve(path.join(root, "uploads"));
+  const abs = path.resolve(path.join(root, String(relativePath || "")));
+
+  if (!abs.startsWith(uploadsRoot + path.sep) && abs !== uploadsRoot) {
+    return null;
+  }
+
+  return abs;
+};
 
 const slugify = (value) =>
   String(value || "")
@@ -661,10 +682,39 @@ const ensureNotBanned = async (userId) => {
 
 const mapThread = (thread, currentUserId) => {
   const myId = String(currentUserId);
+  const threadId = String(thread._id);
+
+  const mapAttachment = (a, url) => ({
+    id: a._id,
+    originalName: a.originalName,
+    mimeType: a.mimeType,
+    sizeBytes: a.sizeBytes,
+    pageCount: a.pageCount ?? null,
+    createdAt: a.createdAt,
+    url,
+  });
+
+  const attachments = (thread.attachments || []).map((a) =>
+    mapAttachment(
+      a,
+      `/api/study-material/forum/threads/${encodeURIComponent(
+        threadId,
+      )}/attachments/${encodeURIComponent(String(a._id))}/file`,
+    ),
+  );
+
   const replies = (thread.replies || []).map((r) => ({
     id: r._id,
     body: r.body,
     createdBy: r.createdBy,
+    attachments: (r.attachments || []).map((a) =>
+      mapAttachment(
+        a,
+        `/api/study-material/forum/replies/${encodeURIComponent(
+          String(r._id),
+        )}/attachments/${encodeURIComponent(String(a._id))}/file`,
+      ),
+    ),
     upvoteCount: (r.upvotes || []).length,
     upvoted: (r.upvotes || []).some((id) => String(id) === myId),
     accepted: !!r.accepted,
@@ -680,6 +730,7 @@ const mapThread = (thread, currentUserId) => {
     id: thread._id,
     title: thread.title,
     body: thread.body,
+    attachments,
     tags: thread.tags || [],
     moduleCode: thread.moduleCode,
     topic: thread.topic,
@@ -730,7 +781,9 @@ const adminCreateForumCategory = async (req, res) => {
 
 const adminDeleteForumCategory = async (req, res) => {
   await ensureDefaultForumCategories();
-  const slug = String(req.params.slug || "").trim().toLowerCase();
+  const slug = String(req.params.slug || "")
+    .trim()
+    .toLowerCase();
   if (!slug) return res.status(400).json({ message: "slug is required" });
   if (["general-queries"].includes(slug)) {
     return res.status(400).json({ message: "Cannot delete default category" });
@@ -794,6 +847,33 @@ const createForumThread = async (req, res) => {
   if (!title || !body)
     return res.status(400).json({ message: "title and body are required" });
 
+  const files = Array.isArray(req.files) ? req.files : [];
+  const attachments = await Promise.all(
+    files.map(async (file) => {
+      const attachment = {
+        filePath: normalizeFsPath(
+          path.relative(path.join(__dirname, ".."), file.path),
+        ),
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        sizeBytes: file.size,
+        uploadedBy: req.user._id,
+        pageCount: null,
+      };
+
+      if (String(file.mimetype || "").toLowerCase() === "application/pdf") {
+        try {
+          const parsed = await pdfParse(file.path);
+          if (parsed?.numpages) attachment.pageCount = Number(parsed.numpages);
+        } catch (_) {
+          // ignore
+        }
+      }
+
+      return attachment;
+    }),
+  );
+
   await ensureDefaultForumCategories();
   const requestedCategory = String(
     req.body.categorySlug || "general-queries",
@@ -813,6 +893,7 @@ const createForumThread = async (req, res) => {
   const created = await StudyMaterialForumThread.create({
     title,
     body,
+    attachments,
     tags: tags.slice(0, 20),
     moduleCode: String(req.body.moduleCode || "").trim(),
     topic: String(req.body.topic || "").trim(),
@@ -835,7 +916,10 @@ const addForumReply = async (req, res) => {
     return res.status(403).json({ message: "You are banned from replying" });
 
   const body = String(req.body.body || "").trim();
-  if (!body) return res.status(400).json({ message: "body is required" });
+  const files = Array.isArray(req.files) ? req.files : [];
+  if (!body && !files.length) {
+    return res.status(400).json({ message: "body or attachment is required" });
+  }
 
   const thread = await StudyMaterialForumThread.findById(req.params.threadId);
   if (!thread || thread.status !== "active") {
@@ -845,7 +929,38 @@ const addForumReply = async (req, res) => {
     return res.status(400).json({ message: "Thread is locked" });
   }
 
-  thread.replies.push({ body, createdBy: req.user._id, upvotes: [] });
+  const attachments = await Promise.all(
+    files.map(async (file) => {
+      const attachment = {
+        filePath: normalizeFsPath(
+          path.relative(path.join(__dirname, ".."), file.path),
+        ),
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        sizeBytes: file.size,
+        uploadedBy: req.user._id,
+        pageCount: null,
+      };
+
+      if (String(file.mimetype || "").toLowerCase() === "application/pdf") {
+        try {
+          const parsed = await pdfParse(file.path);
+          if (parsed?.numpages) attachment.pageCount = Number(parsed.numpages);
+        } catch (_) {
+          // ignore
+        }
+      }
+
+      return attachment;
+    }),
+  );
+
+  thread.replies.push({
+    body,
+    attachments,
+    createdBy: req.user._id,
+    upvotes: [],
+  });
   await thread.save();
 
   const notifiedUserIds = [
@@ -866,6 +981,70 @@ const addForumReply = async (req, res) => {
     .lean();
 
   return res.status(201).json({ item: mapThread(populated, req.user._id) });
+};
+
+const streamForumThreadAttachment = async (req, res) => {
+  const thread = await StudyMaterialForumThread.findById(req.params.threadId)
+    .select("attachments status")
+    .lean();
+  if (!thread || thread.status !== "active") {
+    return res.status(404).json({ message: "Not found" });
+  }
+
+  const attachment = (thread.attachments || []).find(
+    (a) => String(a._id) === String(req.params.attachmentId),
+  );
+  if (!attachment) return res.status(404).json({ message: "Not found" });
+
+  const abs = resolveUploadedFilePath(attachment.filePath);
+  if (!abs) return res.status(400).json({ message: "Invalid file path" });
+
+  const disposition =
+    String(req.query.disposition || "attachment").toLowerCase() === "inline"
+      ? "inline"
+      : "attachment";
+  res.setHeader(
+    "Content-Disposition",
+    `${disposition}; filename="${safeAttachmentName(attachment.originalName)}"`,
+  );
+  if (attachment.mimeType) res.type(attachment.mimeType);
+  return res.sendFile(abs);
+};
+
+const streamForumReplyAttachment = async (req, res) => {
+  const thread = await StudyMaterialForumThread.findOne({
+    "replies._id": req.params.replyId,
+  })
+    .select("replies status")
+    .lean();
+  if (!thread || thread.status !== "active") {
+    return res.status(404).json({ message: "Not found" });
+  }
+
+  const reply = (thread.replies || []).find(
+    (r) => String(r._id) === String(req.params.replyId),
+  );
+  if (!reply || reply.removed)
+    return res.status(404).json({ message: "Not found" });
+
+  const attachment = (reply.attachments || []).find(
+    (a) => String(a._id) === String(req.params.attachmentId),
+  );
+  if (!attachment) return res.status(404).json({ message: "Not found" });
+
+  const abs = resolveUploadedFilePath(attachment.filePath);
+  if (!abs) return res.status(400).json({ message: "Invalid file path" });
+
+  const disposition =
+    String(req.query.disposition || "attachment").toLowerCase() === "inline"
+      ? "inline"
+      : "attachment";
+  res.setHeader(
+    "Content-Disposition",
+    `${disposition}; filename="${safeAttachmentName(attachment.originalName)}"`,
+  );
+  if (attachment.mimeType) res.type(attachment.mimeType);
+  return res.sendFile(abs);
 };
 
 const toggleThreadUpvote = async (req, res) => {
@@ -925,6 +1104,69 @@ const acceptReply = async (req, res) => {
   await thread.save();
 
   return res.json({ replyId: reply._id, accepted: true });
+};
+
+const updateOwnForumReply = async (req, res) => {
+  const allowed = await ensureNotBanned(req.user._id);
+  if (!allowed)
+    return res.status(403).json({ message: "You are banned from posting" });
+
+  const thread = await StudyMaterialForumThread.findOne({
+    "replies._id": req.params.replyId,
+  });
+  if (!thread || thread.status !== "active")
+    return res.status(404).json({ message: "Not found" });
+  if (thread.locked && !isAdmin(req)) {
+    return res.status(400).json({ message: "Thread is locked" });
+  }
+
+  const reply = thread.replies.id(req.params.replyId);
+  if (!reply || reply.removed)
+    return res.status(404).json({ message: "Not found" });
+
+  const isOwner = String(reply.createdBy) === String(req.user._id);
+  if (!isOwner) return res.status(403).json({ message: "Forbidden" });
+
+  const body = String(req.body.body || "").trim();
+  const hasAttachments = Array.isArray(reply.attachments)
+    ? reply.attachments.length > 0
+    : false;
+  if (!body && !hasAttachments) {
+    return res.status(400).json({ message: "body or attachment is required" });
+  }
+
+  reply.body = body;
+  await thread.save();
+
+  return res.json({ replyId: reply._id, body: reply.body });
+};
+
+const deleteOwnForumReply = async (req, res) => {
+  const allowed = await ensureNotBanned(req.user._id);
+  if (!allowed)
+    return res.status(403).json({ message: "You are banned from posting" });
+
+  const thread = await StudyMaterialForumThread.findOne({
+    "replies._id": req.params.replyId,
+  });
+  if (!thread || thread.status !== "active")
+    return res.status(404).json({ message: "Not found" });
+  if (thread.locked && !isAdmin(req)) {
+    return res.status(400).json({ message: "Thread is locked" });
+  }
+
+  const reply = thread.replies.id(req.params.replyId);
+  if (!reply || reply.removed)
+    return res.status(404).json({ message: "Not found" });
+
+  const isOwner = String(reply.createdBy) === String(req.user._id);
+  if (!isOwner) return res.status(403).json({ message: "Forbidden" });
+
+  reply.removed = true;
+  if (!reply.removedReason) reply.removedReason = "Removed by author";
+  await thread.save();
+
+  return res.json({ replyId: reply._id, removed: true });
 };
 
 const toggleThreadSubscription = async (req, res) => {
@@ -1158,9 +1400,13 @@ module.exports = {
   listForumThreads,
   getForumThread,
   createForumThread,
+  streamForumThreadAttachment,
   addForumReply,
+  streamForumReplyAttachment,
   toggleThreadUpvote,
   toggleReplyUpvote,
+  updateOwnForumReply,
+  deleteOwnForumReply,
   acceptReply,
   toggleThreadSubscription,
   adminUpdateForumThread,
