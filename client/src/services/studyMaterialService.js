@@ -7,6 +7,14 @@ const getBase = () => {
 };
 
 export const studyMaterialService = {
+  apiUrl(path) {
+    const base = getBase();
+    const p = String(path || "");
+    if (!p) return base;
+    if (/^https?:\/\//i.test(p)) return p;
+    return `${base}${p.startsWith("/") ? p : `/${p}`}`;
+  },
+
   // URLs for opening preview/download in a new tab (cookie auth)
   fileUrl(materialId, { versionId, disposition = "inline" } = {}) {
     const base = getBase();
@@ -22,6 +30,11 @@ export const studyMaterialService = {
     return res.data;
   },
 
+  async aiSearchMaterials(prompt) {
+    const res = await api.post("/study-material/ai/search", { prompt });
+    return res.data;
+  },
+
   async getMaterial(id) {
     const res = await api.get(`/study-material/materials/${id}`);
     return res.data;
@@ -31,6 +44,19 @@ export const studyMaterialService = {
     const res = await api.post(
       "/study-material/materials/suggestions",
       formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
+    return res.data;
+  },
+
+  async scanSuggestionAutofill(file) {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await api.post(
+      "/study-material/materials/suggestions/scan",
+      fd,
       {
         headers: { "Content-Type": "multipart/form-data" },
       },
@@ -262,14 +288,23 @@ export const studyMaterialService = {
   },
 
   async createForumThread(payload) {
-    const res = await api.post("/study-material/forum/threads", payload);
+    const isFormData =
+      typeof FormData !== "undefined" && payload instanceof FormData;
+    const res = await api.post("/study-material/forum/threads", payload, {
+      headers: isFormData ? { "Content-Type": "multipart/form-data" } : {},
+    });
     return res.data;
   },
 
-  async createForumReply(threadId, body) {
+  async createForumReply(threadId, bodyOrFormData) {
+    const isFormData =
+      typeof FormData !== "undefined" && bodyOrFormData instanceof FormData;
     const res = await api.post(
       `/study-material/forum/threads/${threadId}/replies`,
-      { body },
+      isFormData ? bodyOrFormData : { body: bodyOrFormData },
+      {
+        headers: isFormData ? { "Content-Type": "multipart/form-data" } : {},
+      },
     );
     return res.data;
   },
@@ -288,6 +323,18 @@ export const studyMaterialService = {
     return res.data;
   },
 
+  async updateOwnForumReply(replyId, body) {
+    const res = await api.patch(`/study-material/forum/replies/${replyId}`, {
+      body,
+    });
+    return res.data;
+  },
+
+  async deleteOwnForumReply(replyId) {
+    const res = await api.delete(`/study-material/forum/replies/${replyId}`);
+    return res.data;
+  },
+
   async acceptForumReply(replyId) {
     const res = await api.post(
       `/study-material/forum/replies/${replyId}/accept`,
@@ -302,9 +349,7 @@ export const studyMaterialService = {
     return res.data;
   },
   async deleteOwnForumThread(threadId) {
-    const res = await api.delete(
-      `/study-material/forum/threads/${threadId}`,
-    );
+    const res = await api.delete(`/study-material/forum/threads/${threadId}`);
     return res.data;
   },
 

@@ -1,11 +1,18 @@
 const fs = require("fs");
 const path = require("path");
+const pdfParseLib = require("pdf-parse");
+const mammoth = require("mammoth");
 const StudyMaterial = require("../models/StudyMaterial");
 const StudyMaterialDownload = require("../models/StudyMaterialDownload");
 const StudyMaterialBookmark = require("../models/StudyMaterialBookmark");
 const StudyMaterialReview = require("../models/StudyMaterialReview");
 const User = require("../models/User");
 const { sendBulkEmail } = require("../utils/email");
+const {
+  inferSearchIntentWithGemini,
+  inferMaterialAutofillWithGemini,
+  getGeminiDebugStatus,
+} = require("../utils/geminiSearchIntent");
 
 const UPLOAD_ROOT = path.join(__dirname, "..", "uploads", "study-materials");
 
@@ -80,6 +87,261 @@ const escapeRegExp = (value) =>
 
 const exactCaseInsensitive = (value) =>
   new RegExp(`^${escapeRegExp(String(value || "").trim())}$`, "i");
+
+const EXTRACT_MAX_BYTES = 25 * 1024 * 1024; // 25MB
+const EXTRACT_MAX_CHARS = 140_000;
+
+const normalizeExtractedText = (value) =>
+  String(value || "")
+    .replace(/\u0000/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const buildKeywordRegex = (prompt) => {
+  const words = String(prompt || "")
+    .toLowerCase()
+    .split(/[^a-z0-9.+]+/i)
+    .map((w) => w.trim())
+    .filter((w) => w.length >= 3)
+    .slice(0, 8);
+  if (!words.length) return null;
+  const pattern = words.map(escapeRegExp).join("|");
+  return new RegExp(pattern, "i");
+};
+
+const extractTextFromUploadedFile = async (file) => {
+  try {
+    if (!file?.path) return "";
+    const abs = path.isAbsolute(file.path)
+      ? file.path
+      : path.join(__dirname, "..", file.path);
+    if (!fs.existsSync(abs)) return "";
+
+    const stat = fs.statSync(abs);
+    if (!stat?.size || stat.size <= 0) return "";
+    if (stat.size > EXTRACT_MAX_BYTES) return "";
+
+    const originalName = String(file.originalname || "");
+    const mimeType = String(file.mimetype || "").toLowerCase();
+    const ext = path.extname(originalName).toLowerCase();
+
+    // PDF
+    if (mimeType === "application/pdf" || ext === ".pdf") {
+      // Newer pdf-parse versions expose a PDFParse class API.
+      if (typeof pdfParseLib?.PDFParse === "function") {
+        const parser = new pdfParseLib.PDFParse({ url: abs });
+        await parser.load();
+        const out = await parser.getText();
+        await parser.destroy();
+        const text = normalizeExtractedText(out?.text || "");
+        return text.slice(0, EXTRACT_MAX_CHARS);
+      }
+
+      // Older pdf-parse versions export a function that accepts a buffer.
+      const pdfParse =
+        typeof pdfParseLib === "function" ? pdfParseLib : pdfParseLib?.default;
+      if (typeof pdfParse !== "function") return "";
+      const buf = fs.readFileSync(abs);
+      const parsed = await pdfParse(buf);
+      const text = normalizeExtractedText(parsed?.text || "");
+      return text.slice(0, EXTRACT_MAX_CHARS);
+    }
+
+    // DOCX
+    if (
+      mimeType ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      ext === ".docx"
+    ) {
+      const buf = fs.readFileSync(abs);
+      const parsed = await mammoth.extractRawText({ buffer: buf });
+      const text = normalizeExtractedText(parsed?.value || "");
+      return text.slice(0, EXTRACT_MAX_CHARS);
+    }
+
+    // Plain text
+    if (mimeType.startsWith("text/") || ext === ".txt" || ext === ".md") {
+      const buf = fs.readFileSync(abs);
+      const text = normalizeExtractedText(buf.toString("utf8"));
+      return text.slice(0, EXTRACT_MAX_CHARS);
+    }
+
+    return "";
+  } catch {
+    return "";
+  }
+};
+
+const cleanTitleFromName = (originalName) => {
+  const base = path.basename(
+    String(originalName || ""),
+    path.extname(String(originalName || "")),
+  );
+  return base.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 180);
+};
+
+const inferCategoryFromText = (text) => {
+  const t = String(text || "");
+  if (
+    /\b(past\s*papers?|papers?|mid\s*exam|final\s*exam|exam(\s*paper)?|quiz)\b/i.test(
+      t,
+    )
+  ) {
+    return "papers";
+  }
+  if (/\b(tutorials?|tutes?|tutorial\s*sheets?)\b/i.test(t)) return "tutes";
+  if (/\b(lecture\s*notes?|notes?)\b/i.test(t)) return "notes";
+  if (/\b(links?|urls?)\b/i.test(t)) return "links";
+  return "";
+};
+
+const inferSemesterFromText = (text) => {
+  const raw = String(text || "");
+  const m = raw.match(/\b([1-4]\.[12])\b/);
+  if (m) return m[1];
+  const m2 = raw.match(/\bsemester\s*([1-4])\s*([12])\b/i);
+  if (m2) return `${m2[1]}.${m2[2]}`;
+  const m3 = raw.match(/\byear\s*([1-4])\s*semester\s*([12])\b/i);
+  if (m3) return `${m3[1]}.${m3[2]}`;
+  return "";
+};
+
+const inferModuleCodeFromText = (text) => {
+  const raw = String(text || "");
+  const moduleMatch = raw.match(/\b([a-z]{2,6})\s*([0-9]{3,4})\b/i);
+  if (!moduleMatch) return "";
+  return `${String(moduleMatch[1] || "").toUpperCase()}${String(moduleMatch[2] || "")}`;
+};
+
+const snippetFromExtractedText = (text) => {
+  const t = normalizeExtractedText(text);
+  if (!t || t.length < 40) return "";
+  return t.slice(0, 280);
+};
+
+const scanSuggestionAutofill = async (req, res) => {
+  ensureUploadDir();
+
+  if (!req.file) {
+    return res.status(400).json({ message: "file is required" });
+  }
+
+  const apiKey = String(process.env.GEMINI_API_KEY || "").trim();
+  if (!apiKey) {
+    // Cleanup scanned file (the user will upload again on submit)
+    try {
+      if (req.file?.path && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+    } catch {
+      // ignore
+    }
+    return res.status(503).json({
+      message:
+        "Gemini is required for document scanning/autofill. Configure GEMINI_API_KEY in server/.env.",
+    });
+  }
+
+  let extractedText = "";
+  try {
+    extractedText = await extractTextFromUploadedFile(req.file);
+
+    const gemini = await inferMaterialAutofillWithGemini({
+      fileName: req.file.originalname,
+      extractedText,
+    });
+
+    if (!gemini) {
+      const st = getGeminiDebugStatus ? getGeminiDebugStatus() : null;
+      const retrySec = st?.disabledForMs
+        ? Math.max(1, Math.ceil(st.disabledForMs / 1000))
+        : null;
+
+      const quotaHelp =
+        "Gemini free-tier quota exceeded. Try a Flash model (set GEMINI_MODEL to gemini-2.5-flash if available, or gemini-2.0-flash / gemini-1.5-flash), or enable billing. Free-tier quotas often reset daily (UTC).";
+      const extra =
+        st?.lastDisableReason === "quota"
+          ? st?.lastQuotaHint === "daily"
+            ? " (free-tier quota)"
+            : retrySec
+              ? ` (rate limited — retry in ~${retrySec}s)`
+              : " (rate limited)"
+          : st?.lastDisableReason
+            ? ` (${st.lastDisableReason})`
+            : "";
+
+      return res.status(503).json({
+        message:
+          st?.lastDisableReason === "quota"
+            ? `${quotaHelp}${extra ? ` ${extra}` : ""}`
+            : `Gemini is required for document scanning/autofill, but it is currently unavailable${extra}.`,
+      });
+    }
+
+    return res.json({
+      title: gemini.title || "",
+      moduleCode: gemini.moduleCode || "",
+      semester: gemini.semester || "",
+      category: gemini.category || "",
+      description: gemini.description || "",
+    });
+  } catch {
+    return res.status(503).json({
+      message:
+        "Gemini is required for document scanning/autofill, but the request failed.",
+    });
+  } finally {
+    // Cleanup scanned file (the user will upload again on submit)
+    try {
+      if (req.file?.path && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+    } catch {
+      // ignore
+    }
+  }
+};
+
+const parseAiSearchPrompt = (prompt) => {
+  const raw = String(prompt || "").trim();
+  const lowered = raw.toLowerCase();
+
+  const moduleMatch = raw.match(/\b([a-z]{2,6})\s*([0-9]{3,4})\b/i);
+  const moduleCode = moduleMatch
+    ? `${String(moduleMatch[1] || "").toUpperCase()}${String(
+        moduleMatch[2] || "",
+      )}`
+    : "";
+
+  const semesterMatch = raw.match(/\b([1-4]\.[12])\b/);
+  const semester = semesterMatch ? Number(semesterMatch[1]) : null;
+
+  const category = (() => {
+    if (/\b(past\s*papers?|papers?|mid\s*exam|final\s*exam)\b/i.test(raw)) {
+      return "papers";
+    }
+    if (/\b(tutes?|tutorials?)\b/i.test(raw)) return "tutes";
+    // Only treat as "notes" when user explicitly says "notes" or "lecture notes".
+    // (Many users say "give me a note" meaning "a document"; that should NOT force category filtering.)
+    if (/\b(lecture\s*notes?|notes)\b/i.test(raw)) return "notes";
+    if (/\b(links?|urls?)\b/i.test(raw)) return "links";
+    if (/\b(other|misc)\b/i.test(raw)) return "other";
+    return "";
+  })();
+
+  // Keep the original prompt for $text search; it already captures intent well.
+  // (We still apply structured filters when detected.)
+  const searchText = raw;
+
+  return {
+    raw,
+    lowered,
+    moduleCode,
+    semester: Number.isFinite(semester) ? semester : null,
+    category,
+    searchText,
+  };
+};
 
 const findDuplicateMaterial = async ({
   title,
@@ -360,6 +622,243 @@ const listMaterials = async (req, res) => {
   return res.json({ items: sorted });
 };
 
+const aiSearchMaterials = async (req, res) => {
+  const prompt = String(req.body?.prompt || "").trim();
+  if (!prompt) {
+    return res.status(400).json({ message: "Prompt is required" });
+  }
+
+  const apiKey = String(process.env.GEMINI_API_KEY || "").trim();
+  if (!apiKey) {
+    return res.json({
+      prompt,
+      interpreted: { moduleCode: "", semester: null, category: "" },
+      totalFound: 0,
+      results: [],
+      gemini: { required: true, ok: false },
+      message:
+        "Gemini is required for AI search. Configure GEMINI_API_KEY in server/.env.",
+    });
+  }
+
+  let geminiIntent = null;
+  try {
+    geminiIntent = await inferSearchIntentWithGemini(prompt);
+  } catch {
+    geminiIntent = null;
+  }
+
+  if (!geminiIntent) {
+    const st = getGeminiDebugStatus ? getGeminiDebugStatus() : null;
+    const retrySec = st?.disabledForMs
+      ? Math.max(1, Math.ceil(st.disabledForMs / 1000))
+      : null;
+
+    const quotaHelp =
+      "Gemini free-tier quota exceeded. Try a Flash model (set GEMINI_MODEL to gemini-2.5-flash if available, or gemini-2.0-flash / gemini-1.5-flash), or enable billing. Free-tier quotas often reset daily (UTC).";
+
+    const extra =
+      st?.lastDisableReason === "quota"
+        ? st?.lastQuotaHint === "daily"
+          ? " (free-tier quota)"
+          : retrySec
+            ? ` (rate limited — retry in ~${retrySec}s)`
+            : " (rate limited)"
+        : st?.lastDisableReason
+          ? ` (${st.lastDisableReason})`
+          : "";
+    return res.json({
+      prompt,
+      interpreted: { moduleCode: "", semester: null, category: "" },
+      totalFound: 0,
+      results: [],
+      gemini: { required: true, ok: false },
+      message:
+        st?.lastDisableReason === "quota"
+          ? `${quotaHelp}${extra ? ` ${extra}` : ""}`
+          : `Gemini is required for AI search, but it is currently unavailable${extra}.`,
+    });
+  }
+
+  const parsed = {
+    raw: prompt,
+    lowered: prompt.toLowerCase(),
+    searchText: geminiIntent.searchText || prompt,
+    moduleCode: geminiIntent.moduleCode || "",
+    semester:
+      geminiIntent.semester !== null && geminiIntent.semester !== undefined
+        ? geminiIntent.semester
+        : null,
+    category: geminiIntent.category || "",
+  };
+
+  const baseQuery = {};
+  if (isAdmin(req)) {
+    if (req.query.status) baseQuery.status = String(req.query.status).trim();
+  } else {
+    baseQuery.status = "published";
+  }
+
+  if (parsed.category) baseQuery.category = parsed.category;
+  if (parsed.moduleCode)
+    baseQuery.moduleCode = exactCaseInsensitive(parsed.moduleCode);
+  if (Number.isFinite(parsed.semester)) baseQuery.semester = parsed.semester;
+
+  const limit = 6;
+  const useText = parsed.searchText.length >= 2;
+  const keywordRegex = buildKeywordRegex(parsed.searchText);
+
+  const combined = [];
+  const seen = new Set();
+  const pushResult = (m, matchedIn) => {
+    const id = String(m?._id || "");
+    if (!id || seen.has(id)) return;
+    seen.add(id);
+
+    const versions = Array.isArray(m.versions) ? m.versions : [];
+    const current =
+      versions.find((v) => String(v._id) === String(m.currentVersionId)) ||
+      versions[0] ||
+      null;
+
+    combined.push({
+      id: m._id,
+      title: m.title,
+      description: m.description,
+      category: m.category,
+      moduleCode: m.moduleCode,
+      subject: m.subject,
+      semester: m.semester,
+      fileType: m.fileType,
+      downloadCount: m.downloadCount || 0,
+      createdAt: m.createdAt,
+      updatedAt: m.updatedAt,
+      matchedIn,
+      currentVersion: current
+        ? {
+            id: current._id,
+            originalName: current.originalName,
+            mimeType: current.mimeType,
+            sizeBytes: current.sizeBytes,
+            createdAt: current.createdAt,
+          }
+        : null,
+    });
+  };
+
+  const selectFields =
+    "title description category moduleCode subject semester fileType currentVersionId versions downloadCount createdAt updatedAt";
+
+  // Multi-pass strategy: start strict (use parsed filters), then relax.
+  // This prevents bad intent parsing (e.g., user says "note") from hiding relevant items.
+  const buildPasses = () => {
+    const passes = [];
+
+    const addPass = (q, label) => {
+      const key = JSON.stringify(q, Object.keys(q).sort());
+      if (passes.some((p) => p.key === key)) return;
+      passes.push({ q, label, key });
+    };
+
+    addPass({ ...baseQuery }, "strict");
+
+    if (baseQuery.category) {
+      const { category, ...rest } = baseQuery;
+      addPass({ ...rest }, "no_category");
+    }
+
+    if (baseQuery.moduleCode) {
+      const { moduleCode, ...rest } = baseQuery;
+      addPass({ ...rest }, "no_module");
+    }
+
+    if (baseQuery.semester !== undefined) {
+      const { semester, ...rest } = baseQuery;
+      addPass({ ...rest }, "no_semester");
+    }
+
+    // Last resort: only keep status (published) constraint.
+    const minimal = isAdmin(req) ? {} : { status: "published" };
+    addPass(minimal, "minimal");
+
+    return passes;
+  };
+
+  const passes = buildPasses();
+
+  for (const pass of passes) {
+    if (combined.length >= limit) break;
+
+    const textQuery = useText
+      ? { ...pass.q, $text: { $search: parsed.searchText } }
+      : { ...pass.q };
+
+    let qy = StudyMaterial.find(textQuery).select(selectFields).limit(60);
+    if (useText) {
+      qy = qy.select({ score: { $meta: "textScore" } }).sort({
+        score: { $meta: "textScore" },
+        downloadCount: -1,
+        createdAt: -1,
+      });
+    } else {
+      qy = qy.sort({ downloadCount: -1, createdAt: -1 });
+    }
+
+    const docs = await qy.lean();
+    for (const m of docs) {
+      if (!isAdmin(req)) {
+        if (!matchesAccess(req.user, m)) continue;
+      }
+      pushResult(m, "metadata");
+      if (combined.length >= limit) break;
+    }
+
+    if (combined.length >= limit) break;
+
+    // Fallback: match inside extracted document content.
+    if (keywordRegex) {
+      const contentQuery = {
+        ...pass.q,
+        extractedText: { $regex: keywordRegex },
+      };
+
+      const contentDocs = await StudyMaterial.find(contentQuery)
+        .select(selectFields)
+        .sort({ downloadCount: -1, createdAt: -1 })
+        .limit(60)
+        .lean();
+
+      for (const m of contentDocs) {
+        if (!isAdmin(req)) {
+          if (!matchesAccess(req.user, m)) continue;
+        }
+        pushResult(m, "content");
+        if (combined.length >= limit) break;
+      }
+    }
+  }
+
+  const interpreted = {
+    moduleCode: parsed.moduleCode || "",
+    semester: Number.isFinite(parsed.semester) ? parsed.semester : null,
+    category: parsed.category || "",
+  };
+
+  const message =
+    combined.length > 0
+      ? `I found ${combined.length} relevant materials.`
+      : "I couldn't find matching materials. Try different keywords (e.g. module code like SE3020).";
+
+  return res.json({
+    prompt,
+    interpreted,
+    totalFound: combined.length,
+    results: combined,
+    gemini: { required: true, ok: true },
+    message,
+  });
+};
+
 const adminDownloadsHistory = async (req, res) => {
   const limitRaw =
     req.query.limit !== undefined ? Number(req.query.limit) : 200;
@@ -633,6 +1132,13 @@ const createSuggestion = async (req, res) => {
   });
 
   material.currentVersionId = material.versions[0]._id;
+
+  const extractedText = await extractTextFromUploadedFile(req.file);
+  if (extractedText) {
+    material.extractedText = extractedText;
+    material.extractedAt = new Date();
+    material.extractedFromVersionId = material.currentVersionId;
+  }
   await material.save();
 
   return res.status(201).json({
@@ -895,6 +1401,13 @@ const adminCreateMaterials = async (req, res) => {
     });
 
     m.currentVersionId = m.versions[0]._id;
+
+    const extractedText = await extractTextFromUploadedFile(file);
+    if (extractedText) {
+      m.extractedText = extractedText;
+      m.extractedAt = new Date();
+      m.extractedFromVersionId = m.currentVersionId;
+    }
     await m.save();
     created.push({ id: m._id, title: m.title, status: m.status });
     if (String(m.status).trim().toLowerCase() === "published") {
@@ -927,6 +1440,13 @@ const adminAddVersion = async (req, res) => {
 
   const newVersion = material.versions[material.versions.length - 1];
   material.currentVersionId = newVersion._id;
+
+  const extractedText = await extractTextFromUploadedFile(req.file);
+  if (extractedText) {
+    material.extractedText = extractedText;
+    material.extractedAt = new Date();
+    material.extractedFromVersionId = material.currentVersionId;
+  }
   await material.save();
 
   return res.status(201).json({
@@ -1203,8 +1723,10 @@ const adminAnalytics = async (req, res) => {
 
 module.exports = {
   listMaterials,
+  aiSearchMaterials,
   getMaterial,
   streamMaterialFile,
+  scanSuggestionAutofill,
   createSuggestion,
   toggleBookmark,
   listBookmarks,
