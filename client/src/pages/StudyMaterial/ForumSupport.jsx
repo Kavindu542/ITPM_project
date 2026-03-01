@@ -39,17 +39,9 @@ export default function ForumSupport({ user, onLoggedOut }) {
     categorySlug: 'general-queries',
   });
 
-  const [threadFiles, setThreadFiles] = React.useState([]);
-
   const [replyBodyByThread, setReplyBodyByThread] = React.useState({});
-  const [replyFilesByThread, setReplyFilesByThread] = React.useState({});
-
-  const [editingReplyId, setEditingReplyId] = React.useState(null);
-  const [editingReplyBody, setEditingReplyBody] = React.useState('');
 
   const [showThreadModal, setShowThreadModal] = React.useState(false);
-
-  const [activeTab, setActiveTab] = React.useState('mine');
 
   const logout = async () => {
     await authService.logout();
@@ -93,18 +85,8 @@ export default function ForumSupport({ user, onLoggedOut }) {
     setLoading(true);
     setError('');
     try {
-      if (threadFiles.length) {
-        const formData = new FormData();
-        Object.entries(threadForm).forEach(([k, v]) => {
-          if (v !== undefined && v !== null) formData.append(k, String(v));
-        });
-        threadFiles.forEach((f) => formData.append('attachments', f));
-        await studyMaterialService.createForumThread(formData);
-      } else {
-        await studyMaterialService.createForumThread(threadForm);
-      }
+      await studyMaterialService.createForumThread(threadForm);
       setThreadForm((p) => ({ ...p, title: '', body: '', tags: '', moduleCode: '', topic: '' }));
-      setThreadFiles([]);
       await load();
     } catch (e2) {
       setError(e2?.response?.data?.message || e2?.message || 'Failed to post thread');
@@ -115,127 +97,19 @@ export default function ForumSupport({ user, onLoggedOut }) {
 
   const submitReply = async (threadId) => {
     const body = String(replyBodyByThread[threadId] || '').trim();
-    const files = Array.isArray(replyFilesByThread[threadId]) ? replyFilesByThread[threadId] : [];
-    if (!body && !files.length) return;
+    if (!body) return;
 
     setLoading(true);
     setError('');
     try {
-      if (files.length) {
-        const formData = new FormData();
-        formData.append('body', body);
-        files.forEach((f) => formData.append('attachments', f));
-        await studyMaterialService.createForumReply(threadId, formData);
-      } else {
-        await studyMaterialService.createForumReply(threadId, body);
-      }
+      await studyMaterialService.createForumReply(threadId, body);
       setReplyBodyByThread((p) => ({ ...p, [threadId]: '' }));
-      setReplyFilesByThread((p) => ({ ...p, [threadId]: [] }));
       await load();
     } catch (e) {
       setError(e?.response?.data?.message || e?.message || 'Failed to add reply');
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatBytes = (bytes) => {
-    const b = Number(bytes || 0);
-    if (!Number.isFinite(b) || b <= 0) return '';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    const idx = Math.min(units.length - 1, Math.floor(Math.log(b) / Math.log(1024)));
-    const val = b / Math.pow(1024, idx);
-    return `${val.toFixed(val >= 10 || idx === 0 ? 0 : 1)} ${units[idx]}`;
-  };
-
-  const isImageAttachment = (a) => String(a?.mimeType || '').toLowerCase().startsWith('image/');
-
-  const isPdfAttachment = (a) => {
-    const mt = String(a?.mimeType || '').toLowerCase();
-    if (mt === 'application/pdf') return true;
-    return String(a?.originalName || '').toLowerCase().endsWith('.pdf');
-  };
-
-  const attachmentTypeLabel = (a) => {
-    if (isPdfAttachment(a)) return 'PDF';
-    if (isImageAttachment(a)) return 'Image';
-    const name = String(a?.originalName || '');
-    const ext = name.includes('.') ? name.split('.').pop() : '';
-    return ext ? ext.toUpperCase().slice(0, 10) : 'File';
-  };
-
-  const AttachmentView = ({ attachment, tone = 'light' }) => {
-    const a = attachment;
-    const url = studyMaterialService.apiUrl(a.url);
-    const openUrl = studyMaterialService.apiUrl(`${a.url}?disposition=inline`);
-
-    if (isPdfAttachment(a)) {
-      const metaParts = [];
-      if (a.pageCount) metaParts.push(`${a.pageCount} pages`);
-      metaParts.push('PDF');
-      if (a.sizeBytes) metaParts.push(formatBytes(a.sizeBytes));
-      const meta = metaParts.join(' • ');
-
-      return (
-        <div className={`rounded-xl border ${tone === 'dark' ? 'border-blue-500/40 bg-blue-500/20' : 'border-gray-200 bg-white'} overflow-hidden`}>
-          <div className="h-28 bg-gray-50">
-            <iframe
-              title={a.originalName}
-              src={`${openUrl}#page=1&view=FitH`}
-              className="w-full h-full"
-            />
-          </div>
-          <div className="px-3 py-2">
-            <div className={`text-sm font-semibold ${tone === 'dark' ? 'text-white' : 'text-gray-900'}`}>{a.originalName}</div>
-            {meta ? (
-              <div className={`mt-0.5 text-xs ${tone === 'dark' ? 'text-blue-50/90' : 'text-gray-600'}`}>{meta}</div>
-            ) : null}
-            <div className="mt-2 flex items-center gap-2">
-              <a
-                href={openUrl}
-                target="_blank"
-                rel="noreferrer"
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${tone === 'dark' ? 'border-blue-500/40 bg-blue-500/20 text-white' : 'border-gray-200 bg-white text-gray-800'}`}
-              >
-                Open
-              </a>
-              <a
-                href={url}
-                target="_blank"
-                rel="noreferrer"
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${tone === 'dark' ? 'border-blue-500/40 bg-blue-500/20 text-white' : 'border-gray-200 bg-white text-gray-800'}`}
-              >
-                Save as...
-              </a>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (isImageAttachment(a)) {
-      return (
-        <a href={url} target="_blank" rel="noreferrer" className="inline-block">
-          <img
-            src={openUrl}
-            alt={a.originalName}
-            className={`max-h-40 w-auto rounded-xl border ${tone === 'dark' ? 'border-blue-500/40 bg-blue-500/20' : 'border-gray-200 bg-white'}`}
-            loading="lazy"
-          />
-        </a>
-      );
-    }
-
-    return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className={`text-sm ${tone === 'dark' ? 'text-blue-50 underline' : 'text-blue-700 hover:underline'}`}
-      >
-        {a.originalName}{a.sizeBytes ? ` (${attachmentTypeLabel(a)} • ${formatBytes(a.sizeBytes)})` : ''}
-      </a>
-    );
   };
 
   const deleteOwnThread = async (threadId) => {
@@ -286,273 +160,6 @@ export default function ForumSupport({ user, onLoggedOut }) {
     } catch (e) {
       setError(e?.response?.data?.message || e?.message || 'Failed to subscribe');
     }
-  };
-
-  const startEditReply = (reply) => {
-    setEditingReplyId(reply.id);
-    setEditingReplyBody(String(reply.body || ''));
-  };
-
-  const cancelEditReply = () => {
-    setEditingReplyId(null);
-    setEditingReplyBody('');
-  };
-
-  const saveEditedReply = async () => {
-    if (!editingReplyId) return;
-    setError('');
-    setLoading(true);
-    try {
-      await studyMaterialService.updateOwnForumReply(editingReplyId, editingReplyBody);
-      cancelEditReply();
-      await load();
-    } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to update reply');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const deleteOwnReply = async (replyId) => {
-    setError('');
-    setLoading(true);
-    try {
-      await studyMaterialService.deleteOwnForumReply(replyId);
-      if (editingReplyId === replyId) cancelEditReply();
-      await load();
-    } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to delete reply');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const myThreads = React.useMemo(() => threads.filter((t) => !!t.isMine), [threads]);
-  const otherThreads = React.useMemo(() => threads.filter((t) => !t.isMine), [threads]);
-
-  const renderThreadList = (list) => {
-    return list.map((t) => (
-      <div key={t.id} className="bg-white rounded-2xl border border-gray-200 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-lg font-bold text-gray-900">{t.title}</h3>
-              {t.sticky ? (
-                <span className="px-2 py-0.5 rounded-full bg-yellow-50 border border-yellow-200 text-yellow-700 text-xs font-semibold">Sticky</span>
-              ) : null}
-              {t.announcement ? (
-                <span className="px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold">Announcement</span>
-              ) : null}
-            </div>
-            <div className="text-xs text-gray-500 mt-1">
-              {t.categorySlug} • {t.moduleCode || '—'} • {new Date(t.createdAt).toLocaleString()}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => upvoteThread(t.id)}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700"
-            >
-              Upvote ({t.upvoteCount || 0})
-            </button>
-            <button
-              type="button"
-              onClick={() => subscribe(t.id)}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700"
-            >
-              {t.subscribed ? 'Subscribed' : 'Subscribe'}
-            </button>
-            {t.isMine ? (
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm('Delete this thread?')) deleteOwnThread(t.id);
-                }}
-                className="px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-xs font-semibold text-red-700"
-              >
-                Delete
-              </button>
-            ) : null}
-          </div>
-        </div>
-        <p className="mt-2 text-sm text-gray-700">{t.body}</p>
-
-        {(t.attachments || []).length ? (
-          <div className="mt-3">
-            <div className="text-xs font-semibold text-gray-700">Attachments</div>
-            <div className="mt-1 flex flex-col gap-1">
-              {(t.attachments || []).map((a) => (
-                <div key={a.id} className="flex flex-col gap-2">
-                  <AttachmentView attachment={a} tone="light" />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        <div className="mt-3 space-y-2">
-          {(t.replies || []).filter((r) => !r.removed).map((r) => {
-            const isMine = !!r.isMine;
-            const avatar =
-              r.createdBy?.avatarUrl && String(r.createdBy.avatarUrl).trim() !== ''
-                ? r.createdBy.avatarUrl
-                : `https://ui-avatars.com/api/?name=${encodeURIComponent(r.createdBy?.name || 'Student')}&background=random`;
-            return (
-              <div key={r.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                <div className={`flex items-end gap-2 max-w-[85%] ${isMine ? 'flex-row-reverse' : ''}`}>
-                  <img
-                    src={avatar}
-                    alt={r.createdBy?.name || 'Student'}
-                    className="w-8 h-8 rounded-full object-cover"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.createdBy?.name || 'Student')}&background=random`;
-                    }}
-                  />
-                  <div
-                    className={`rounded-2xl px-3 py-2 border text-sm ${
-                      isMine ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-800 border-gray-200'
-                    }`}
-                  >
-                    {editingReplyId === r.id ? (
-                      <div className="space-y-2">
-                        <textarea
-                          value={editingReplyBody}
-                          onChange={(e) => setEditingReplyBody(e.target.value)}
-                          className={`w-full px-3 py-2 rounded-xl border text-sm min-h-20 ${
-                            isMine
-                              ? 'border-blue-500/40 bg-blue-500/20 text-white placeholder-blue-100'
-                              : 'border-gray-200 bg-white text-gray-800'
-                          }`}
-                          placeholder="Edit your reply"
-                        />
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={cancelEditReply}
-                            className={`px-2.5 py-1 rounded-lg border text-xs font-semibold ${
-                              isMine ? 'border-blue-500/40 bg-blue-500/20 text-white' : 'border-gray-200 bg-white text-gray-700'
-                            }`}
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            disabled={loading}
-                            onClick={saveEditedReply}
-                            className={`px-2.5 py-1 rounded-lg border text-xs font-semibold disabled:opacity-60 ${
-                              isMine ? 'border-blue-500/40 bg-blue-500/20 text-white' : 'border-gray-200 bg-white text-gray-700'
-                            }`}
-                          >
-                            Save
-                          </button>
-                        </div>
-                      </div>
-                    ) : r.body ? (
-                      <div>{r.body}</div>
-                    ) : null}
-
-                    {(r.attachments || []).length ? (
-                      <div className="mt-2 flex flex-col gap-1">
-                        {(r.attachments || []).map((a) => (
-                          <div key={a.id} className="flex flex-col gap-2">
-                            <AttachmentView attachment={a} tone={isMine ? 'dark' : 'light'} />
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-
-                    <div className={`mt-1 text-[11px] ${isMine ? 'text-blue-100' : 'text-gray-500'}`}>
-                      {r.accepted ? 'Accepted • ' : ''}
-                      {r.createdBy?.name || 'Student'} • {new Date(r.createdAt).toLocaleString()}
-                    </div>
-                    <div className="mt-1 flex items-center gap-2">
-                      {isMine ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => startEditReply(r)}
-                            disabled={loading || editingReplyId === r.id}
-                            className={`px-2.5 py-1 rounded-lg border text-xs font-semibold disabled:opacity-60 ${
-                              isMine
-                                ? 'border-blue-500/40 bg-blue-500/20 text-white'
-                                : 'border-gray-200 bg-white text-gray-700'
-                            }`}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (window.confirm('Delete this reply?')) deleteOwnReply(r.id);
-                            }}
-                            disabled={loading}
-                            className="px-2.5 py-1 rounded-lg border border-red-200 bg-red-50 text-xs font-semibold text-red-700 disabled:opacity-60"
-                          >
-                            Delete
-                          </button>
-                        </>
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={() => upvoteReply(r.id)}
-                        className={`px-2.5 py-1 rounded-lg border text-xs font-semibold ${
-                          isMine ? 'border-blue-500/40 bg-blue-500/20 text-white' : 'border-gray-200 bg-white text-gray-700'
-                        }`}
-                      >
-                        Upvote ({r.upvoteCount || 0})
-                      </button>
-                      {t.isMine && !r.accepted ? (
-                        <button
-                          type="button"
-                          onClick={() => acceptReply(r.id)}
-                          className="px-2.5 py-1 rounded-lg border border-green-200 bg-green-50 text-xs font-semibold text-green-700"
-                        >
-                          Accept
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {!t.locked ? (
-          <div className="mt-3 flex items-center gap-2">
-            <input
-              value={replyBodyByThread[t.id] || ''}
-              onChange={(e) => setReplyBodyByThread((p) => ({ ...p, [t.id]: e.target.value }))}
-              placeholder="Write a reply"
-              className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-            />
-            <input
-              type="file"
-              multiple
-              onChange={(e) =>
-                setReplyFilesByThread((p) => ({
-                  ...p,
-                  [t.id]: Array.from(e.target.files || []),
-                }))
-              }
-              className="max-w-[220px] px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-              accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
-            />
-            <button
-              type="button"
-              onClick={() => submitReply(t.id)}
-              className="px-3 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold"
-            >
-              Reply
-            </button>
-          </div>
-        ) : (
-          <div className="mt-3 text-xs text-gray-500">Thread is locked.</div>
-        )}
-      </div>
-    ));
   };
 
   return (
@@ -717,7 +324,7 @@ export default function ForumSupport({ user, onLoggedOut }) {
                   className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white px-4 py-2 text-sm font-semibold"
                   onClick={() => setShowThreadModal(true)}
                 >
-                  Post Your Question?
+                  Post Thread
                 </button>
               </div>
               {showThreadModal && (
@@ -731,13 +338,7 @@ export default function ForumSupport({ user, onLoggedOut }) {
                       ×
                     </button>
                     <h2 className="text-xl font-bold text-gray-900 mb-4">Post a Question</h2>
-                    <form
-                      className="grid grid-cols-1 md:grid-cols-2 gap-3"
-                      onSubmit={async (e) => {
-                        await submitThread(e);
-                        setShowThreadModal(false);
-                      }}
-                    >
+                    <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={(e) => { submitThread(e); setShowThreadModal(false); }}>
                       <input
                         value={threadForm.title}
                         onChange={(e) => setThreadForm((p) => ({ ...p, title: e.target.value }))}
@@ -777,27 +378,13 @@ export default function ForumSupport({ user, onLoggedOut }) {
                         className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm min-h-24"
                         placeholder="Write your question"
                       />
-                      <div className="md:col-span-2">
-                        <input
-                          type="file"
-                          multiple
-                          onChange={(e) => setThreadFiles(Array.from(e.target.files || []))}
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-                          accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
-                        />
-                        {threadFiles.length ? (
-                          <div className="mt-1 text-xs text-gray-600">
-                            {threadFiles.length} file(s) selected
-                          </div>
-                        ) : null}
-                      </div>
                       <div className="md:col-span-2 flex justify-end">
                         <button
                           type="submit"
                           disabled={loading}
                           className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
                         >
-                          Post Your Question?
+                          Post Thread
                         </button>
                       </div>
                     </form>
@@ -805,41 +392,93 @@ export default function ForumSupport({ user, onLoggedOut }) {
                 </div>
               )}
             </div>
-            <div className="mt-6">
-              <div className="inline-flex rounded-xl border border-gray-200 bg-white overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('mine')}
-                  className={`px-4 py-2 text-sm font-semibold ${
-                    activeTab === 'mine' ? 'bg-gray-900 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  My Questions ({myThreads.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('others')}
-                  className={`px-4 py-2 text-sm font-semibold border-l border-gray-200 ${
-                    activeTab === 'others' ? 'bg-gray-900 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Other Questions ({otherThreads.length})
-                </button>
-              </div>
-
-              <div className="space-y-4 mt-4">
-                {activeTab === 'mine' ? (
-                  !loading && myThreads.length === 0 ? (
-                    <div className="text-sm text-gray-600">You haven’t posted any questions yet.</div>
+            <div className="space-y-4 mt-6">
+              {threads.map((t) => (
+                <div key={t.id} className="bg-white rounded-2xl border border-gray-200 p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-lg font-bold text-gray-900">{t.title}</h3>
+                        {t.sticky ? <span className="px-2 py-0.5 rounded-full bg-yellow-50 border border-yellow-200 text-yellow-700 text-xs font-semibold">Sticky</span> : null}
+                        {t.announcement ? <span className="px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold">Announcement</span> : null}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">{t.categorySlug} • {t.moduleCode || '—'} • {new Date(t.createdAt).toLocaleString()}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={() => upvoteThread(t.id)} className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700">Upvote ({t.upvoteCount || 0})</button>
+                      <button type="button" onClick={() => subscribe(t.id)} className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700">{t.subscribed ? 'Subscribed' : 'Subscribe'}</button>
+                    {t.isMine ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm('Delete this thread?')) deleteOwnThread(t.id);
+                        }}
+                        className="px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-xs font-semibold text-red-700"
+                      >
+                        Delete
+                      </button>
+                    ) : null}
+                    </div>
+                  </div>
+                  <p className="mt-2 text-sm text-gray-700">{t.body}</p>
+                <div className="mt-3 space-y-2">
+                  {(t.replies || []).filter((r) => !r.removed).map((r) => {
+                    const isMine = !!r.isMine;
+                    const avatar =
+                      r.createdBy?.avatarUrl && String(r.createdBy.avatarUrl).trim() !== ''
+                        ? r.createdBy.avatarUrl
+                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(r.createdBy?.name || 'Student')}&background=random`;
+                    return (
+                      <div key={r.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`flex items-end gap-2 max-w-[85%] ${isMine ? 'flex-row-reverse' : ''}`}>
+                          <img
+                            src={avatar}
+                            alt={r.createdBy?.name || 'Student'}
+                            className="w-8 h-8 rounded-full object-cover"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.createdBy?.name || 'Student')}&background=random`;
+                            }}
+                          />
+                          <div className={`rounded-2xl px-3 py-2 border text-sm ${isMine ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-800 border-gray-200'}`}>
+                            <div>{r.body}</div>
+                            <div className={`mt-1 text-[11px] ${isMine ? 'text-blue-100' : 'text-gray-500'}`}>
+                              {r.accepted ? 'Accepted • ' : ''}{r.createdBy?.name || 'Student'} • {new Date(r.createdAt).toLocaleString()}
+                            </div>
+                            <div className="mt-1 flex items-center gap-2">
+                              <button type="button" onClick={() => upvoteReply(r.id)} className={`px-2.5 py-1 rounded-lg border text-xs font-semibold ${isMine ? 'border-blue-500/40 bg-blue-500/20 text-white' : 'border-gray-200 bg-white text-gray-700'}`}>Upvote ({r.upvoteCount || 0})</button>
+                              {t.isMine && !r.accepted ? (
+                                <button type="button" onClick={() => acceptReply(r.id)} className="px-2.5 py-1 rounded-lg border border-green-200 bg-green-50 text-xs font-semibold text-green-700">Accept</button>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                  {!t.locked ? (
+                    <div className="mt-3 flex items-center gap-2">
+                      <input
+                        value={replyBodyByThread[t.id] || ''}
+                        onChange={(e) => setReplyBodyByThread((p) => ({ ...p, [t.id]: e.target.value }))}
+                        placeholder="Write a reply"
+                        className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => submitReply(t.id)}
+                        className="px-3 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold"
+                      >
+                        Reply
+                      </button>
+                    </div>
                   ) : (
-                    renderThreadList(myThreads)
-                  )
-                ) : !loading && otherThreads.length === 0 ? (
-                  <div className="text-sm text-gray-600">No threads found.</div>
-                ) : (
-                  renderThreadList(otherThreads)
-                )}
-              </div>
+                    <div className="mt-3 text-xs text-gray-500">Thread is locked.</div>
+                  )}
+                </div>
+              ))}
+              {!loading && threads.length === 0 ? <div className="text-sm text-gray-600">No threads found.</div> : null}
             </div>
           </div>
         </div>

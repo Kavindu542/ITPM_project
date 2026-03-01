@@ -1,32 +1,8 @@
 const mongoose = require("mongoose");
 
-const forumAttachmentSchema = new mongoose.Schema(
-  {
-    filePath: { type: String, required: true, trim: true, maxlength: 500 },
-    originalName: { type: String, required: true, trim: true, maxlength: 255 },
-    mimeType: { type: String, default: "", trim: true, maxlength: 120 },
-    sizeBytes: { type: Number, default: 0 },
-    pageCount: { type: Number, default: null },
-    uploadedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true,
-    },
-  },
-  { timestamps: true },
-);
-
 const forumReplySchema = new mongoose.Schema(
   {
-    body: {
-      type: String,
-      required: false,
-      default: "",
-      trim: true,
-      maxlength: 5000,
-    },
-    attachments: { type: [forumAttachmentSchema], default: [] },
+    body: { type: String, required: true, trim: true, maxlength: 5000 },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -54,7 +30,6 @@ const studyMaterialForumThreadSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true, maxlength: 250 },
     body: { type: String, required: true, trim: true, maxlength: 8000 },
-    attachments: { type: [forumAttachmentSchema], default: [] },
     tags: { type: [String], default: [] },
     moduleCode: { type: String, default: "", trim: true, maxlength: 50 },
     topic: { type: String, default: "", trim: true, maxlength: 120 },

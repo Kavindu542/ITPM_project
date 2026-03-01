@@ -3,9 +3,6 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 
 import Home from './pages/Home.jsx';
 import Profile from './pages/Profile.jsx';
-import AboutUs from './pages/AboutUs.jsx';
-import ContactUs from './pages/ContactUs.jsx';
-import FAQ from './pages/FAQ.jsx';
 import SignIn from './pages/SignIn.jsx';
 import SignUp from './pages/SignUp.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
@@ -161,39 +158,6 @@ export default function App() {
             <Profile
               user={user}
               onUserUpdated={setUser}
-              onLoggedOut={() => setUser(null)}
-            />
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/about"
-        element={
-          <RequireAuth user={user}>
-            <AboutUs
-              user={user}
-              onLoggedOut={() => setUser(null)}
-            />
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/contact"
-        element={
-          <RequireAuth user={user}>
-            <ContactUs
-              user={user}
-              onLoggedOut={() => setUser(null)}
-            />
-          </RequireAuth>
-        }
-      />
-      <Route
-        path="/faq"
-        element={
-          <RequireAuth user={user}>
-            <FAQ
-              user={user}
               onLoggedOut={() => setUser(null)}
             />
           </RequireAuth>

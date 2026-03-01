@@ -51,67 +51,9 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
   const [uploadModalOpen, setUploadModalOpen] = React.useState(false);
 
-  const [aiPrompt, setAiPrompt] = React.useState('');
-  const [aiMessages, setAiMessages] = React.useState([]);
-  const [aiLoading, setAiLoading] = React.useState(false);
-  const [aiChatOpen, setAiChatOpen] = React.useState(false);
-  const aiChatScrollRef = React.useRef(null);
-  const aiChatInputRef = React.useRef(null);
+  // AI assistant removed
 
-  React.useEffect(() => {
-    if (tab !== 'all' && aiChatOpen) setAiChatOpen(false);
-  }, [tab, aiChatOpen]);
-
-  React.useEffect(() => {
-    if (!aiChatOpen) return;
-    const el = aiChatScrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [aiChatOpen, aiMessages.length, aiLoading]);
-
-  React.useEffect(() => {
-    if (!aiChatOpen) return;
-    const t = setTimeout(() => aiChatInputRef.current?.focus?.(), 0);
-    return () => clearTimeout(t);
-  }, [aiChatOpen]);
-
-  const sendAiPrompt = async (e) => {
-    e?.preventDefault?.();
-
-    const text = String(aiPrompt || '').trim();
-    if (!text || aiLoading) return;
-
-    const msgId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    setAiMessages((prev) => [...prev, { id: msgId, role: 'user', text }]);
-    setAiPrompt('');
-    setAiLoading(true);
-
-    try {
-      const res = await studyMaterialService.aiSearchMaterials(text);
-      const aId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      setAiMessages((prev) => [
-        ...prev,
-        {
-          id: aId,
-          role: 'assistant',
-          text: res?.message || 'Here are the most relevant materials I found.',
-          results: Array.isArray(res?.results) ? res.results : [],
-        },
-      ]);
-    } catch (err) {
-      const aId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      setAiMessages((prev) => [
-        ...prev,
-        {
-          id: aId,
-          role: 'assistant',
-          text: err?.response?.data?.message || err?.message || 'AI search failed. Please try again.',
-          results: [],
-        },
-      ]);
-    } finally {
-      setAiLoading(false);
-    }
-  };
+  // No auto-load — results only after user submits a prompt
 
   const [expandedId, setExpandedId] = React.useState(null);
   const [detailsById, setDetailsById] = React.useState({});
@@ -127,60 +69,6 @@ export default function StudyMaterial({ user, onLoggedOut }) {
     suggested: true,
     file: null,
   });
-
-  const [contribTouched, setContribTouched] = React.useState({
-    title: false,
-    description: false,
-    moduleCode: false,
-    semester: false,
-    category: false,
-  });
-
-  const contribTouchedRef = React.useRef(contribTouched);
-  React.useEffect(() => {
-    contribTouchedRef.current = contribTouched;
-  }, [contribTouched]);
-
-  const [contribScanLoading, setContribScanLoading] = React.useState(false);
-  const [contribScanHint, setContribScanHint] = React.useState('');
-
-  const onSelectContribFile = async (file) => {
-    setContribScanHint('');
-    setContrib((p) => ({ ...p, file: file || null }));
-    if (!file) return;
-
-    setContribScanLoading(true);
-    try {
-      const out = await studyMaterialService.scanSuggestionAutofill(file);
-      const patch = {
-        title: String(out?.title || '').trim(),
-        moduleCode: String(out?.moduleCode || '').trim(),
-        semester: String(out?.semester || '').trim(),
-        category: String(out?.category || '').trim(),
-        description: String(out?.description || '').trim(),
-      };
-
-      const touched = contribTouchedRef.current;
-
-      setContrib((p) => ({
-        ...p,
-        title: touched.title ? p.title : (patch.title || p.title),
-        moduleCode: touched.moduleCode ? p.moduleCode : (patch.moduleCode || p.moduleCode),
-        semester: touched.semester ? p.semester : (patch.semester || p.semester),
-        category: touched.category ? p.category : (patch.category || p.category),
-        description: touched.description ? p.description : (patch.description || p.description),
-      }));
-      setContribScanHint(patch.title || patch.moduleCode || patch.semester || patch.category ? 'Auto-filled from the selected document.' : '');
-    } catch (e) {
-      setContribScanHint(
-        e?.response?.data?.message ||
-          e?.message ||
-          'Could not scan this document. Please fill fields manually.',
-      );
-    } finally {
-      setContribScanLoading(false);
-    }
-  };
 
   const loadAll = React.useCallback(async () => {
     setLoading(true);
@@ -349,18 +237,9 @@ export default function StudyMaterial({ user, onLoggedOut }) {
         title: '',
         description: '',
         moduleCode: '',
-        semester: user?.semester ?? '',
-        category: 'notes',
         file: null,
         suggested: true,
       }));
-      setContribTouched({
-        title: false,
-        description: false,
-        moduleCode: false,
-        semester: false,
-        category: false,
-      });
       setUploadModalOpen(false);
       await loadMyUploads();
     } catch (e2) {
@@ -606,32 +485,16 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                       ? 'History'
                       : 'Contribute'}
               </div>
-              <div className="flex items-center gap-2">
-                {tab === 'all' ? (
-                  <button
-                    type="button"
-                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border transition-colors ${
-                      aiChatOpen
-                        ? 'bg-gray-900 text-white border-transparent'
-                        : 'bg-white text-gray-900 border-gray-200 hover:bg-gray-50'
-                    }`}
-                    onClick={() => setAiChatOpen((v) => !v)}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    {aiChatOpen ? 'Close AI Chat' : 'Open AI Chat'}
-                  </button>
-                ) : null}
-                {tab !== 'contribute' ? (
-                  <button
-                    type="button"
-                    className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md"
-                    onClick={() => navigate('/materials/contribute')}
-                  >
-                    <UploadCloud className="h-4 w-4" />
-                    Contribute
-                  </button>
-                ) : null}
-              </div>
+              {tab !== 'contribute' ? (
+                <button
+                  type="button"
+                  className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md"
+                  onClick={() => navigate('/materials/contribute')}
+                >
+                  <UploadCloud className="h-4 w-4" />
+                  Contribute
+                </button>
+              ) : null}
             </div>
 
             {error ? (
@@ -639,344 +502,223 @@ export default function StudyMaterial({ user, onLoggedOut }) {
             ) : null}
 
             {tab === 'all' ? (
-              <div className={`flex flex-col xl:flex-row ${aiChatOpen ? 'xl:divide-x xl:divide-gray-200' : ''}`}>
-                <div className="flex-1 min-w-0">
-                  <div className="p-5 border-b border-gray-200">
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                      <div className="sm:col-span-2 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                        <input
-                          value={filters.q}
-                          onChange={(e) => setFilters((p) => ({ ...p, q: e.target.value }))}
-                          placeholder="Search title/description..."
-                          className="w-full pl-10 pr-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
-                        />
-                      </div>
-
+              <>
+                <div className="p-5 border-b border-gray-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div className="sm:col-span-2 relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                       <input
-                        value={filters.moduleCode}
-                        onChange={(e) => setFilters((p) => ({ ...p, moduleCode: e.target.value }))}
-                        placeholder="Module code (e.g. SE3020)"
-                        className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
+                        value={filters.q}
+                        onChange={(e) => setFilters((p) => ({ ...p, q: e.target.value }))}
+                        placeholder="Search title/description..."
+                        className="w-full pl-10 pr-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
                       />
-
-                      <div className="flex gap-3">
-                        <select
-                          value={filters.semester}
-                          onChange={(e) => setFilters((p) => ({ ...p, semester: e.target.value }))}
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
-                        >
-                          <option value="">Any semester</option>
-                          {Array.from({ length: 12 }).map((_, i) => (
-                            <option key={i + 1} value={i + 1}>
-                              Semester {i + 1}
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          value={filters.category}
-                          onChange={(e) => setFilters((p) => ({ ...p, category: e.target.value }))}
-                          className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
-                        >
-                          {categories.map((c) => (
-                            <option key={c.id || 'all'} value={c.id}>
-                              {c.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="text-xs text-gray-500">
-                        {loading
-                          ? 'Loading…'
-                          : `${items.length} items • Showing ${(currentPage - 1) * pageSize + (items.length ? 1 : 0)}-${Math.min(currentPage * pageSize, items.length)}`}
-                      </div>
-                      <button
-                        type="button"
-                        className="px-3 py-1.5 rounded-xl bg-gray-900 text-white text-sm font-semibold"
-                        onClick={loadAll}
-                        disabled={loading}
+                    <input
+                      value={filters.moduleCode}
+                      onChange={(e) => setFilters((p) => ({ ...p, moduleCode: e.target.value }))}
+                      placeholder="Module code (e.g. SE3020)"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
+                    />
+
+                    <div className="flex gap-3">
+                      <select
+                        value={filters.semester}
+                        onChange={(e) => setFilters((p) => ({ ...p, semester: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
                       >
-                        Refresh
-                      </button>
+                        <option value="">Any semester</option>
+                        {Array.from({ length: 12 }).map((_, i) => (
+                          <option key={i + 1} value={i + 1}>
+                            Semester {i + 1}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={filters.category}
+                        onChange={(e) => setFilters((p) => ({ ...p, category: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
+                      >
+                        {categories.map((c) => (
+                          <option key={c.id || 'all'} value={c.id}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Title</th>
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Module</th>
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Semester</th>
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Downloads</th>
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedItems.map((m) => (
-                          <React.Fragment key={m.id}>
-                            <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                              <td className="py-3 px-5">
-                                <div className="font-semibold text-gray-900 text-sm">{m.title}</div>
-                                <div className="text-xs text-gray-500 mt-0.5">{m.description || '—'}</div>
-                              </td>
-                              <td className="py-3 px-5 text-sm text-gray-700">{m.moduleCode || '—'}</td>
-                              <td className="py-3 px-5 text-sm text-gray-700">{m.semester ?? '—'}</td>
-                              <td className="py-3 px-5 text-sm text-gray-700">{m.downloadCount ?? 0}</td>
-                              <td className="py-3 px-5">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <button
-                                    type="button"
-                                    className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                                    onClick={() => openPreview(m)}
-                                  >
-                                    Preview
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-sm font-semibold"
-                                    onClick={() => downloadFile(m)}
-                                  >
-                                    <Download className="h-4 w-4" />
-                                    Download
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                                    onClick={() => toggleVersions(m.id)}
-                                  >
-                                    Versions
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className={`p-2 rounded-xl border ${
-                                      m.bookmarked ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'
-                                    } hover:bg-gray-50`}
-                                    onClick={() => onToggleBookmark(m.id)}
-                                    title={m.bookmarked ? 'Remove from favourites' : 'Add to favourites'}
-                                  >
-                                    <Star className={`h-4 w-4 ${m.bookmarked ? 'text-yellow-600' : 'text-gray-700'}`} />
-                                  </button>
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="text-xs text-gray-500">
+                      {loading
+                        ? 'Loading…'
+                        : `${items.length} items • Showing ${(currentPage - 1) * pageSize + (items.length ? 1 : 0)}-${Math.min(currentPage * pageSize, items.length)}`}
+                    </div>
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 rounded-xl bg-gray-900 text-white text-sm font-semibold"
+                      onClick={loadAll}
+                      disabled={loading}
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Title</th>
+                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Module</th>
+                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Semester</th>
+                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Downloads</th>
+                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedItems.map((m) => (
+                        <React.Fragment key={m.id}>
+                          <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                            <td className="py-3 px-5">
+                              <div className="font-semibold text-gray-900 text-sm">{m.title}</div>
+                              <div className="text-xs text-gray-500 mt-0.5">{m.description || '—'}</div>
+                            </td>
+                            <td className="py-3 px-5 text-sm text-gray-700">{m.moduleCode || '—'}</td>
+                            <td className="py-3 px-5 text-sm text-gray-700">{m.semester ?? '—'}</td>
+                            <td className="py-3 px-5 text-sm text-gray-700">{m.downloadCount ?? 0}</td>
+                            <td className="py-3 px-5">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                  type="button"
+                                  className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                                  onClick={() => openPreview(m)}
+                                >
+                                  Preview
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-sm font-semibold"
+                                  onClick={() => downloadFile(m)}
+                                >
+                                  <Download className="h-4 w-4" />
+                                  Download
+                                </button>
+                                <button
+                                  type="button"
+                                  className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                                  onClick={() => toggleVersions(m.id)}
+                                >
+                                  Versions
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`p-2 rounded-xl border ${
+                                    m.bookmarked ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'
+                                  } hover:bg-gray-50`}
+                                  onClick={() => onToggleBookmark(m.id)}
+                                  title={m.bookmarked ? 'Remove from favourites' : 'Add to favourites'}
+                                >
+                                  <Star className={`h-4 w-4 ${m.bookmarked ? 'text-yellow-600' : 'text-gray-700'}`} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+
+                          {expandedId === m.id ? (
+                            <tr className="border-b border-gray-200 bg-gray-50/40">
+                              <td colSpan={5} className="py-4 px-5">
+                                <div className="text-sm font-semibold text-gray-900 mb-2">Versions</div>
+                                <div className="space-y-2">
+                                  {(detailsById[m.id]?.versions || []).map((v) => (
+                                    <div
+                                      key={v.id}
+                                      className="rounded-xl border border-gray-200 bg-white px-4 py-3 flex items-center justify-between gap-3"
+                                    >
+                                      <div>
+                                        <div className="text-sm font-semibold text-gray-900">{v.originalName}</div>
+                                        <div className="text-xs text-gray-500 mt-0.5">
+                                          {v.note ? `${v.note} • ` : ''}
+                                          {v.createdAt ? new Date(v.createdAt).toLocaleString() : ''}
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                                          onClick={() =>
+                                            window.open(
+                                              studyMaterialService.fileUrl(m.id, {
+                                                versionId: v.id,
+                                                disposition: 'inline',
+                                              }),
+                                              '_blank',
+                                              'noopener,noreferrer',
+                                            )
+                                          }
+                                        >
+                                          Preview
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {detailsById[m.id] && (detailsById[m.id]?.versions || []).length === 0 ? (
+                                    <div className="text-sm text-gray-600">No versions found.</div>
+                                  ) : null}
+                                  {!detailsById[m.id] ? (
+                                    <div className="text-sm text-gray-600">Loading versions…</div>
+                                  ) : null}
                                 </div>
                               </td>
                             </tr>
+                          ) : null}
+                        </React.Fragment>
+                      ))}
 
-                            {expandedId === m.id ? (
-                              <tr className="border-b border-gray-200 bg-gray-50/40">
-                                <td colSpan={5} className="py-4 px-5">
-                                  <div className="text-sm font-semibold text-gray-900 mb-2">Versions</div>
-                                  <div className="space-y-2">
-                                    {(detailsById[m.id]?.versions || []).map((v) => (
-                                      <div
-                                        key={v.id}
-                                        className="rounded-xl border border-gray-200 bg-white px-4 py-3 flex items-center justify-between gap-3"
-                                      >
-                                        <div>
-                                          <div className="text-sm font-semibold text-gray-900">{v.originalName}</div>
-                                          <div className="text-xs text-gray-500 mt-0.5">
-                                            {v.note ? `${v.note} • ` : ''}
-                                            {v.createdAt ? new Date(v.createdAt).toLocaleString() : ''}
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          <button
-                                            type="button"
-                                            className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                                            onClick={() =>
-                                              window.open(
-                                                studyMaterialService.fileUrl(m.id, {
-                                                  versionId: v.id,
-                                                  disposition: 'inline',
-                                                }),
-                                                '_blank',
-                                                'noopener,noreferrer',
-                                              )
-                                            }
-                                          >
-                                            Preview
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ))}
-                                    {detailsById[m.id] && (detailsById[m.id]?.versions || []).length === 0 ? (
-                                      <div className="text-sm text-gray-600">No versions found.</div>
-                                    ) : null}
-                                    {!detailsById[m.id] ? (
-                                      <div className="text-sm text-gray-600">Loading versions…</div>
-                                    ) : null}
-                                  </div>
-                                </td>
-                              </tr>
-                            ) : null}
-                          </React.Fragment>
-                        ))}
-
-                        {!loading && items.length === 0 ? (
-                          <tr>
-                            <td colSpan={5} className="py-10 px-5 text-center text-sm text-gray-600">
-                              No materials found for your filters.
-                            </td>
-                          </tr>
-                        ) : null}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {!loading && items.length > 0 ? (
-                    <div className="p-5 border-t border-gray-200 flex items-center justify-between gap-3">
-                      <div className="text-sm text-gray-600">
-                        Page {currentPage} of {totalPages}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          onClick={() => {
-                            setExpandedId(null);
-                            setCurrentPage((p) => Math.max(1, p - 1));
-                          }}
-                          disabled={currentPage === 1}
-                        >
-                          Back
-                        </button>
-                        <button
-                          type="button"
-                          className="px-3 py-1.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                          onClick={() => {
-                            setExpandedId(null);
-                            setCurrentPage((p) => Math.min(totalPages, p + 1));
-                          }}
-                          disabled={currentPage === totalPages}
-                        >
-                          Next
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
+                      {!loading && items.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-10 px-5 text-center text-sm text-gray-600">
+                            No materials found for your filters.
+                          </td>
+                        </tr>
+                      ) : null}
+                    </tbody>
+                  </table>
                 </div>
 
-                {aiChatOpen ? (
-                  <div className="xl:w-[420px] w-full shrink-0 bg-white">
-                    <div className="p-4 border-b border-gray-200">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="text-sm font-bold text-gray-900">AI Chat</div>
-                          <div className="mt-0.5 text-xs text-gray-600">
-                            Ask for notes, past papers, module-specific materials.
-                          </div>
-                        </div>
-                        <div className="hidden sm:inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                          <Search className="h-3.5 w-3.5" />
-                          Smart search
-                        </div>
-                      </div>
+                {!loading && items.length > 0 ? (
+                  <div className="p-5 border-t border-gray-200 flex items-center justify-between gap-3">
+                    <div className="text-sm text-gray-600">
+                      Page {currentPage} of {totalPages}
                     </div>
-
-                    <div className="p-4">
-                      <div
-                        ref={aiChatScrollRef}
-                        className="rounded-xl border border-gray-200 bg-gray-50 p-3 max-h-[60vh] overflow-auto space-y-3"
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => {
+                          setExpandedId(null);
+                          setCurrentPage((p) => Math.max(1, p - 1));
+                        }}
+                        disabled={currentPage === 1}
                       >
-                        {aiMessages.length ? (
-                          aiMessages.map((m) => (
-                            <div
-                              key={m.id}
-                              className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                            >
-                              <div
-                                className={`max-w-[92%] rounded-2xl px-3 py-2 text-sm border ${
-                                  m.role === 'user'
-                                    ? 'bg-white border-gray-200 text-gray-900'
-                                    : 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white'
-                                }`}
-                              >
-                                <div className="whitespace-pre-wrap">{m.text}</div>
-
-                                {m.role === 'assistant' && Array.isArray(m.results) && m.results.length ? (
-                                  <div className="mt-2 space-y-2">
-                                    <div className="text-xs font-semibold text-white/90">Smart results</div>
-                                    <div className="space-y-2">
-                                      {m.results.map((r) => (
-                                        <div key={String(r.id)} className="rounded-xl bg-white/15 border border-white/20 px-3 py-2">
-                                          <div className="flex items-start justify-between gap-3">
-                                            <div className="min-w-0">
-                                              <div className="text-sm font-semibold text-white truncate">{r.title}</div>
-                                              <div className="mt-0.5 text-xs text-white/90 truncate">
-                                                {(r.moduleCode ? r.moduleCode : '—')}
-                                                {' • '}
-                                                {(r.semester !== null && r.semester !== undefined && r.semester !== '' ? r.semester : '—')}
-                                                {' • '}
-                                                {(r.category ? r.category : '—')}
-                                              </div>
-                                              {r.description ? (
-                                                <div className="mt-1 text-xs text-white/90">
-                                                  {String(r.description).length > 120 ? `${String(r.description).slice(0, 120)}…` : String(r.description)}
-                                                </div>
-                                              ) : null}
-                                            </div>
-                                            <div className="flex items-center gap-2 shrink-0">
-                                              <button
-                                                type="button"
-                                                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-white/30 bg-white/10 text-white"
-                                                onClick={() => openPreview(r)}
-                                              >
-                                                Preview
-                                              </button>
-                                              <button
-                                                type="button"
-                                                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-white/30 bg-white/10 text-white"
-                                                onClick={() => downloadFile(r)}
-                                              >
-                                                Download
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ) : null}
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-sm text-gray-700">
-                            Click <span className="font-semibold">Open AI Chat</span> and try: <span className="font-semibold">“Data Science documents”</span>
-                          </div>
-                        )}
-
-                        {aiLoading ? (
-                          <div className="flex justify-start">
-                            <div className="max-w-[92%] rounded-2xl px-3 py-2 text-sm border bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white">
-                              AI Processing...
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-
-                      <form onSubmit={sendAiPrompt} className="mt-3 flex items-center gap-2">
-                        <input
-                          ref={aiChatInputRef}
-                          value={aiPrompt}
-                          onChange={(e) => setAiPrompt(e.target.value)}
-                          placeholder="Enter a search prompt..."
-                          className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
-                        />
-                        <button
-                          type="submit"
-                          disabled={aiLoading || !String(aiPrompt || '').trim()}
-                          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md disabled:opacity-60"
-                        >
-                          Send
-                        </button>
-                      </form>
+                        Back
+                      </button>
+                      <button
+                        type="button"
+                        className="px-3 py-1.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => {
+                          setExpandedId(null);
+                          setCurrentPage((p) => Math.min(totalPages, p + 1));
+                        }}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                      </button>
                     </div>
                   </div>
                 ) : null}
-              </div>
+              </>
             ) : null}
 
             {tab === 'favs' ? (
@@ -1077,27 +819,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                     <button
                       type="button"
                       className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md disabled:opacity-60"
-                      onClick={() => {
-                        setContrib({
-                          title: '',
-                          description: '',
-                          moduleCode: '',
-                          semester: user?.semester ?? '',
-                          category: 'notes',
-                          suggested: true,
-                          file: null,
-                        });
-                        setContribTouched({
-                          title: false,
-                          description: false,
-                          moduleCode: false,
-                          semester: false,
-                          category: false,
-                        });
-                        setContribScanHint('');
-                        setContribScanLoading(false);
-                        setUploadModalOpen(true);
-                      }}
+                      onClick={() => setUploadModalOpen(true)}
                       disabled={loading}
                     >
                       <UploadCloud className="h-4 w-4" />
@@ -1196,28 +918,19 @@ export default function StudyMaterial({ user, onLoggedOut }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input
                   value={contrib.title}
-                  onChange={(e) => {
-                    setContribTouched((t) => ({ ...t, title: true }));
-                    setContrib((p) => ({ ...p, title: e.target.value }));
-                  }}
+                  onChange={(e) => setContrib((p) => ({ ...p, title: e.target.value }))}
                   placeholder="Title"
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
                 />
                 <input
                   value={contrib.moduleCode}
-                  onChange={(e) => {
-                    setContribTouched((t) => ({ ...t, moduleCode: true }));
-                    setContrib((p) => ({ ...p, moduleCode: e.target.value }));
-                  }}
+                  onChange={(e) => setContrib((p) => ({ ...p, moduleCode: e.target.value }))}
                   placeholder="Module code"
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
                 />
                 <select
                   value={contrib.semester}
-                  onChange={(e) => {
-                    setContribTouched((t) => ({ ...t, semester: true }));
-                    setContrib((p) => ({ ...p, semester: e.target.value }));
-                  }}
+                  onChange={(e) => setContrib((p) => ({ ...p, semester: e.target.value }))}
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
                 >
                   <option value="">Semester (optional)</option>
@@ -1229,10 +942,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                 </select>
                 <select
                   value={contrib.category}
-                  onChange={(e) => {
-                    setContribTouched((t) => ({ ...t, category: true }));
-                    setContrib((p) => ({ ...p, category: e.target.value }));
-                  }}
+                  onChange={(e) => setContrib((p) => ({ ...p, category: e.target.value }))}
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
                 >
                   {categories
@@ -1247,10 +957,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
               <textarea
                 value={contrib.description}
-                onChange={(e) => {
-                  setContribTouched((t) => ({ ...t, description: true }));
-                  setContrib((p) => ({ ...p, description: e.target.value }));
-                }}
+                onChange={(e) => setContrib((p) => ({ ...p, description: e.target.value }))}
                 placeholder="Description (optional)"
                 className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none min-h-[90px]"
               />
@@ -1267,16 +974,10 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
                 <input
                   type="file"
-                  onChange={(e) => onSelectContribFile(e.target.files?.[0] || null)}
+                  onChange={(e) => setContrib((p) => ({ ...p, file: e.target.files?.[0] || null }))}
                   className="text-sm"
                 />
               </div>
-
-              {contribScanLoading ? (
-                <div className="text-xs text-gray-500">Scanning document…</div>
-              ) : contribScanHint ? (
-                <div className="text-xs text-gray-500">{contribScanHint}</div>
-              ) : null}
 
               <button
                 type="submit"
