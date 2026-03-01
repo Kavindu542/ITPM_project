@@ -7,11 +7,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node scripts/freePort.js 5000 && nodemon --config nodemon.json server.js",
-    "seed:module-admins": "node scripts/seedModuleAdmins.js",
-    "backfill:material-text": "node scripts/backfillMaterialText.js"
+    "seed:module-admins": "node scripts/seedModuleAdmins.js"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",

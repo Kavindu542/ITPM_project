@@ -39,20 +39,12 @@ router.post(
   upload.single("file"),
   controller.createSuggestion,
 );
-
-router.post(
-  "/materials/suggestions/scan",
-  requireAuth,
-  upload.single("file"),
-  controller.scanSuggestionAutofill,
-);
 router.post("/materials/:id/bookmark", requireAuth, controller.toggleBookmark);
 router.get("/me/uploads", requireAuth, controller.listMyUploads);
 router.get("/me/bookmarks", requireAuth, controller.listBookmarks);
 router.get("/me/history", requireAuth, controller.listHistory);
 
 // AI endpoints removed
-router.post("/ai/search", requireAuth, controller.aiSearchMaterials);
 
 // Missing resource requests (student)
 router.get("/requests", requireAuth, community.listRequests);
@@ -77,28 +69,12 @@ router.delete("/reviews/:reviewId", requireAuth, community.deleteOwnReview);
 // Forum (student)
 router.get("/forum/categories", requireAuth, community.listForumCategories);
 router.get("/forum/threads", requireAuth, community.listForumThreads);
-router.post(
-  "/forum/threads",
-  requireAuth,
-  upload.array("attachments", 10),
-  community.createForumThread,
-);
+router.post("/forum/threads", requireAuth, community.createForumThread);
 router.get("/forum/threads/:threadId", requireAuth, community.getForumThread);
-router.get(
-  "/forum/threads/:threadId/attachments/:attachmentId/file",
-  requireAuth,
-  community.streamForumThreadAttachment,
-);
 router.post(
   "/forum/threads/:threadId/replies",
   requireAuth,
-  upload.array("attachments", 10),
   community.addForumReply,
-);
-router.get(
-  "/forum/replies/:replyId/attachments/:attachmentId/file",
-  requireAuth,
-  community.streamForumReplyAttachment,
 );
 router.post(
   "/forum/threads/:threadId/upvote",
@@ -109,16 +85,6 @@ router.post(
   "/forum/replies/:replyId/upvote",
   requireAuth,
   community.toggleReplyUpvote,
-);
-router.patch(
-  "/forum/replies/:replyId",
-  requireAuth,
-  community.updateOwnForumReply,
-);
-router.delete(
-  "/forum/replies/:replyId",
-  requireAuth,
-  community.deleteOwnForumReply,
 );
 router.post(
   "/forum/replies/:replyId/accept",

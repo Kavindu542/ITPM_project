@@ -8,8 +8,6 @@
   - `MONGODB_URI`
   - `JWT_SECRET`
   - `CLIENT_ORIGIN` (default `http://localhost:5173`)
-  - `GEMINI_API_KEY` (required for AI search + scan/autofill)
-  - `GEMINI_MODEL` (optional; prefer a Flash model to reduce free-tier quota hits, e.g. `gemini-2.0-flash` or `gemini-1.5-flash`)
 
 Commands:
 

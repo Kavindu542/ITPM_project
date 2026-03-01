@@ -27,8 +27,6 @@ export default function CentralUploadAndMaterialsPage() {
     allowedRoles: '',
   });
   const [uploadFiles, setUploadFiles] = React.useState([]);
-  const [uploadScanLoading, setUploadScanLoading] = React.useState(false);
-  const [uploadScanHint, setUploadScanHint] = React.useState('');
 
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [editId, setEditId] = React.useState(null);
@@ -93,53 +91,6 @@ export default function CentralUploadAndMaterialsPage() {
       setError(e2?.response?.data?.message || e2?.message || 'Upload failed');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const closeUploadModal = () => {
-    setIsUploadOpen(false);
-    setUploadScanLoading(false);
-    setUploadScanHint('');
-  };
-
-  const scanFirstSelectedFile = async () => {
-    const file = uploadFiles?.[0];
-    if (!file || uploadScanLoading || loading) return;
-
-    setUploadScanHint('');
-    setUploadScanLoading(true);
-    setError('');
-
-    try {
-      const out = await studyMaterialService.scanSuggestionAutofill(file);
-      const patch = {
-        title: String(out?.title || '').trim(),
-        moduleCode: String(out?.moduleCode || '').trim(),
-        semester: String(out?.semester || '').trim(),
-        category: String(out?.category || '').trim(),
-        description: String(out?.description || '').trim(),
-      };
-
-      setUploadMeta((p) => ({
-        ...p,
-        title: p.title ? p.title : (patch.title || p.title),
-        moduleCode: p.moduleCode ? p.moduleCode : (patch.moduleCode || p.moduleCode),
-        semester: p.semester ? p.semester : (patch.semester || p.semester),
-        category: p.category && p.category !== 'notes' ? p.category : (patch.category || p.category),
-        description: p.description ? p.description : (patch.description || p.description),
-      }));
-
-      setUploadScanHint(
-        patch.title || patch.moduleCode || patch.semester || patch.category
-          ? 'Auto-filled from the selected document.'
-          : 'Scan completed, but no metadata was detected.',
-      );
-    } catch (e) {
-      setUploadScanHint(
-        e?.response?.data?.message || e?.message || 'Could not scan this document. Please fill fields manually.',
-      );
-    } finally {
-      setUploadScanLoading(false);
     }
   };
 
@@ -302,7 +253,7 @@ export default function CentralUploadAndMaterialsPage() {
           aria-modal="true"
           aria-label="Upload materials"
           onMouseDown={(e) => {
-            if (e.target === e.currentTarget) closeUploadModal();
+            if (e.target === e.currentTarget) setIsUploadOpen(false);
           }}
         >
           <div className="absolute inset-0 bg-black/40" />
@@ -315,7 +266,7 @@ export default function CentralUploadAndMaterialsPage() {
               </div>
               <button
                 type="button"
-                onClick={closeUploadModal}
+                onClick={() => setIsUploadOpen(false)}
                 className="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
                 aria-label="Close"
               >
@@ -371,10 +322,7 @@ export default function CentralUploadAndMaterialsPage() {
                     <input
                       type="file"
                       multiple
-                      onChange={(e) => {
-                        setUploadFiles(Array.from(e.target.files || []));
-                        setUploadScanHint('');
-                      }}
+                      onChange={(e) => setUploadFiles(Array.from(e.target.files || []))}
                       className="text-sm"
                     />
                     <input
@@ -382,38 +330,19 @@ export default function CentralUploadAndMaterialsPage() {
                       multiple
                       webkitdirectory=""
                       directory=""
-                      onChange={(e) => {
-                        setUploadFiles(Array.from(e.target.files || []));
-                        setUploadScanHint('');
-                      }}
+                      onChange={(e) => setUploadFiles(Array.from(e.target.files || []))}
                       className="text-sm"
                     />
                     <div className="text-xs text-gray-500">Selected: {uploadFiles.length} file(s)</div>
-                    {uploadScanLoading ? (
-                      <div className="text-xs text-gray-500">Scanning document…</div>
-                    ) : uploadScanHint ? (
-                      <div className="text-xs text-gray-500">{uploadScanHint}</div>
-                    ) : null}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={scanFirstSelectedFile}
-                      disabled={loading || uploadScanLoading || uploadFiles.length === 0}
-                      className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-900 font-semibold text-sm hover:bg-gray-50 disabled:opacity-60"
-                      title={uploadFiles.length ? 'Uses the first selected file to auto-fill fields' : 'Select a file to scan'}
-                    >
-                      Scan & Autofill
-                    </button>
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-[#25f194] text-white rounded-xl font-semibold disabled:opacity-60"
-                      disabled={loading}
-                    >
-                      <UploadCloud className="h-4 w-4" />
-                      Upload
-                    </button>
-                  </div>
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-[#25f194] text-white rounded-xl font-semibold disabled:opacity-60"
+                    disabled={loading}
+                  >
+                    <UploadCloud className="h-4 w-4" />
+                    Upload
+                  </button>
                 </div>
               </form>
             </div>
