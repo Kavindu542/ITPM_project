@@ -224,10 +224,39 @@ router.post(
           .json({ message: "Selected user is not an eligible student" });
       }
 
-      if (club.leader && !replaceExisting) {
-        return res.status(409).json({
-          message: "Club already has a leader. Set replaceExisting to true.",
-        });
+      // If the club already has a leader, decide whether this is a real conflict.
+      // - If the current leader record no longer exists, clear the dangling reference.
+      // - If assigning the same current leader, treat as idempotent success.
+      // - Otherwise require explicit replaceExisting.
+      if (club.leader) {
+        const currentLeaderId = String(club.leader);
+        const selectedStudentId = String(student._id);
+
+        if (currentLeaderId === selectedStudentId) {
+          return res.json({
+            message: `${student.name} is already the leader of ${club.name}`,
+            club: { id: club._id, name: club.name, leaderId: student._id },
+            student: {
+              id: student._id,
+              name: student.name,
+              email: student.email,
+              department: student.department || null,
+              year: student.year || null,
+            },
+            replaced: false,
+            oldLeader: null,
+          });
+        }
+
+        const currentLeaderExists = await User.exists({ _id: club.leader });
+        if (!currentLeaderExists) {
+          club.leader = null;
+          await club.save();
+        } else if (!replaceExisting) {
+          return res.status(409).json({
+            message: "Club already has a leader. Set replaceExisting to true.",
+          });
+        }
       }
 
       const otherLeaderClub = await Club.findOne({

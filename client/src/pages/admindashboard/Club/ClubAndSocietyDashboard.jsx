@@ -227,8 +227,56 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
     const selectedClub = clubs.find(c => String(c.id) === String(leaderFormData.clubId));
     const selectedStudent = students.find(s => String(s.id) === String(leaderFormData.studentId));
 
+    if (!selectedClub) {
+      alert('Selected club was not found. Please refresh and try again.');
+      return;
+    }
+
+    if (!selectedStudent) {
+      alert('Selected student was not found. Please refresh and try again.');
+      return;
+    }
+
+    // If the UI thinks the club is vacant, do a quick refresh to avoid stale state
+    // causing a backend 409 "already has a leader".
+    let clubToUse = selectedClub;
+    if (!clubToUse.leader) {
+      try {
+        const data = await clubService.adminListClubs();
+        const items = Array.isArray(data?.items) ? data.items : [];
+        const normalized = items.map((c) => ({
+          id: String(c.id || c._id || ''),
+          name: c.name,
+          description: c.description || '',
+          rules: c.rules || '',
+          logoUrl: c.logoUrl || '',
+          leader: c.leader
+            ? { id: String(c.leader.id || c.leader._id || ''), name: c.leader.name, email: c.leader.email }
+            : null,
+          members: Number(c.members || 0),
+          events: Number(c.events || 0),
+          status: c.status || 'Active',
+        }));
+
+        setClubs(normalized);
+        setStats((prev) => ({
+          ...prev,
+          totalClubs: normalized.length,
+          totalLeaders: normalized.filter((c) => !!c.leader).length,
+          vacantClubs: normalized.filter((c) => !c.leader).length,
+        }));
+
+        const refreshedClub = normalized.find(
+          (c) => String(c.id) === String(leaderFormData.clubId),
+        );
+        if (refreshedClub) clubToUse = refreshedClub;
+      } catch {
+        // ignore refresh errors; we'll fall back to current state
+      }
+    }
+
     // If club already has a leader, require confirmation
-    if (selectedClub.leader && !confirmReplaceLeader) {
+    if (clubToUse.leader && !confirmReplaceLeader) {
       return; // Show warning
     }
 
@@ -236,7 +284,7 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
       const res = await clubService.assignLeader({
         clubId: leaderFormData.clubId,
         studentId: leaderFormData.studentId,
-        replaceExisting: !!selectedClub.leader,
+        replaceExisting: !!clubToUse.leader,
       });
       const updatedClubs = clubs.map((club) =>
         String(club.id) === String(leaderFormData.clubId)
@@ -247,12 +295,47 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
       const msg = res?.message || `${selectedStudent.name} is now the leader of ${selectedClub.name}`;
       alert(msg);
     } catch (err) {
-      alert('Failed to assign leader');
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message || 'Failed to assign leader';
+
+      // If backend says the club already has a leader, the UI state is likely stale.
+      // Refresh clubs so the replace-leader warning/checkbox is shown correctly.
+      if (status === 409 && /already has a leader/i.test(String(message))) {
+        try {
+          const data = await clubService.adminListClubs();
+          const items = Array.isArray(data?.items) ? data.items : [];
+          const normalized = items.map((c) => ({
+            id: String(c.id || c._id || ''),
+            name: c.name,
+            description: c.description || '',
+            rules: c.rules || '',
+            logoUrl: c.logoUrl || '',
+            leader: c.leader
+              ? { id: String(c.leader.id || c.leader._id || ''), name: c.leader.name, email: c.leader.email }
+              : null,
+            members: Number(c.members || 0),
+            events: Number(c.events || 0),
+            status: c.status || 'Active',
+          }));
+
+          setClubs(normalized);
+          setStats((prev) => ({
+            ...prev,
+            totalClubs: normalized.length,
+            totalLeaders: normalized.filter((c) => !!c.leader).length,
+            vacantClubs: normalized.filter((c) => !c.leader).length,
+          }));
+        } catch {
+          // ignore refresh errors and still show the server message
+        }
+      }
+
+      alert(message);
       return;
     }
 
     // Update stats if assigning to a vacant club
-    if (!selectedClub.leader) {
+    if (!clubToUse.leader) {
       setStats(prev => ({
         ...prev,
         totalLeaders: prev.totalLeaders + 1,

@@ -1,6 +1,16 @@
 import { api } from "./api";
 
 export const clubService = {
+  // Student endpoints
+  async listClubs() {
+    const res = await api.get("/clubs");
+    return res.data;
+  },
+  async applyToClub(clubId, payload) {
+    const res = await api.post(`/clubs/${clubId}/apply`, payload);
+    return res.data;
+  },
+
   // Leader endpoints
   async leaderGetMyClub() {
     const res = await api.get("/leader/me/club");
@@ -25,6 +35,10 @@ export const clubService = {
   },
   async leaderListEvents() {
     const res = await api.get("/leader/events");
+    return res.data;
+  },
+  async leaderListMembershipApplications() {
+    const res = await api.get("/leader/membership-applications");
     return res.data;
   },
   async leaderCreateEvent(payload) {

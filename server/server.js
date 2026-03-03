@@ -17,6 +17,7 @@ const libraryRoutes = require('./routes/libraryRoutes');
 const adminClubRoutes = require("./routes/adminClubRoutes");
 const leaderClubRoutes = require("./routes/leaderClubRoutes");
 const clubFeedRoutes = require("./routes/clubFeedRoutes");
+const clubPublicRoutes = require("./routes/clubPublicRoutes");
 const hostelRoutes = require("./routes/hostelRoutes");
 
 const { errorHandler } = require("./middleware/errorMiddleware");
@@ -70,6 +71,7 @@ app.use("/api/library", libraryRoutes);
 app.use("/api/admin", adminClubRoutes);
 app.use("/api/leader", leaderClubRoutes);
 app.use("/api/club-feed", clubFeedRoutes);
+app.use("/api/clubs", clubPublicRoutes);
 app.use("/api/hostel", hostelRoutes);
 
 app.use(errorHandler);

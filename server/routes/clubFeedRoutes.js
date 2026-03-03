@@ -3,23 +3,28 @@ const { requireAuth } = require("../middleware/authMiddleware");
 const Event = require("../models/Event");
 const Club = require("../models/Club");
 const Meeting = require("../models/Meeting");
+const User = require("../models/User");
 
 const router = express.Router();
 
 // Authenticated user's feed: meetings for clubs they belong to
 router.get("/my/meetings", requireAuth, async (req, res) => {
   try {
-    const clubIds = new Set(
-      [...(req.user?.clubs || []).map((c) => String(c)), req.user?.club ? String(req.user.club) : null].filter(Boolean),
-    );
-    if (clubIds.size === 0) {
-      return res.json({ meetings: [] });
-    }
+    const fullUser = await User.findById(req.user?._id)
+      .select("club clubs")
+      .lean();
+    const clubIds = new Set([
+      ...(Array.isArray(fullUser?.clubs) ? fullUser.clubs.map((c) => String(c)) : []),
+      fullUser?.club ? String(fullUser.club) : null,
+    ].filter(Boolean));
+    const hasMembership = clubIds.size > 0;
+    if (!hasMembership) return res.json({ hasMembership: false, meetings: [] });
     const meetings = await Meeting.find({ club: { $in: Array.from(clubIds) } })
       .sort({ date: 1 })
       .populate("club", "_id name")
       .lean();
     return res.json({
+      hasMembership,
       meetings: meetings.map((m) => ({
         id: m._id,
         title: m.title,
@@ -37,12 +42,14 @@ router.get("/my/meetings", requireAuth, async (req, res) => {
 // Authenticated user's feed: events for clubs they belong to (both Members-only and Public)
 router.get("/my/events", requireAuth, async (req, res) => {
   try {
-    const clubIds = new Set(
-      [...(req.user?.clubs || []).map((c) => String(c)), req.user?.club ? String(req.user.club) : null].filter(Boolean),
-    );
-    if (clubIds.size === 0) {
-      return res.json({ events: [] });
-    }
+    const fullUser = await User.findById(req.user?._id)
+      .select("club clubs")
+      .lean();
+    const clubIds = new Set([
+      ...(Array.isArray(fullUser?.clubs) ? fullUser.clubs.map((c) => String(c)) : []),
+      fullUser?.club ? String(fullUser.club) : null,
+    ].filter(Boolean));
+    if (clubIds.size === 0) return res.json({ events: [] });
     const events = await Event.find({ club: { $in: Array.from(clubIds) } }).sort({ date: 1 }).populate("club", "_id name").lean();
     return res.json({
       events: events.map((e) => ({

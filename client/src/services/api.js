@@ -20,6 +20,8 @@ const getApiBase = () => {
 export const api = axios.create({
   baseURL: getApiBase(),
   withCredentials: true,
+  timeout: 60000,
+  timeoutErrorMessage: "Request timed out",
 });
 
 api.interceptors.request.use((config) => {
