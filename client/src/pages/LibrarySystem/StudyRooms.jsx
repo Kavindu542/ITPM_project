@@ -68,7 +68,7 @@ const Button = ({ children, className = '', variant = 'default', size = 'md', ..
 };
 
 const amenityIcons = {
-  'Wifi': Wifi, 'Wifi': Wifi, 'Projector': Monitor, 'Whiteboard': BookOpen,
+  'Wifi': Wifi, 'Projector': Monitor, 'Whiteboard': BookOpen,
   'Computer': Monitor, 'Air Conditioning': Shield, 'AC': Shield, 'Power Outlets': Zap,
   'Printer Access': BookOpen, 'Coffee': Coffee, 'Monitor': Monitor
 };
@@ -140,9 +140,21 @@ export default function StudyRooms() {
     (async () => {
       try {
         const today = new Date().toISOString().split('T')[0];
-        const res = await reservationService.getAll({ type: 'Study Room', date: today });
-        const raw = res?.data?.data?.reservations || res?.data?.data || res?.data || [];
-        if (m) setRoomReservations(Array.isArray(raw) ? raw : []);
+        // Students are not allowed to call the admin-only GET /reservations endpoint.
+        // Use /reservations/my-reservations and filter to today.
+        const res = await reservationService.getMine({ type: 'Study Room' });
+        const raw = res?.data?.data?.reservations || [];
+        const filtered = (Array.isArray(raw) ? raw : []).filter((r) => {
+          const d = r?.reservationDate;
+          if (!d) return false;
+          try {
+            const iso = new Date(d).toISOString().split('T')[0];
+            return iso === today;
+          } catch {
+            return String(d).slice(0, 10) === today;
+          }
+        });
+        if (m) setRoomReservations(filtered);
       } catch {
         if (m) setRoomReservations([]);
       }

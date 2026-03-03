@@ -1,16 +1,4 @@
 import api from './api';
-import axios from 'axios';
-
-// Support Vite + CRA + fallback
-const API_BASE_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
-  (typeof process !== 'undefined' && process.env?.REACT_APP_API_URL) ||
-  'http://localhost:5000/api';
-
-const API = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true
-});
 
 export const bookService = {
   getAll: (params = {}) => api.get('/library/books', { params }),
@@ -45,6 +33,7 @@ export const digitalResourceService = {
 
 export const reservationService = {
   getAll: (params = {}) => api.get('/library/reservations', { params }),
+  getMine: (params = {}) => api.get('/library/reservations/my-reservations', { params }),
   getById: (id) => api.get(`/library/reservations/${id}`),
   create: (data) => api.post('/library/reservations', data),
   update: (id, data) => api.put(`/library/reservations/${id}`, data),

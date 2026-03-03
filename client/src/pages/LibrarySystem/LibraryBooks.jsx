@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import {
   Search, Download, Heart, X, Star, Zap,
   ArrowRight, Filter, Bookmark, Layers,
@@ -46,7 +46,9 @@ const styles = `
 const toAssetUrl = (p) => {
   if (!p) return '';
   if (String(p).startsWith('http')) return p;
-  return `http://localhost:5000/${String(p).replace(/^\/+/, '')}`;
+  const base = String(api?.defaults?.baseURL || '').replace(/\/+api\/?$/, '');
+  if (base) return `${base}/${String(p).replace(/^\/+/, '')}`;
+  return `/${String(p).replace(/^\/+/, '')}`;
 };
 
 export default function LibraryBooks() {
@@ -56,11 +58,10 @@ export default function LibraryBooks() {
 
   const handleDownload = async (book) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/library/my-library', {
+      await api.post('/library/my-library', {
         bookId: book.id,
         status: 'Downloaded'
-      }, { headers: { Authorization: `Bearer ${token}` } });
+      });
     } catch (err) {
       console.error('Failed to log download', err);
     }
@@ -204,11 +205,10 @@ export default function LibraryBooks() {
 
     if (!isFav) {
       try {
-        const token = localStorage.getItem('token');
-        await axios.post('http://localhost:5000/api/library/my-library', {
+        await api.post('/library/my-library', {
           bookId: book.id,
           status: 'Favorite'
-        }, { headers: { Authorization: `Bearer ${token}` } });
+        });
       } catch (err) {
         console.error('Failed to favorite', err);
       }

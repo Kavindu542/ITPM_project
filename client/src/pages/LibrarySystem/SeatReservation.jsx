@@ -1,19 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { Calendar, Clock, Check, X } from 'lucide-react';
-
-const api = axios.create({
-    baseURL: 'http://localhost:5000/api',
-    withCredentials: true,
-});
-
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
 
 const SEATS = Array.from({ length: 40 }, (_, i) => ({
     id: `seat-${i + 1}`,

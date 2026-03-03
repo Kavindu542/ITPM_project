@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { BookOpen, Download, Heart, Star, Clock, Search, X, Eye, Trash2, Share2, Edit, Plus, ChevronRight, Zap, Brain, Sparkles, BookMarked, FileText, Headphones, Play } from 'lucide-react';
 
 const styles = `
@@ -90,10 +90,7 @@ export default function MyLibrary() {
   const fetchMyLibrary = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/library/my-library', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get('/library/my-library');
       if (res.data.success) {
         setLibraryItems(res.data.data);
       }
@@ -106,10 +103,7 @@ export default function MyLibrary() {
 
   const removeFromLibrary = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/library/my-library/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/library/my-library/${id}`);
       fetchMyLibrary();
     } catch (err) {
       console.error('Failed to remove item', err);
