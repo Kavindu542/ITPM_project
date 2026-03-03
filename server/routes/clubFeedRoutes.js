@@ -67,7 +67,7 @@ router.get("/my/events", requireAuth, async (req, res) => {
 });
 
 // Public events for all users (no auth required in principle, but we keep it behind auth for simplicity)
-router.get("/public/events", requireAuth, async (req, res) => {
+router.get("/public/events", async (req, res) => {
   try {
     const events = await Event.find({ type: "Public" }).sort({ date: 1 }).populate("club", "_id name").lean();
     return res.json({

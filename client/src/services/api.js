@@ -1,9 +1,26 @@
 import axios from "axios";
 
+const isLoopbackHost = (host) => host === "localhost" || host === "127.0.0.1";
+
+const normalizeLocalApiUrl = (rawUrl) => {
+  try {
+    const parsed = new URL(String(rawUrl));
+    if (typeof window !== "undefined") {
+      const uiHost = window.location.hostname || "localhost";
+      if (isLoopbackHost(parsed.hostname) && isLoopbackHost(uiHost)) {
+        parsed.hostname = uiHost;
+      }
+    }
+    return parsed.toString().replace(/\/+$/, "");
+  } catch {
+    return String(rawUrl).replace(/\/+$/, "");
+  }
+};
+
 const getApiBase = () => {
   try {
     if (import.meta.env?.VITE_API_URL) {
-      const base = String(import.meta.env.VITE_API_URL).replace(/\/+$/, "");
+      const base = normalizeLocalApiUrl(import.meta.env.VITE_API_URL);
       return `${base}/api`;
     }
     if (typeof window !== "undefined") {
@@ -25,13 +42,31 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  const isAuthEndpoint = String(config?.url || "").startsWith("/auth/");
   const token =
-    localStorage.getItem("token") ||
     localStorage.getItem("accessToken") ||
-    localStorage.getItem("moduleToken");
+    localStorage.getItem("moduleToken") ||
+    localStorage.getItem("token");
+
+  if (isAuthEndpoint) return config;
 
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      const sentAuthHeader = Boolean(error?.config?.headers?.Authorization);
+      if (sentAuthHeader) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("moduleToken");
+        localStorage.removeItem("token");
+      }
+    }
+    return Promise.reject(error);
+  },
+);
 
 export default api;
