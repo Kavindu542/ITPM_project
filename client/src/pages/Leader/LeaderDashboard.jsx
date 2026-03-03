@@ -10,6 +10,8 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
   const [loading, setLoading] = React.useState(true);
   const [club, setClub] = React.useState(null);
   const [members, setMembers] = React.useState([]);
+  const [applications, setApplications] = React.useState([]);
+  const [applicationsLoading, setApplicationsLoading] = React.useState(false);
   const [showAddMember, setShowAddMember] = React.useState(false);
   const [eligible, setEligible] = React.useState([]);
   const [eligibleLoading, setEligibleLoading] = React.useState(false);
@@ -45,10 +47,21 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
           const e = await clubService.leaderListEvents();
           setEvents(Array.isArray(e?.events) ? e.events : []);
         } catch { setEvents([]); }
+
+        setApplicationsLoading(true);
+        try {
+          const a = await clubService.leaderListMembershipApplications();
+          setApplications(Array.isArray(a?.items) ? a.items : []);
+        } catch {
+          setApplications([]);
+        } finally {
+          setApplicationsLoading(false);
+        }
       } catch {
         if (!cancelled) {
           setClub(null);
           setMembers([]);
+          setApplications([]);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -285,6 +298,90 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                   </ul>
                 )}
               </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-xl md:col-span-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Membership Applications</h2>
+                <p className="text-sm text-gray-500">Applications submitted by students (view-only)</p>
+              </div>
+              <div className="text-xs text-gray-500">Total: {applications.length}</div>
+            </div>
+
+            <div className="mt-4">
+              {applicationsLoading ? (
+                <div className="text-sm text-gray-500">Loading…</div>
+              ) : applications.length === 0 ? (
+                <div className="text-sm text-gray-500">No applications yet.</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {applications.map((a) => (
+                    <div key={a.id} className="rounded-2xl border border-gray-200 p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-bold text-gray-900 truncate">{a.applicant?.name || a.personal?.fullName || 'Applicant'}</div>
+                          <div className="text-xs text-gray-500">{a.applicant?.email || a.contact?.email || ''}</div>
+                          <div className="text-xs text-gray-500">
+                            {(a.applicant?.studentId || a.school?.studentId || '') ? `ID: ${a.applicant?.studentId || a.school?.studentId}` : ''}
+                            {a.createdAt ? ` • ${new Date(a.createdAt).toLocaleString()}` : ''}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 text-xs text-gray-700 space-y-2">
+                        <div>
+                          <div className="font-semibold text-gray-900">School</div>
+                          <div className="text-gray-700">
+                            {[a.school?.university, a.school?.faculty, a.school?.department].filter(Boolean).join(' • ') || '—'}
+                          </div>
+                          <div className="text-gray-500">
+                            {[a.school?.year ? `Year: ${a.school.year}` : null, a.school?.semester ? `Semester: ${a.school.semester}` : null]
+                              .filter(Boolean)
+                              .join(' • ') || ''}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="font-semibold text-gray-900">Personal</div>
+                          <div className="text-gray-700">
+                            {[a.personal?.phone ? `Phone: ${a.personal.phone}` : null, a.personal?.address ? `Address: ${a.personal.address}` : null]
+                              .filter(Boolean)
+                              .join(' • ') || '—'}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="font-semibold text-gray-900">Languages</div>
+                          <div className="text-gray-700">
+                            {Array.isArray(a.languages) && a.languages.length
+                              ? a.languages.map((l) => l?.name).filter(Boolean).join(', ')
+                              : '—'}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="font-semibold text-gray-900">Education Qualifications</div>
+                          <div className="text-gray-700 whitespace-pre-wrap">{a.educationQualifications || '—'}</div>
+                        </div>
+
+                        <div>
+                          <div className="font-semibold text-gray-900">Sports Qualifications</div>
+                          <div className="text-gray-700 whitespace-pre-wrap">{a.sportsQualifications || '—'}</div>
+                        </div>
+
+                        {a.notes ? (
+                          <div>
+                            <div className="font-semibold text-gray-900">Notes</div>
+                            <div className="text-gray-700 whitespace-pre-wrap">{a.notes}</div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
