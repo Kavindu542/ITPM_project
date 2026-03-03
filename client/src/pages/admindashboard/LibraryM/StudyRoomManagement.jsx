@@ -17,7 +17,13 @@ const INITIAL_ROOMS = [
   { id: 6, _id: '6', name: 'Room C2', floor: '3rd Floor', capacity: 12, status: 'Available', amenities: ['Wifi', 'Projector', 'AC', 'Coffee', 'Whiteboard'], openTime: '08:00', closeTime: '22:00', description: 'Premium conference room.' },
 ];
 
-const FLOORS = ['All', '1st Floor', '2nd Floor', '3rd Floor'];
+const FLOORS = ['All', '1', '2', '3', '4'];
+const formatFloor = (n) => {
+  const num = Number(n);
+  if (isNaN(num)) return n;
+  const suffix = num === 1 ? 'st' : num === 2 ? 'nd' : num === 3 ? 'rd' : 'th';
+  return `${num}${suffix} Floor`;
+};
 const STATUSES = ['Available', 'Occupied', 'Maintenance'];
 
 const AMENITY_LIST = [
@@ -262,7 +268,7 @@ function RoomCard({ room, onEdit, onDelete, onView }) {
             <div className="p-2.5 bg-indigo-50 rounded-xl"><DoorOpen className="h-5 w-5 text-indigo-600" /></div>
             <div>
               <div className="text-sm font-black text-gray-900">{room.name}</div>
-              <div className="text-xs text-gray-400">{room.floor}</div>
+              <div className="text-xs text-gray-400">{formatFloor(room.floor)}</div>
             </div>
           </div>
           <StatusBadge status={room.status} />
@@ -332,7 +338,8 @@ export default function StudyRoomManagement() {
       const mapped = (Array.isArray(rawData) ? rawData : []).map(r => ({
         ...r,
         id: r._id || r.id,
-        floor: r.floor != null ? `${r.floor}${r.floor === 1 ? 'st' : r.floor === 2 ? 'nd' : r.floor === 3 ? 'rd' : 'th'} Floor` : '1st Floor',
+        // Keep floor as a number
+        floor: r.floor != null ? Number(r.floor) : 1,
         status: r.isActive === false ? 'Maintenance' : (r.status || 'Available'),
         amenities: r.facilities || r.amenities || [],
         openTime: r.operatingHours?.monday?.start || '08:00',
@@ -356,8 +363,8 @@ export default function StudyRoomManagement() {
   // ── Filter ─────────────────────────────────────────────
   const filtered = rooms.filter(r => {
     const matchSearch = r.name?.toLowerCase().includes(search.toLowerCase()) ||
-      r.floor?.toLowerCase().includes(search.toLowerCase());
-    const matchFloor = floorFilter === 'All' || r.floor === floorFilter;
+      formatFloor(r.floor).toLowerCase().includes(search.toLowerCase());
+    const matchFloor = floorFilter === 'All' || String(r.floor) === floorFilter;
     const matchStatus = statusFilter === 'All' || r.status === statusFilter;
     return matchSearch && matchFloor && matchStatus;
   });
@@ -411,6 +418,15 @@ export default function StudyRoomManagement() {
         facilities: form.amenities,
         description: form.description,
         isActive: form.status === 'Available',
+        operatingHours: {
+          monday: { start: form.openTime, end: form.closeTime },
+          tuesday: { start: form.openTime, end: form.closeTime },
+          wednesday: { start: form.openTime, end: form.closeTime },
+          thursday: { start: form.openTime, end: form.closeTime },
+          friday: { start: form.openTime, end: form.closeTime },
+          saturday: { start: form.openTime, end: form.closeTime },
+          sunday: { start: form.openTime, end: form.closeTime },
+        }
       };
       if (editRoom) {
         await studyRoomService.update(editRoom._id, payload);
@@ -495,7 +511,8 @@ export default function StudyRoomManagement() {
           </div>
           <select value={floorFilter} onChange={e => { setFloorFilter(e.target.value); setPage(1); }}
             className="px-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-400 bg-white cursor-pointer">
-            {FLOORS.map(f => <option key={f} value={f}>{f}</option>)}
+            <option value="All">All Floors</option>
+            {FLOORS.filter(f => f !== 'All').map(f => <option key={f} value={f}>{formatFloor(f)}</option>)}
           </select>
           <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
             className="px-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-indigo-400 bg-white cursor-pointer">
@@ -555,7 +572,7 @@ export default function StudyRoomManagement() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-sm text-gray-600">{room.floor}</td>
+                    <td className="px-5 py-4 text-sm text-gray-600">{formatFloor(room.floor)}</td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-1.5">
                         <Users className="h-3.5 w-3.5 text-indigo-400" />
@@ -604,7 +621,7 @@ export default function StudyRoomManagement() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-400">{viewRoom.floor}</p>
+                <p className="text-xs text-gray-400">{formatFloor(viewRoom.floor)}</p>
                 <p className="text-lg font-black text-gray-900">{viewRoom.name}</p>
               </div>
               <StatusBadge status={viewRoom.status} />

@@ -1,6 +1,14 @@
 const mongoose = require('mongoose');
 
 const libraryReservationSchema = new mongoose.Schema({
+  userName: {
+    type: String,
+    default: ''
+  },
+  refName: {
+    type: String,
+    default: ''
+  },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -18,8 +26,12 @@ const libraryReservationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['Book', 'Study Room'],
+    enum: ['Book', 'Study Room', 'Seat'],
     required: [true, 'Reservation type is required']
+  },
+  seatNumber: {
+    type: String,
+    default: null
   },
   reservationDate: {
     type: Date,
@@ -56,7 +68,7 @@ const libraryReservationSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Pending', 'Confirmed', 'Cancelled', 'Completed', 'In Progress', 'Rejected'],
+    enum: ['Pending', 'Confirmed', 'Cancelled', 'Completed', 'In Progress', 'Rejected', 'Expired'],
     default: 'Pending'
   },
   cancelledAt: {

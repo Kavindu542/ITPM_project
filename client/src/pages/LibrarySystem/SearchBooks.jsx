@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Search, Download, Heart, X, Star, Filter, Eye, BookOpen, Layers, FileText, Globe, Zap, Brain, Sparkles, TrendingUp, Clock, Tag } from 'lucide-react';
 import { bookService } from '../../services/libraryService';
 
@@ -157,6 +158,15 @@ export default function SearchBooks() {
   }, [searchQuery]);
 
   const handleDownload = async (book) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('http://localhost:5000/api/library/my-library', {
+        bookId: book.id,
+        status: 'Downloaded'
+      }, { headers: { Authorization: `Bearer ${token}` } });
+    } catch (err) {
+      console.error('Failed to log download', err);
+    }
     const filename = `${String(book.title || 'resource').replace(/[^a-z0-9_\-\.]/gi, '_')}.pdf`;
     try {
       const response = await fetch(book.pdf);
@@ -190,6 +200,24 @@ export default function SearchBooks() {
         document.body.removeChild(a);
       } catch {
         window.open(book.pdf, '_blank', 'noopener,noreferrer');
+      }
+    }
+  };
+
+  const toggleFavorite = async (book, e) => {
+    e.stopPropagation();
+    const isFav = favorites.includes(book.id);
+    setFavorites(f => isFav ? f.filter(id => id !== book.id) : [...f, book.id]);
+
+    if (!isFav) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post('http://localhost:5000/api/library/my-library', {
+          bookId: book.id,
+          status: 'Favorite'
+        }, { headers: { Authorization: `Bearer ${token}` } });
+      } catch (err) {
+        console.error('Failed to favorite', err);
       }
     }
   };
@@ -397,7 +425,7 @@ export default function SearchBooks() {
                 {book.difficulty}
               </div>
               <button
-                onClick={() => setFavorites(f => f.includes(book.id) ? f.filter(id => id !== book.id) : [...f, book.id])}
+                onClick={(e) => toggleFavorite(book, e)}
                 className={`absolute top-4 right-4 p-3 rounded-xl backdrop-blur-md transition-all ${favorites.includes(book.id) ? 'bg-[#25f194] text-slate-900' : 'bg-black/20 text-white hover:bg-[#25f194]'}`}
               >
                 <Heart size={18} fill={favorites.includes(book.id) ? "currentColor" : "none"} />

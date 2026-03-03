@@ -229,7 +229,7 @@ function CustomUserMenu({ user, onProfile, onLogout }) {
         <div className="w-10 h-10 bg-[#1DB584] rounded-full flex items-center justify-center font-bold text-white text-lg shadow-md">
           {getInitial()}
         </div>
-        
+
         {/* User Info */}
         <div className="text-left hidden md:block">
           <p className="text-sm font-semibold text-gray-900 leading-tight">
@@ -239,13 +239,13 @@ function CustomUserMenu({ user, onProfile, onLogout }) {
             ID: {getStudentId()}
           </p>
         </div>
-        
+
         {/* Dropdown Arrow */}
         <div className="hidden md:block">
-          <svg 
-            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
-            fill="none" 
-            stroke="currentColor" 
+          <svg
+            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -256,11 +256,11 @@ function CustomUserMenu({ user, onProfile, onLogout }) {
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div 
-            className="fixed inset-0 z-[9998]" 
+          <div
+            className="fixed inset-0 z-[9998]"
             onClick={() => setIsOpen(false)}
           />
-          
+
           {/* Dropdown Menu */}
           <div className="user-menu-dropdown">
             {/* User Info Header in Dropdown */}
@@ -279,7 +279,7 @@ function CustomUserMenu({ user, onProfile, onLogout }) {
                 </div>
               </div>
             </div>
-            
+
             <div className="py-1">
               <button
                 onClick={handleProfileClick}
@@ -288,7 +288,7 @@ function CustomUserMenu({ user, onProfile, onLogout }) {
                 <User size={16} />
                 <span>View Profile</span>
               </button>
-              
+
               <button
                 onClick={handleLogoutClick}
                 className="user-menu-item text-red-600 hover:bg-red-50"
@@ -326,7 +326,7 @@ export default function LibrarySystem({ user, onLoggedOut }) {
     setActiveNav(navId);
     try {
       localStorage.setItem('cc_library_active_nav', navId);
-    } catch {}
+    } catch { }
   };
 
   const logout = async () => {
@@ -348,10 +348,10 @@ export default function LibrarySystem({ user, onLoggedOut }) {
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'books', label: 'Books', icon: BookOpen },
+    { id: 'digital', label: 'Books & Resources', icon: BookOpen },
     { id: 'search', label: 'Search', icon: Search },
     { id: 'rooms', label: 'Study Rooms', icon: Users },
-    { id: 'digital', label: 'Digital Resources', icon: Globe },
+    { id: 'digital_alt', label: 'Digital Resources', icon: Globe, hidden: true }, // Keeping for compatibility
     { id: 'mylibrary', label: 'My Library', icon: BookMarked }
   ];
 
@@ -362,25 +362,25 @@ export default function LibrarySystem({ user, onLoggedOut }) {
         return (
           <DashboardContent
             user={user}
-            onBrowseLibrary={() => handleNavChange('books')}
+            onBrowseLibrary={() => handleNavChange('digital')}
             onBrowseDigital={() => handleNavChange('digital')}
           />
         );
-      case 'books':
-        return <LibraryBooksWrapper user={user} onLoggedOut={onLoggedOut} />;
       case 'search':
         return <SearchBooks user={user} onLoggedOut={onLoggedOut} />;
       case 'rooms':
         return <StudyRooms user={user} onLoggedOut={onLoggedOut} />;
       case 'digital':
         return <DigitalResources user={user} onLoggedOut={onLoggedOut} />;
+      case 'books':
+        return <DigitalResources user={user} onLoggedOut={onLoggedOut} />; // Redirect Books to Digital too
       case 'mylibrary':
         return <MyLibrary user={user} onLoggedOut={onLoggedOut} />;
       default:
         return (
           <DashboardContent
             user={user}
-            onBrowseLibrary={() => handleNavChange('books')}
+            onBrowseLibrary={() => handleNavChange('digital')}
             onBrowseDigital={() => handleNavChange('digital')}
           />
         );
@@ -414,11 +414,10 @@ export default function LibrarySystem({ user, onLoggedOut }) {
               <button
                 key={item.id}
                 onClick={() => handleNavChange(item.id)}
-                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-3 hover:translate-x-1 animate-fade-in-up ${
-                  activeNav === item.id
-                    ? 'bg-[#25f194] text-gray-900 shadow-md'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
+                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-3 hover:translate-x-1 animate-fade-in-up ${activeNav === item.id
+                  ? 'bg-[#25f194] text-gray-900 shadow-md'
+                  : 'text-gray-600 hover:bg-gray-100'
+                  }`}
                 title={!sidebarOpen ? item.label : ''}
                 style={{ animationDelay: `${idx * 50}ms` }}
               >
@@ -434,7 +433,7 @@ export default function LibrarySystem({ user, onLoggedOut }) {
               onClick={() => {
                 const v = !sidebarOpen;
                 setSidebarOpen(v);
-                try { localStorage.setItem('cc_library_sidebar_open', String(v)); } catch {}
+                try { localStorage.setItem('cc_library_sidebar_open', String(v)); } catch { }
               }}
               className="w-full px-4 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
               title={sidebarOpen ? 'Collapse' : 'Expand'}
@@ -498,7 +497,7 @@ function DashboardContent({ user, onBrowseLibrary, onBrowseDigital }) {
   };
 
   const Card = ({ children, className = '', delay = 0 }) => (
-    <div 
+    <div
       className={`bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 hover-lift animate-scale-in ${className}`}
       style={{ animationDelay: `${delay}ms` }}
     >
@@ -664,10 +663,10 @@ function DashboardContent({ user, onBrowseLibrary, onBrowseDigital }) {
             ].map((book, idx) => (
               <Card key={idx} className="overflow-hidden bg-white/95 backdrop-blur group" delay={idx * 100}>
                 <div className="relative overflow-hidden h-48">
-                  <img 
-                    src={book.image} 
-                    alt={book.title} 
-                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" 
+                  <img
+                    src={book.image}
+                    alt={book.title}
+                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 </div>
                 <div className="p-4 animate-fade-in-up" style={{ animationDelay: `${idx * 100}ms` }}>
@@ -678,7 +677,7 @@ function DashboardContent({ user, onBrowseLibrary, onBrowseDigital }) {
                   <p className="text-xs text-gray-500 mt-1">{book.author}</p>
                   <div className="flex items-center justify-between mt-3">
                     <span>⭐ {book.rating}</span>
-                    <Button>Borrow</Button>
+                    <Button onClick={onBrowseDigital}>Borrow</Button>
                   </div>
                 </div>
               </Card>

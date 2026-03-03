@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Search, Download, Heart, X, Star, Zap, 
+import axios from 'axios';
+import {
+  Search, Download, Heart, X, Star, Zap,
   ArrowRight, Filter, Bookmark, Layers,
   FileText, Globe, ShieldCheck
 } from 'lucide-react';
@@ -54,6 +55,15 @@ export default function LibraryBooks() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleDownload = async (book) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('http://localhost:5000/api/library/my-library', {
+        bookId: book.id,
+        status: 'Downloaded'
+      }, { headers: { Authorization: `Bearer ${token}` } });
+    } catch (err) {
+      console.error('Failed to log download', err);
+    }
     const filename = `${String(book.title || 'resource').replace(/[^a-z0-9_\-\.]/gi, '_')}.pdf`;
     try {
       const response = await fetch(book.pdf);
@@ -96,96 +106,114 @@ export default function LibraryBooks() {
   };
 
   const [books, setBooks] = useState([
-    { 
-      id: 1, 
-      title: "Mastering Strategy", 
-      author: "Sun Tzu", 
-      rating: 4.9, 
-      category: "Strategy", 
-      pages: 120, 
-      size: "2.5 MB", 
+    {
+      id: 1,
+      title: "Mastering Strategy",
+      author: "Sun Tzu",
+      rating: 4.9,
+      category: "Strategy",
+      pages: 120,
+      size: "2.5 MB",
       image: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=800", // High contrast
-      pdf: "https://files.libertyfund.org/files/2070/SunTzu_1399_LFeBk.pdf" 
+      pdf: "https://files.libertyfund.org/files/2070/SunTzu_1399_LFeBk.pdf"
     },
-    { 
-      id: 2, 
-      title: "Architectural Wonders", 
-      author: "Frank Wright", 
-      rating: 4.7, 
-      category: "Design", 
-      pages: 310, 
-      size: "15.4 MB", 
+    {
+      id: 2,
+      title: "Architectural Wonders",
+      author: "Frank Wright",
+      rating: 4.7,
+      category: "Design",
+      pages: 310,
+      size: "15.4 MB",
       image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=800", // High contrast
-      pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" 
+      pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
     },
-    { 
-      id: 3, 
-      title: "Cosmos & Stars", 
-      author: "Carl Sagan", 
-      rating: 5.0, 
-      category: "Science", 
-      pages: 450, 
-      size: "8.9 MB", 
-      image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=800", 
-      pdf: "https://sedl.org/afterschool/toolkits/science/pdf/astronomy_star_power.pdf" 
+    {
+      id: 3,
+      title: "Cosmos & Stars",
+      author: "Carl Sagan",
+      rating: 5.0,
+      category: "Science",
+      pages: 450,
+      size: "8.9 MB",
+      image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=800",
+      pdf: "https://sedl.org/afterschool/toolkits/science/pdf/astronomy_star_power.pdf"
     },
-    { 
-      id: 4, 
-      title: "Legal Foundations", 
-      author: "Justice Marshall", 
-      rating: 4.6, 
-      category: "Law", 
-      pages: 1200, 
-      size: "22.1 MB", 
-      image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=800", 
-      pdf: "https://unstats.un.org/unsd/snaama/Introduction.pdf" 
+    {
+      id: 4,
+      title: "Legal Foundations",
+      author: "Justice Marshall",
+      rating: 4.6,
+      category: "Law",
+      pages: 1200,
+      size: "22.1 MB",
+      image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=800",
+      pdf: "https://unstats.un.org/unsd/snaama/Introduction.pdf"
     },
-    { 
-      id: 5, 
-      title: "Digital Innovation", 
-      author: "Steve Jobs", 
-      rating: 4.8, 
-      category: "Technology", 
-      pages: 280, 
-      size: "10.5 MB", 
-      image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=800", 
-      pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" 
+    {
+      id: 5,
+      title: "Digital Innovation",
+      author: "Steve Jobs",
+      rating: 4.8,
+      category: "Technology",
+      pages: 280,
+      size: "10.5 MB",
+      image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=800",
+      pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
     },
-    { 
-      id: 6, 
-      title: "Ancient Wisdom", 
-      author: "Aristotle", 
-      rating: 4.5, 
-      category: "Philosophy", 
-      pages: 500, 
-      size: "5.2 MB", 
-      image: "https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&q=80&w=800", 
-      pdf: "https://www.ucl.ac.uk/~uccanev/booklet.pdf" 
+    {
+      id: 6,
+      title: "Ancient Wisdom",
+      author: "Aristotle",
+      rating: 4.5,
+      category: "Philosophy",
+      pages: 500,
+      size: "5.2 MB",
+      image: "https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&q=80&w=800",
+      pdf: "https://www.ucl.ac.uk/~uccanev/booklet.pdf"
     },
-    { 
-      id: 7, 
-      title: "Cyber Security", 
-      author: "Kevin Mitnick", 
-      rating: 4.9, 
-      category: "IT Security", 
-      pages: 420, 
-      size: "12.0 MB", 
-      image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800", 
-      pdf: "https://www.antennahouse.com/hubfs/xsl-fo-sample/pdf/basic-link-1.pdf" 
+    {
+      id: 7,
+      title: "Cyber Security",
+      author: "Kevin Mitnick",
+      rating: 4.9,
+      category: "IT Security",
+      pages: 420,
+      size: "12.0 MB",
+      image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800",
+      pdf: "https://www.antennahouse.com/hubfs/xsl-fo-sample/pdf/basic-link-1.pdf"
     },
-    { 
-      id: 8, 
-      title: "The Creative Mind", 
-      author: "Ken Robinson", 
-      rating: 4.8, 
-      category: "Education", 
-      pages: 190, 
-      size: "6.7 MB", 
-      image: "https://images.unsplash.com/photo-1543004218-ee141104638e?auto=format&fit=crop&q=80&w=800", 
-      pdf: "https://www.nrel.gov/docs/fy15osti/64013.pdf" 
+    {
+      id: 8,
+      title: "The Creative Mind",
+      author: "Ken Robinson",
+      rating: 4.8,
+      category: "Education",
+      pages: 190,
+      size: "6.7 MB",
+      image: "https://images.unsplash.com/photo-1543004218-ee141104638e?auto=format&fit=crop&q=80&w=800",
+      pdf: "https://www.nrel.gov/docs/fy15osti/64013.pdf"
     }
   ]);
   const [usingDummy, setUsingDummy] = useState(false);
+
+  const toggleFavorite = async (book, e) => {
+    e.stopPropagation();
+    const isFav = favorites.includes(book.id);
+    setFavorites(p => isFav ? p.filter(id => id !== book.id) : [...p, book.id]);
+
+    if (!isFav) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.post('http://localhost:5000/api/library/my-library', {
+          bookId: book.id,
+          status: 'Favorite'
+        }, { headers: { Authorization: `Bearer ${token}` } });
+      } catch (err) {
+        console.error('Failed to favorite', err);
+      }
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -220,9 +248,9 @@ export default function LibraryBooks() {
     })();
     return () => { mounted = false; };
   }, []);
-  
-  const filteredBooks = books.filter(b => 
-    b.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+
+  const filteredBooks = books.filter(b =>
+    b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     b.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -238,9 +266,9 @@ export default function LibraryBooks() {
         <div className="max-w-xl mx-auto relative">
           <div className="relative flex items-center bg-white shadow-xl rounded-2xl overflow-hidden border border-slate-100">
             <Search className="ml-5 text-slate-400" size={20} />
-            <input 
-              type="text" 
-              placeholder="Filter resources..." 
+            <input
+              type="text"
+              placeholder="Filter resources..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full px-4 py-4 outline-none text-slate-700 font-medium"
@@ -252,38 +280,38 @@ export default function LibraryBooks() {
       {/* GRID */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {filteredBooks.map((book, i) => (
-          <div 
-            key={book.id} 
+          <div
+            key={book.id}
             className="premium-card group rounded-3xl overflow-hidden"
             style={{ animation: `fadeInUp 0.5s ease-out forwards ${i * 0.05}s`, opacity: 0 }}
           >
             <div className="image-container relative h-48 overflow-hidden">
               <img src={book.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
-              <button 
-                onClick={(e) => { e.stopPropagation(); setFavorites(p => p.includes(book.id) ? p.filter(id => id !== book.id) : [...p, book.id]) }}
+              <button
+                onClick={(e) => toggleFavorite(book, e)}
                 className={`absolute top-4 right-4 p-2.5 rounded-xl backdrop-blur-md transition-all ${favorites.includes(book.id) ? 'bg-[#25f194] text-slate-900' : 'bg-black/20 text-white hover:bg-[#25f194]'}`}
               >
                 <Heart size={18} fill={favorites.includes(book.id) ? "currentColor" : "none"} />
               </button>
             </div>
-            
+
             <div className="p-6">
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 block mb-2">{book.category}</span>
               <h3 className="text-lg font-bold text-slate-900 line-clamp-1 mb-4">{book.title}</h3>
-              
+
               <div className="flex items-center justify-between text-xs text-slate-400 font-bold mb-5">
                 <div className="flex items-center gap-1.5"><Star size={14} className="text-amber-400 fill-amber-400" /> {book.rating}</div>
                 <div className="flex items-center gap-1.5"><FileText size={14} /> {book.size}</div>
               </div>
 
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => setSelectedBook(book)}
                   className="flex-1 bg-slate-900 text-white py-3 rounded-xl text-[11px] font-black uppercase tracking-wider hover:bg-emerald-600 transition-colors"
                 >
                   Details
                 </button>
-                <button 
+                <button
                   onClick={(e) => { e.stopPropagation(); handleDownload(book); }}
                   className="bg-[#25f194] text-slate-900 p-3 rounded-xl hover:bg-emerald-400 transition-colors"
                 >
@@ -309,7 +337,7 @@ export default function LibraryBooks() {
                   <ShieldCheck size={20} className="text-emerald-500" />
                 </div>
               </div>
-              
+
               <div className="h-60 rounded-3xl overflow-hidden shadow-lg">
                 <img src={selectedBook.image} className="w-full h-full object-cover" alt="" />
               </div>
@@ -343,7 +371,7 @@ export default function LibraryBooks() {
             </div>
 
             <div className="p-8 bg-slate-50 mt-auto">
-              <button 
+              <button
                 onClick={() => handleDownload(selectedBook)}
                 className="w-full py-5 rounded-2xl bg-[#25f194] text-slate-900 font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-emerald-400 transition-all shadow-lg"
               >

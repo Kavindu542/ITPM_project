@@ -14,6 +14,8 @@ const requireAuth = (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
+    if (decoded.sub && !decoded.id) req.user.id = decoded.sub;
+    if (decoded.sub && !decoded._id) req.user._id = decoded.sub;
     next();
   } catch {
     return res.status(401).json({ success: false, message: 'Unauthorized' });

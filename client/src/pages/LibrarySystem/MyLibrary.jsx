@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { BookOpen, Download, Heart, Star, Clock, Search, X, Eye, Trash2, Share2, Edit, Plus, ChevronRight, Zap, Brain, Sparkles, BookMarked, FileText, Headphones, Play } from 'lucide-react';
 
 const styles = `
@@ -49,7 +50,7 @@ const styles = `
 
 const Button = ({ children, className = '', variant = 'default', size = 'md', ...props }) => {
   const baseStyles = 'font-bold rounded-2xl transition-all duration-300 flex items-center justify-center gap-2';
-  
+
   const variants = {
     default: 'bg-slate-900 text-white hover:bg-emerald-600 hover:shadow-lg',
     primary: 'bg-[#25f194] text-slate-900 hover:bg-emerald-400 hover:shadow-xl hover:scale-105',
@@ -76,15 +77,71 @@ const Button = ({ children, className = '', variant = 'default', size = 'md', ..
 
 export default function MyLibrary() {
   const [selectedItem, setSelectedItem] = useState(null);
+  const [libraryItems, setLibraryItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('favorites');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('Recent');
 
+  useEffect(() => {
+    fetchMyLibrary();
+  }, []);
+
+  const fetchMyLibrary = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const res = await axios.get('http://localhost:5000/api/library/my-library', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.success) {
+        setLibraryItems(res.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch library', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeFromLibrary = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/library/my-library/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchMyLibrary();
+    } catch (err) {
+      console.error('Failed to remove item', err);
+    }
+  };
+
+  const filteredItems = libraryItems.filter(item => {
+    if (activeTab === 'favorites' && item.status === 'Favorite') return true;
+    if (activeTab === 'downloaded' && item.status === 'Downloaded') return true;
+    return false;
+  }).filter(item => {
+    if (!searchQuery) return true;
+    const title = item.bookId?.title || '';
+    const author = item.bookId?.author || '';
+    return title.toLowerCase().includes(searchQuery.toLowerCase()) || author.toLowerCase().includes(searchQuery.toLowerCase());
+  }).sort((a, b) => {
+    if (sortBy === 'Title') {
+      return (a.bookId?.title || '').localeCompare(b.bookId?.title || '');
+    }
+    if (sortBy === 'Author') {
+      return (a.bookId?.author || '').localeCompare(b.bookId?.author || '');
+    }
+    // Default: Recent (by date added/updated)
+    return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0);
+  });
+
+  const favoritesCount = libraryItems.filter(i => i.status === 'Favorite').length;
+  const downloadedCount = libraryItems.filter(i => i.status === 'Downloaded').length;
+
   const tabs = [
-    { id: 'favorites', label: 'Favorites', icon: Heart, count: 0 },
-    { id: 'downloaded', label: 'Downloaded', icon: Download, count: 0 },
-    { id: 'history', label: 'Reading History', icon: Clock, count: 0 },
-    { id: 'readingList', label: 'Reading List', icon: BookMarked, count: 0 }
+    { id: 'favorites', label: 'Favorites', icon: Heart, count: favoritesCount },
+    { id: 'downloaded', label: 'Downloaded', icon: Download, count: downloadedCount }
   ];
 
   return (
@@ -98,7 +155,7 @@ export default function MyLibrary() {
           Personal Library
           <Sparkles size={16} />
         </div>
-        
+
         <h1 className="text-6xl md:text-7xl font-black text-slate-900 tracking-tight mb-6">
           Your Digital <span className="bg-gradient-to-r from-emerald-500 to-blue-500 bg-clip-text text-transparent">Collection</span>
         </h1>
@@ -107,22 +164,14 @@ export default function MyLibrary() {
         </p>
 
         {/* LIBRARY STATS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto mb-16">
+        <div className="grid grid-cols-2 gap-6 max-w-2xl mx-auto mb-16">
           <div className="premium-card p-6 text-center">
-            <div className="text-3xl font-black text-emerald-500 mb-2">0</div>
+            <div className="text-3xl font-black text-emerald-500 mb-2">{favoritesCount}</div>
             <div className="text-sm font-bold text-slate-600 uppercase tracking-wider">Favorites</div>
           </div>
           <div className="premium-card p-6 text-center">
-            <div className="text-3xl font-black text-blue-500 mb-2">0</div>
+            <div className="text-3xl font-black text-blue-500 mb-2">{downloadedCount}</div>
             <div className="text-sm font-bold text-slate-600 uppercase tracking-wider">Downloaded</div>
-          </div>
-          <div className="premium-card p-6 text-center">
-            <div className="text-3xl font-black text-amber-500 mb-2">0</div>
-            <div className="text-sm font-bold text-slate-600 uppercase tracking-wider">Read</div>
-          </div>
-          <div className="premium-card p-6 text-center">
-            <div className="text-3xl font-black text-rose-500 mb-2">0%</div>
-            <div className="text-sm font-bold text-slate-600 uppercase tracking-wider">Progress</div>
           </div>
         </div>
       </header>
@@ -136,17 +185,15 @@ export default function MyLibrary() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-bold transition-all relative ${
-                  activeTab === tab.id 
-                    ? 'bg-[#25f194] text-slate-900 shadow-lg' 
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
-                }`}
+                className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-bold transition-all relative ${activeTab === tab.id
+                  ? 'bg-[#25f194] text-slate-900 shadow-lg'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  }`}
               >
                 <IconComponent size={20} />
                 <span className="hidden md:block">{tab.label}</span>
-                <span className={`text-xs px-2 py-1 rounded-full font-black ${
-                  activeTab === tab.id ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-600'
-                }`}>
+                <span className={`text-xs px-2 py-1 rounded-full font-black ${activeTab === tab.id ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-600'
+                  }`}>
                   {tab.count}
                 </span>
               </button>
@@ -162,15 +209,15 @@ export default function MyLibrary() {
             <div className="absolute inset-y-0 left-6 flex items-center">
               <Search className="text-slate-400" size={20} />
             </div>
-            <input 
-              type="text" 
-              placeholder="Search your library..." 
+            <input
+              type="text"
+              placeholder="Search your library..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-white/80 backdrop-blur-xl px-16 py-4 rounded-2xl border border-white/50 outline-none text-slate-800 placeholder-slate-400 shadow-lg focus:border-[#25f194] focus:shadow-xl transition-all"
             />
             {searchQuery && (
-              <button 
+              <button
                 onClick={() => setSearchQuery("")}
                 className="absolute inset-y-0 right-6 flex items-center hover:bg-slate-100 rounded-lg p-1 transition-colors"
               >
@@ -178,7 +225,7 @@ export default function MyLibrary() {
               </button>
             )}
           </div>
-          
+
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -188,128 +235,47 @@ export default function MyLibrary() {
             <option>Title</option>
             <option>Author</option>
           </select>
-
-          <Button variant="primary" size="lg">
-            <Plus size={20} />
-            Add Resource
-          </Button>
         </div>
       </div>
 
-      {/* EMPTY STATE */}
-      <div className="max-w-7xl mx-auto mb-20">
-        <div className="text-center py-20">
+      {filteredItems.length === 0 && !loading && (
+        <div className="max-w-7xl mx-auto mb-20 text-center py-20">
           <BookOpen className="mx-auto mb-6 text-slate-300" size={80} />
-          <h3 className="text-3xl font-black text-slate-900 mb-4">Your Library is Empty</h3>
+          <h3 className="text-3xl font-black text-slate-900 mb-4">No {activeTab} yet</h3>
           <p className="text-slate-500 mb-8 max-w-md mx-auto">
-            Start building your personal digital library by adding your favorite books, articles, and resources.
+            You don't have any items in this category. Browse the library to add some!
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="primary" size="lg">
-              <Plus size={20} />
-              Add Your First Resource
-            </Button>
-            <Button variant="secondary" size="lg">
-              <Search size={20} />
-              Browse Digital Resources
-            </Button>
-          </div>
         </div>
-      </div>
+      )}
 
-      {/* PLACEHOLDER CARDS FOR DESIGN PREVIEW */}
       <div className="max-w-7xl mx-auto mb-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {/* Sample Card 1 */}
-          <div className="premium-card group rounded-3xl overflow-hidden opacity-30">
-            <div className="image-container relative h-48 overflow-hidden">
-              <div className="w-full h-full bg-gradient-to-br from-emerald-400 to-blue-500"></div>
-              <div className="absolute top-4 left-4">
-                <span className="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/90 text-white">Reading</span>
-              </div>
-              <div className="absolute top-4 right-4 flex items-center gap-1 bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded-xl text-xs font-bold">
-                <Star size={12} className="fill-amber-400 text-amber-400" />
-                4.8
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <BookOpen size={16} className="text-emerald-600" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">eBook</span>
+          {filteredItems.map((item, idx) => (
+            <div key={item._id} className="premium-card group rounded-3xl overflow-hidden" style={{ animation: `fadeInUp 0.6s ease-out forwards ${idx * 0.1}s`, opacity: 0 }}>
+              <div className="image-container relative h-48 overflow-hidden bg-gradient-to-br from-emerald-400 to-blue-500">
+                {item.bookId?.coverImage && (
+                  <img src={`http://localhost:5000/${item.bookId.coverImage}`} alt="cover" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                )}
+                <div className="absolute top-4 left-4">
+                  <span className={`px-3 py-1 rounded-xl text-xs font-bold text-white ${item.status === 'Favorite' ? 'bg-rose-500/90' : 'bg-blue-500/90'}`}>
+                    {item.status}
+                  </span>
                 </div>
-                <span className="text-xs text-slate-500">12.3 MB</span>
               </div>
-              <h3 className="text-lg font-bold text-slate-900 line-clamp-2 mb-2">Sample Book Title</h3>
-              <p className="text-sm text-slate-600 mb-4">By Sample Author</p>
-              <div className="flex gap-2">
-                <Button variant="primary" className="flex-1 text-xs font-black uppercase tracking-wider" size="sm">
-                  Continue Reading
-                </Button>
-                <Button variant="secondary" size="sm" className="p-3">
-                  <Eye size={16} />
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Sample Card 2 */}
-          <div className="premium-card group rounded-3xl overflow-hidden opacity-30">
-            <div className="image-container relative h-48 overflow-hidden">
-              <div className="w-full h-full bg-gradient-to-br from-purple-400 to-pink-500"></div>
-              <div className="absolute top-4 left-4">
-                <span className="px-3 py-1 rounded-xl text-xs font-bold bg-blue-500/90 text-white">Completed</span>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Play size={16} className="text-emerald-600" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Video</span>
+              <div className="p-6">
+                <h3 className="text-lg font-bold text-slate-900 line-clamp-2 mb-2">{item.bookId?.title || 'Unknown Title'}</h3>
+                <p className="text-sm text-slate-600 mb-4">By {item.bookId?.author || 'Unknown Author'}</p>
+                <div className="flex gap-2">
+                  <Button variant="primary" className="flex-1 text-xs font-black uppercase tracking-wider" size="sm" onClick={() => setSelectedItem(item)}>
+                    Details
+                  </Button>
+                  <Button variant="danger" size="sm" className="p-3" onClick={(e) => { e.stopPropagation(); removeFromLibrary(item._id); }}>
+                    <Trash2 size={16} />
+                  </Button>
                 </div>
-                <span className="text-xs text-slate-500">2.5 GB</span>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 line-clamp-2 mb-2">Sample Course</h3>
-              <p className="text-sm text-slate-600 mb-4">By Sample Instructor</p>
-              <div className="flex gap-2">
-                <Button variant="default" className="flex-1 text-xs font-black uppercase tracking-wider" size="sm">
-                  Watch Again
-                </Button>
-                <Button variant="secondary" size="sm" className="p-3">
-                  <Eye size={16} />
-                </Button>
               </div>
             </div>
-          </div>
-
-          {/* Sample Card 3 */}
-          <div className="premium-card group rounded-3xl overflow-hidden opacity-30">
-            <div className="image-container relative h-48 overflow-hidden">
-              <div className="w-full h-full bg-gradient-to-br from-amber-400 to-orange-500"></div>
-              <div className="absolute top-4 left-4">
-                <span className="px-3 py-1 rounded-xl text-xs font-bold bg-amber-500/90 text-white">To Read</span>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <FileText size={16} className="text-emerald-600" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Paper</span>
-                </div>
-                <span className="text-xs text-slate-500">3.2 MB</span>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 line-clamp-2 mb-2">Research Paper</h3>
-              <p className="text-sm text-slate-600 mb-4">By Researchers</p>
-              <div className="flex gap-2">
-                <Button variant="primary" className="flex-1 text-xs font-black uppercase tracking-wider" size="sm">
-                  Start Reading
-                </Button>
-                <Button variant="secondary" size="sm" className="p-3">
-                  <Eye size={16} />
-                </Button>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -322,47 +288,32 @@ export default function MyLibrary() {
                 <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors" onClick={() => setSelectedItem(null)}>
                   <X size={24} />
                 </button>
-                <div className="flex gap-2">
-                  <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                    <Share2 size={20} className="text-slate-400" />
-                  </button>
-                  <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                    <Edit size={20} className="text-slate-400" />
-                  </button>
-                </div>
               </div>
-              
+
               <div className="h-48 rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-emerald-400 to-blue-500">
+                {selectedItem.bookId?.coverImage && (
+                  <img src={`http://localhost:5000/${selectedItem.bookId.coverImage}`} alt="cover" className="w-full h-full object-cover" />
+                )}
               </div>
 
               <div className="space-y-2">
-                <h2 className="text-2xl font-black text-slate-900">Resource Title</h2>
-                <p className="text-sm text-emerald-600 font-bold uppercase tracking-widest">Author Name</p>
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-xl">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-bold text-slate-700">Reading Progress</span>
-                  <span className="text-sm font-bold text-slate-900">0%</span>
-                </div>
-                <div className="w-full bg-slate-200 rounded-full h-3">
-                  <div className="bg-[#25f194] h-3 rounded-full progress-bar" style={{ width: '0%' }} />
-                </div>
+                <h2 className="text-2xl font-black text-slate-900">{selectedItem.bookId?.title}</h2>
+                <p className="text-sm text-emerald-600 font-bold uppercase tracking-widest">{selectedItem.bookId?.author}</p>
               </div>
             </div>
 
             <div className="p-6 bg-slate-50 space-y-3">
-              <Button variant="primary" className="w-full py-4 text-sm font-black uppercase tracking-widest">
-                Start Reading
-                <ChevronRight size={20} />
-              </Button>
+              {selectedItem.bookId?.fileUrl && (
+                <a href={`http://localhost:5000/${selectedItem.bookId.fileUrl}`} target="_blank" rel="noreferrer" className="block w-full">
+                  <Button variant="primary" className="w-full py-4 text-sm font-black uppercase tracking-widest">
+                    Read / Download
+                    <ChevronRight size={20} />
+                  </Button>
+                </a>
+              )}
               <div className="flex gap-3">
-                <Button variant="secondary" className="flex-1">
-                  <Heart size={18} />
-                  Add to Favorites
-                </Button>
-                <Button variant="danger" size="md" className="p-3">
-                  <Trash2 size={18} />
+                <Button variant="danger" size="md" className="p-3 w-full" onClick={() => { removeFromLibrary(selectedItem._id); setSelectedItem(null); }}>
+                  <Trash2 size={18} /> Remove from Library
                 </Button>
               </div>
             </div>
