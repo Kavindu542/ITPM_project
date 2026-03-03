@@ -148,6 +148,9 @@ export default function Home({ user, onLoggedOut }) {
         const pe = await clubService.publicEvents();
         if (cancelled) return;
         setPublicEvents(pe?.events || []);
+      } catch (e) {
+        if (cancelled) return;
+        setPublicEvents([]);
       } finally {
         if (!cancelled) setFeedLoading(false);
       }

@@ -13,9 +13,6 @@ const base = import.meta.env.VITE_API_URL || defaultBase;
 export const api = axios.create({
   baseURL: `${base}/api`,
   withCredentials: true,
-  timeout: 20000,
+  timeout: 60000,
   timeoutErrorMessage: "Request timed out",
-  headers: {
-    "Content-Type": "application/json",
-  },
 });

@@ -6,6 +6,7 @@ const Club = require("../models/Club");
 const ClubMember = require("../models/ClubMember");
 const Meeting = require("../models/Meeting");
 const Event = require("../models/Event");
+const ClubMembershipApplication = require("../models/ClubMembershipApplication");
 
 const router = express.Router();
 
@@ -175,6 +176,50 @@ router.post("/events", requireAuth, async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({ message: "Failed to create event" });
+  }
+});
+
+// Leader: list membership applications for their club
+router.get("/membership-applications", requireAuth, async (req, res) => {
+  try {
+    const club = await Club.findOne({ leader: req.user._id })
+      .select("_id name")
+      .lean();
+    if (!club) {
+      return res.status(403).json({ message: "You are not a club leader" });
+    }
+
+    const apps = await ClubMembershipApplication.find({ club: club._id })
+      .sort({ createdAt: -1 })
+      .populate("applicant", "_id name email studentId department year")
+      .lean();
+
+    const items = (apps || []).map((a) => ({
+      id: a._id,
+      createdAt: a.createdAt,
+      club: { id: club._id, name: club.name },
+      applicant: a.applicant
+        ? {
+            id: a.applicant._id,
+            name: a.applicant.name,
+            email: a.applicant.email,
+            studentId: a.applicant.studentId || null,
+            department: a.applicant.department || null,
+            year: a.applicant.year || null,
+          }
+        : null,
+      school: a.school || {},
+      personal: a.personal || {},
+      contact: a.contact || {},
+      languages: Array.isArray(a.languages) ? a.languages : [],
+      educationQualifications: a.educationQualifications || "",
+      sportsQualifications: a.sportsQualifications || "",
+      notes: a.notes || "",
+    }));
+
+    return res.json({ items, count: items.length });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch applications" });
   }
 });
 router.get("/eligible-students", requireAuth, async (req, res) => {
