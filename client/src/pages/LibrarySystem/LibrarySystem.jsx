@@ -348,10 +348,9 @@ export default function LibrarySystem({ user, onLoggedOut }) {
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'digital', label: 'Books & Resources', icon: BookOpen },
     { id: 'search', label: 'Search', icon: Search },
     { id: 'rooms', label: 'Study Rooms', icon: Users },
-    { id: 'digital_alt', label: 'Digital Resources', icon: Globe, hidden: true }, // Keeping for compatibility
+    { id: 'digital', label: 'Digital Resources', icon: Globe },
     { id: 'mylibrary', label: 'My Library', icon: BookMarked }
   ];
 
@@ -408,7 +407,6 @@ export default function LibrarySystem({ user, onLoggedOut }) {
             </div>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             {navItems.map((item, idx) => (
               <button
@@ -481,8 +479,27 @@ function LibraryBooksWrapper({ user, onLoggedOut }) {
   );
 }
 
-// DASHBOARD CONTENT (keep existing DashboardContent component unchanged)
+// DASHBOARD CONTENT
 function DashboardContent({ user, onBrowseLibrary, onBrowseDigital }) {
+  const [featuredBooks, setFeaturedBooks] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        const { bookService } = await import('../../services/libraryService');
+        const res = await bookService.getAll();
+        const data = res?.data?.data || res?.data || [];
+        setFeaturedBooks(Array.isArray(data) ? data.slice(0, 4) : []);
+      } catch (err) {
+        console.error("Failed to fetch featured books", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFeatured();
+  }, []);
+
   const Button = ({ children, className = '', variant = 'default', ...props }) => {
     const baseStyles = 'inline-flex items-center justify-center font-bold rounded-lg transition-all duration-300 transform hover:scale-105 hover:-translate-y-1';
     const variants = {
@@ -626,63 +643,38 @@ function DashboardContent({ user, onBrowseLibrary, onBrowseDigital }) {
         {/* Featured Books */}
         <div>
           <h3 className="text-xl font-bold text-gray-900 mb-4 animate-fade-in">Featured Books</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                title: 'Clean Code',
-                author: 'Robert C. Martin',
-                rating: 4.8,
-                image:
-                  'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80',
-                status: 'Available',
-              },
-              {
-                title: 'The Pragmatic Programmer',
-                author: 'David Thomas',
-                rating: 4.7,
-                image:
-                  'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80',
-                status: 'Issued',
-              },
-              {
-                title: 'Design Patterns',
-                author: 'Gang of Four',
-                rating: 4.6,
-                image:
-                  'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=600&q=80',
-                status: 'Available',
-              },
-              {
-                title: 'System Design Interview',
-                author: 'Alex Xu',
-                rating: 4.9,
-                image:
-                  'https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=600&q=80',
-                status: 'Available',
-              },
-            ].map((book, idx) => (
-              <Card key={idx} className="overflow-hidden bg-white/95 backdrop-blur group" delay={idx * 100}>
-                <div className="relative overflow-hidden h-48">
-                  <img
-                    src={book.image}
-                    alt={book.title}
-                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
-                <div className="p-4 animate-fade-in-up" style={{ animationDelay: `${idx * 100}ms` }}>
-                  <Badge variant={book.status === 'Available' ? 'success' : 'warning'}>
-                    {book.status}
-                  </Badge>
-                  <h4 className="font-bold text-gray-900 mt-2 line-clamp-2">{book.title}</h4>
-                  <p className="text-xs text-gray-500 mt-1">{book.author}</p>
-                  <div className="flex items-center justify-between mt-3">
-                    <span>⭐ {book.rating}</span>
-                    <Button onClick={onBrowseDigital}>Borrow</Button>
+          {loading ? (
+            <div className="flex justify-center p-12"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500"></div></div>
+          ) : featuredBooks.length === 0 ? (
+            <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-10 text-center border border-dashed border-gray-300">
+              <p className="text-gray-500 font-medium">No featured books available at the moment.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredBooks.map((book, idx) => (
+                <Card key={idx} className="overflow-hidden bg-white/95 backdrop-blur group" delay={idx * 100}>
+                  <div className="relative overflow-hidden h-48">
+                    <img
+                      src={book.thumbnailImage || book.cover || 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80'}
+                      alt={book.title}
+                      className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
                   </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                  <div className="p-4 animate-fade-in-up" style={{ animationDelay: `${idx * 100}ms` }}>
+                    <Badge variant={book.status === 'Available' ? 'success' : 'warning'}>
+                      {book.status || 'Available'}
+                    </Badge>
+                    <h4 className="font-bold text-gray-900 mt-2 line-clamp-2">{book.title}</h4>
+                    <p className="text-xs text-gray-500 mt-1">{book.author}</p>
+                    <div className="flex items-center justify-between mt-3">
+                      <span>⭐ {book.rating || '4.8'}</span>
+                      <Button onClick={onBrowseDigital}>Borrow</Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
