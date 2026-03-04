@@ -89,9 +89,7 @@ export default function Hostel({ user, onLoggedOut }) {
     if (!['dashboard', 'laundry', 'laundry-bookings'].includes(activeTab)) return;
 
     loadLaundryShops();
-    if (activeTab === 'laundry-bookings') {
-      loadMyLaundryBookings();
-    }
+    loadMyLaundryBookings();
   }, [activeTab, applicationStatus]);
 
   const checkApplicationStatus = async () => {
@@ -215,6 +213,23 @@ export default function Hostel({ user, onLoggedOut }) {
     } finally {
       setBookingSubmitting(false);
     }
+  };
+
+  const getLatestBookingForShop = (shopId) => {
+    if (!shopId) return null;
+    const relatedBookings = laundryBookings.filter((booking) => {
+      const bookingShopId = booking?.shop?._id || booking?.shop;
+      return String(bookingShopId || '') === String(shopId);
+    });
+    if (relatedBookings.length === 0) return null;
+    return relatedBookings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+  };
+
+  const statusBadgeClass = (status) => {
+    if (status === 'accepted') return 'bg-blue-100 text-blue-700';
+    if (status === 'completed') return 'bg-green-100 text-green-700';
+    if (status === 'cancelled') return 'bg-red-100 text-red-700';
+    return 'bg-yellow-100 text-yellow-700';
   };
 
   const handleInputChange = (e) => {
@@ -705,6 +720,14 @@ export default function Hostel({ user, onLoggedOut }) {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {laundryShops.slice(0, 2).map((shop) => (
                           <div key={shop._id} className="rounded-xl border border-gray-200 bg-white p-4">
+                            {getLatestBookingForShop(shop._id) ? (
+                              <div className="mb-2 flex items-center justify-between">
+                                <span className="text-xs text-gray-500">Your approval status</span>
+                                <span className={`rounded-md px-2 py-1 text-xs font-medium capitalize ${statusBadgeClass(getLatestBookingForShop(shop._id)?.status)}`}>
+                                  {getLatestBookingForShop(shop._id)?.status}
+                                </span>
+                              </div>
+                            ) : null}
                             <div className="flex items-start gap-3">
                               {shop.logoUrl ? (
                                 <img src={shop.logoUrl} alt={shop.name} className="h-14 w-14 rounded-lg object-cover border border-gray-200" />
@@ -800,6 +823,14 @@ export default function Hostel({ user, onLoggedOut }) {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {laundryShops.map((shop) => (
                         <div key={shop._id} className="rounded-xl border border-gray-200 p-4">
+                          {getLatestBookingForShop(shop._id) ? (
+                            <div className="mb-2 flex items-center justify-between">
+                              <span className="text-xs text-gray-500">Your approval status</span>
+                              <span className={`rounded-md px-2 py-1 text-xs font-medium capitalize ${statusBadgeClass(getLatestBookingForShop(shop._id)?.status)}`}>
+                                {getLatestBookingForShop(shop._id)?.status}
+                              </span>
+                            </div>
+                          ) : null}
                           <div className="flex items-start gap-3">
                             {shop.logoUrl ? (
                               <img src={shop.logoUrl} alt={shop.name} className="h-16 w-16 rounded-lg object-cover border border-gray-200" />

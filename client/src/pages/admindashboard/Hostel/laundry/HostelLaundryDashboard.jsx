@@ -451,8 +451,16 @@ export default function HostelLaundryDashboard({ user, onLoggedOut }) {
                               <td className="px-3 py-3">{booking.roomNumber || '-'}</td>
                               <td className="px-3 py-3 capitalize">{booking.serviceType === 'dry-cleaning' ? 'Dry Cleaning' : booking.serviceType}</td>
                               <td className="px-3 py-3">
-                                <span className="inline-flex rounded-md bg-blue-50 border border-blue-200 px-2 py-1 text-xs font-medium text-blue-700 capitalize">
-                                  {booking.status}
+                                <span className={`inline-flex rounded-md px-2 py-1 text-xs font-medium capitalize border ${
+                                  booking.status === 'accepted'
+                                    ? 'bg-green-50 border-green-200 text-green-700'
+                                    : booking.status === 'completed'
+                                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                      : booking.status === 'cancelled'
+                                        ? 'bg-red-50 border-red-200 text-red-700'
+                                        : 'bg-yellow-50 border-yellow-200 text-yellow-700'
+                                  }`}>
+                                  {booking.status === 'accepted' ? 'approved' : booking.status}
                                 </span>
                               </td>
                               <td className="px-3 py-3 text-gray-600">{new Date(booking.createdAt).toLocaleString()}</td>
