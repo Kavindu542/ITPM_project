@@ -16,10 +16,12 @@ import {
 import { authService } from '../../services/authService';
 import { hostelService } from '../../services/hostelService';
 import UserMenu from '../../components/UserMenu';
+import Complaints from './Complaints';
 
 export default function Hostel({ user, onLoggedOut }) {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [applicationStatus, setApplicationStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formSubmitting, setFormSubmitting] = useState(false);
@@ -39,17 +41,17 @@ export default function Hostel({ user, onLoggedOut }) {
   const roomTypeOptions = ['Single Room (1 person)', 'Double Room (2 persons)'];
   const floorOptions = ['1st Floor', '2nd Floor', '3rd Floor', '4th Floor'];
   const sriLankanDistricts = [
-    'Colombo','Gampaha','Kalutara',
-    'Kandy','Matale','Nuwara Eliya',
-    'Galle','Matara','Hambantota',
-    'Jaffna','Kilinochchi','Mannar','Vavuniya','Mullaitivu',
-    'Batticaloa','Ampara','Trincomalee',
-    'Kurunegala','Puttalam',
-    'Anuradhapura','Polonnaruwa',
-    'Badulla','Monaragala',
-    'Ratnapura','Kegalle'
+    'Colombo', 'Gampaha', 'Kalutara',
+    'Kandy', 'Matale', 'Nuwara Eliya',
+    'Galle', 'Matara', 'Hambantota',
+    'Jaffna', 'Kilinochchi', 'Mannar', 'Vavuniya', 'Mullaitivu',
+    'Batticaloa', 'Ampara', 'Trincomalee',
+    'Kurunegala', 'Puttalam',
+    'Anuradhapura', 'Polonnaruwa',
+    'Badulla', 'Monaragala',
+    'Ratnapura', 'Kegalle'
   ];
-  
+
   const pollIntervalRef = useRef(null);
 
   // Check application status on load and set up polling
@@ -177,31 +179,31 @@ export default function Hostel({ user, onLoggedOut }) {
       icon: Home,
       label: 'Dashboard',
       description: 'View your hostel details',
-      onClick: () => navigate('/hostel'),
+      onClick: () => { navigate('/hostel'); setActiveTab('dashboard'); },
     },
     {
       icon: FileText,
       label: 'Apply for Hostel',
       description: 'Submit hostel application',
-      onClick: () => navigate('/hostel'),
+      onClick: () => { navigate('/hostel'); setActiveTab('dashboard'); },
     },
     {
       icon: MapPin,
       label: 'Room Details',
       description: 'View your room information',
-      onClick: () => {},
+      onClick: () => { },
     },
     {
       icon: History,
       label: 'Booking History',
       description: 'View past bookings',
-      onClick: () => {},
+      onClick: () => { },
     },
     {
       icon: AlertCircle,
       label: 'Complaints',
       description: 'Report issues',
-      onClick: () => {},
+      onClick: () => setActiveTab('complaints'),
     },
   ];
 
@@ -461,9 +463,8 @@ export default function Hostel({ user, onLoggedOut }) {
       <div className="flex h-screen overflow-hidden">
         {/* Sidebar */}
         <div
-          className={`${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transition-transform duration-300 md:translate-x-0 md:static`}
+          className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transition-transform duration-300 md:translate-x-0 md:static`}
         >
           <div className="flex flex-col h-full">
             {/* Header */}
@@ -548,76 +549,81 @@ export default function Hostel({ user, onLoggedOut }) {
             </div>
 
             {/* Page Content */}
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
-              <div className="p-6 border-b border-gray-200 flex items-center gap-3">
-                <div className="p-2 bg-emerald-50 rounded-lg">
-                  <Home className="h-5 w-5 text-emerald-600" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Hostel Dashboard</h1>
-                  <p className="text-sm text-gray-500">Welcome to your hostel portal</p>
-                </div>
-              </div>
-
-              <div className="p-6">
-                {/* Statistics */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <div className="text-3xl font-bold text-blue-600 mb-1">1</div>
-                    <div className="text-sm text-gray-600">Room Assigned</div>
+            {activeTab === 'dashboard' && (
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
+                <div className="p-6 border-b border-gray-200 flex items-center gap-3">
+                  <div className="p-2 bg-emerald-50 rounded-lg">
+                    <Home className="h-5 w-5 text-emerald-600" />
                   </div>
-                  <div className="p-4 bg-green-50 rounded-lg">
-                    <div className="text-3xl font-bold text-green-600 mb-1">Active</div>
-                    <div className="text-sm text-gray-600">Status</div>
-                  </div>
-                  <div className="p-4 bg-yellow-50 rounded-lg">
-                    <div className="text-3xl font-bold text-yellow-600 mb-1">Month</div>
-                    <div className="text-sm text-gray-600">Package Duration</div>
-                  </div>
-                  <div className="p-4 bg-purple-50 rounded-lg">
-                    <div className="text-3xl font-bold text-purple-600 mb-1">₹5,000</div>
-                    <div className="text-sm text-gray-600">Monthly Rent</div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Hostel Dashboard</h1>
+                    <p className="text-sm text-gray-500">Welcome to your hostel portal</p>
                   </div>
                 </div>
 
-                {/* Room Details */}
-                <div className="mb-8">
-                  <h2 className="text-lg font-bold text-gray-900 mb-4">Room Details</h2>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Room Number:</span>
-                      <span className="font-medium text-gray-900">A-101</span>
+                <div className="p-6">
+                  {/* Statistics */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <div className="text-3xl font-bold text-blue-600 mb-1">1</div>
+                      <div className="text-sm text-gray-600">Room Assigned</div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Floor:</span>
-                      <span className="font-medium text-gray-900">1st Floor</span>
+                    <div className="p-4 bg-green-50 rounded-lg">
+                      <div className="text-3xl font-bold text-green-600 mb-1">Active</div>
+                      <div className="text-sm text-gray-600">Status</div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Room Type:</span>
-                      <span className="font-medium text-gray-900">Double Room</span>
+                    <div className="p-4 bg-yellow-50 rounded-lg">
+                      <div className="text-3xl font-bold text-yellow-600 mb-1">Month</div>
+                      <div className="text-sm text-gray-600">Package Duration</div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Occupants:</span>
-                      <span className="font-medium text-gray-900">2 persons</span>
+                    <div className="p-4 bg-purple-50 rounded-lg">
+                      <div className="text-3xl font-bold text-purple-600 mb-1">₹5,000</div>
+                      <div className="text-sm text-gray-600">Monthly Rent</div>
                     </div>
                   </div>
-                </div>
 
-                {/* Recent Bookings */}
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Notifications</h2>
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                      <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <div className="text-sm font-medium text-blue-900">Room Assignment Confirmed</div>
-                        <div className="text-xs text-blue-700">Your room has been assigned for this semester</div>
+                  {/* Room Details */}
+                  <div className="mb-8">
+                    <h2 className="text-lg font-bold text-gray-900 mb-4">Room Details</h2>
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Room Number:</span>
+                        <span className="font-medium text-gray-900">A-101</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Floor:</span>
+                        <span className="font-medium text-gray-900">1st Floor</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Room Type:</span>
+                        <span className="font-medium text-gray-900">Double Room</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Occupants:</span>
+                        <span className="font-medium text-gray-900">2 persons</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recent Bookings */}
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Notifications</h2>
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                        <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <div className="text-sm font-medium text-blue-900">Room Assignment Confirmed</div>
+                          <div className="text-xs text-blue-700">Your room has been assigned for this semester</div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
+            {activeTab === 'complaints' && (
+              <Complaints user={user} />
+            )}
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { LogOut, User } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 
 import Home from './pages/Home.jsx';
 import Profile from './pages/Profile.jsx';
@@ -38,10 +38,10 @@ import LibraryDashboard from './pages/admindashboard/LibraryM/LibraryDashboard.j
 import LibraryAdminLayout from './pages/admindashboard/LibraryM/LibraryAdminLayout.jsx';
 import ClubAndSocietyDashboard from './pages/admindashboard/Club/ClubAndSocietyDashboard.jsx';
 import HostelWardenDashboard from './pages/admindashboard/Hostel/HostelWardenDashboard.jsx';
-import BookManagement from './pages/admindashboard/LibraryM/BookManagement.jsx'; // ← ADD
-import StudyRoomManagement from './pages/admindashboard/LibraryM/StudyRoomManagement.jsx'; // ← ADD
-import DigitalResourcesManagement from './pages/admindashboard/LibraryM/DigitalResourcesManagement.jsx'; // ← ADD
-import ReservationManagement from './pages/admindashboard/LibraryM/ReservationManagement.jsx'; // ← ADD
+import BookManagement from './pages/admindashboard/LibraryM/BookManagement.jsx';
+import StudyRoomManagement from './pages/admindashboard/LibraryM/StudyRoomManagement.jsx';
+import DigitalResourcesManagement from './pages/admindashboard/LibraryM/DigitalResourcesManagement.jsx';
+import ReservationManagement from './pages/admindashboard/LibraryM/ReservationManagement.jsx';
 
 import { authService } from './services/authService';
 

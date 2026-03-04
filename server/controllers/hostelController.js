@@ -1,4 +1,5 @@
 const HostelApplication = require('../models/HostelApplication');
+const HostelComplaint = require('../models/HostelComplaint');
 
 // Student: submit application
 async function applyForHostel(req, res) {
@@ -116,9 +117,89 @@ async function adminUpdateApplicationStatus(req, res) {
   }
 }
 
+// Student: submit a complaint
+async function submitComplaint(req, res) {
+  try {
+    const userId = req.user?._id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+
+    const { subject, category, description, urgency } = req.body || {};
+    if (!subject || !category || !description) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const complaint = await HostelComplaint.create({
+      user: userId,
+      studentId: req.user.studentId,
+      studentName: req.user.name,
+      subject,
+      category,
+      description,
+      urgency: urgency || 'medium',
+      status: 'pending',
+    });
+
+    return res.status(201).json({ id: complaint._id, status: complaint.status });
+  } catch (err) {
+    console.error('submitComplaint error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Student: get my complaints
+async function getMyComplaints(req, res) {
+  try {
+    const userId = req.user?._id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+
+    const complaints = await HostelComplaint.find({ user: userId }).sort({ createdAt: -1 });
+    return res.json(complaints);
+  } catch (err) {
+    console.error('getMyComplaints error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Admin (warden): list all complaints
+async function adminListComplaints(req, res) {
+  try {
+    const complaints = await HostelComplaint.find({}).sort({ createdAt: -1 });
+    return res.json(complaints);
+  } catch (err) {
+    console.error('adminListComplaints error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Admin (warden): update complaint status
+async function adminUpdateComplaintStatus(req, res) {
+  try {
+    const { id } = req.params;
+    const { status } = req.body || {};
+    if (!['pending', 'in-progress', 'resolved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+    const complaint = await HostelComplaint.findByIdAndUpdate(
+      id,
+      { $set: { status } },
+      { new: true }
+    );
+    if (!complaint) return res.status(404).json({ message: 'Not found' });
+    return res.json({ id: complaint._id, status: complaint.status });
+  } catch (err) {
+    console.error('adminUpdateComplaintStatus error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+
 module.exports = {
   applyForHostel,
   getMyApplication,
   adminListApplications,
   adminUpdateApplicationStatus,
+  submitComplaint,
+  getMyComplaints,
+  adminListComplaints,
+  adminUpdateComplaintStatus,
 };

@@ -57,4 +57,44 @@ export const hostelService = {
       throw error.response?.data || error;
     }
   },
+
+  // Student: Submit complaint
+  submitComplaint: async (complaintData) => {
+    try {
+      const response = await api.post('/hostel/complaints', complaintData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Student: Get my complaints
+  getMyComplaints: async () => {
+    try {
+      const response = await api.get('/hostel/my-complaints');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Admin: Get all complaints
+  getAllComplaints: async () => {
+    try {
+      const response = await api.get('/hostel/admin/all-complaints');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Admin: Update complaint status
+  updateComplaintStatus: async (complaintId, status) => {
+    try {
+      const response = await api.put(`/hostel/admin/complaints/${complaintId}`, { status });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
 };
