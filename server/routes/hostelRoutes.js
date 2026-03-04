@@ -12,6 +12,13 @@ const {
   adminUpdateComplaintStatus,
   adminCreateMealShopAccount,
   adminCreateLaundryShopAccount,
+  adminGetLaundryShopProfile,
+  adminUpsertLaundryShopProfile,
+  listLaundryShops,
+  createLaundryBooking,
+  getMyLaundryBookings,
+  adminGetLaundryBookings,
+  adminUpdateLaundryBookingStatus,
 } = require('../controllers/hostelController');
 
 const router = express.Router();
@@ -22,6 +29,9 @@ router.post('/apply', requireAuth, applyForHostel);
 router.get('/my-application', requireAuth, getMyApplication);
 router.post('/complaints', requireAuth, submitComplaint);
 router.get('/my-complaints', requireAuth, getMyComplaints);
+router.get('/laundry/shops', requireAuth, listLaundryShops);
+router.post('/laundry/bookings', requireAuth, createLaundryBooking);
+router.get('/laundry/my-bookings', requireAuth, getMyLaundryBookings);
 
 // Admin (warden) endpoints
 router.get('/admin/all-applications', requireAuth, requireModuleAdmin('hostel-warden'), adminListApplications);
@@ -30,5 +40,9 @@ router.get('/admin/all-complaints', requireAuth, requireModuleAdmin('hostel-ward
 router.put('/admin/complaints/:id', requireAuth, requireModuleAdmin('hostel-warden'), adminUpdateComplaintStatus);
 router.post('/admin/meal-shop-accounts', requireAuth, requireModuleAdmin('hostel-warden'), adminCreateMealShopAccount);
 router.post('/admin/laundry-shop-accounts', requireAuth, requireModuleAdmin('hostel-warden'), adminCreateLaundryShopAccount);
+router.get('/admin/laundry/shop-profile', requireAuth, requireModuleAdmin('hostel-laundry'), adminGetLaundryShopProfile);
+router.put('/admin/laundry/shop-profile', requireAuth, requireModuleAdmin('hostel-laundry'), adminUpsertLaundryShopProfile);
+router.get('/admin/laundry/bookings', requireAuth, requireModuleAdmin('hostel-laundry'), adminGetLaundryBookings);
+router.put('/admin/laundry/bookings/:id/status', requireAuth, requireModuleAdmin('hostel-laundry'), adminUpdateLaundryBookingStatus);
 
 module.exports = router;

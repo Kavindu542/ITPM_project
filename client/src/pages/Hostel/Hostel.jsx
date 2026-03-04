@@ -12,6 +12,10 @@ import {
   X,
   Loader,
   CheckCircle,
+  Shirt,
+  Phone,
+  Clock3,
+  Truck,
 } from 'lucide-react';
 import { hostelService } from '../../services/hostelService';
 import Complaints from './Complaints';
@@ -26,6 +30,21 @@ export default function Hostel({ user, onLoggedOut }) {
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [laundryShops, setLaundryShops] = useState([]);
+  const [laundryLoading, setLaundryLoading] = useState(false);
+  const [laundryError, setLaundryError] = useState('');
+  const [laundryBookings, setLaundryBookings] = useState([]);
+  const [laundryBookingLoading, setLaundryBookingLoading] = useState(false);
+  const [selectedShop, setSelectedShop] = useState(null);
+  const [bookingSubmitting, setBookingSubmitting] = useState(false);
+  const [expandedShopId, setExpandedShopId] = useState('');
+  const [bookingForm, setBookingForm] = useState({
+    contactNumber: '',
+    floor: '',
+    roomNumber: '',
+    serviceType: 'washing',
+    notes: '',
+  });
   const [formData, setFormData] = useState({
     studentId: user?.studentId || '',
     studentName: user?.name || '',
@@ -64,6 +83,16 @@ export default function Hostel({ user, onLoggedOut }) {
     };
   }, [user]);
 
+  useEffect(() => {
+    if (applicationStatus !== 'approved') return;
+    if (!['dashboard', 'laundry', 'laundry-bookings'].includes(activeTab)) return;
+
+    loadLaundryShops();
+    if (activeTab === 'laundry-bookings') {
+      loadMyLaundryBookings();
+    }
+  }, [activeTab, applicationStatus]);
+
   const checkApplicationStatus = async () => {
     try {
       setLoading(true);
@@ -74,6 +103,9 @@ export default function Hostel({ user, onLoggedOut }) {
         // If pending, set up polling
         if (application.status === 'pending') {
           setupPolling();
+        } else if (application.status === 'approved') {
+          loadLaundryShops();
+          loadMyLaundryBookings();
         } else {
           // Stop polling if status is no longer pending
           if (pollIntervalRef.current) {
@@ -83,6 +115,8 @@ export default function Hostel({ user, onLoggedOut }) {
         }
       } else {
         setApplicationStatus('none');
+        setLaundryShops([]);
+        setLaundryBookings([]);
         // Stop polling
         if (pollIntervalRef.current) {
           clearInterval(pollIntervalRef.current);
@@ -119,6 +153,65 @@ export default function Hostel({ user, onLoggedOut }) {
         console.error('Error polling status:', err);
       }
     }, 5000); // Poll every 5 seconds
+  };
+
+  const loadLaundryShops = async () => {
+    try {
+      setLaundryLoading(true);
+      setLaundryError('');
+      const data = await hostelService.getLaundryShops();
+      setLaundryShops(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setLaundryError(err?.message || 'Failed to load laundry shops');
+    } finally {
+      setLaundryLoading(false);
+    }
+  };
+
+  const loadMyLaundryBookings = async () => {
+    try {
+      setLaundryBookingLoading(true);
+      const data = await hostelService.getMyLaundryBookings();
+      setLaundryBookings(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load laundry bookings', err);
+    } finally {
+      setLaundryBookingLoading(false);
+    }
+  };
+
+  const openBooking = (shop) => {
+    setSelectedShop(shop);
+    setBookingForm({
+      contactNumber: user?.studentId || '',
+      floor: '',
+      roomNumber: '',
+      serviceType: shop?.availableServices?.[0] || 'washing',
+      notes: '',
+    });
+  };
+
+  const submitLaundryBooking = async (e) => {
+    e.preventDefault();
+    if (!selectedShop?._id) return;
+    setLaundryError('');
+    setBookingSubmitting(true);
+    try {
+      await hostelService.createLaundryBooking({
+        shopId: selectedShop._id,
+        contactNumber: bookingForm.contactNumber,
+        floor: bookingForm.floor,
+        roomNumber: bookingForm.roomNumber,
+        serviceType: bookingForm.serviceType,
+        notes: bookingForm.notes,
+      });
+      setSelectedShop(null);
+      await loadMyLaundryBookings();
+    } catch (err) {
+      setLaundryError(err?.message || 'Failed to create laundry booking');
+    } finally {
+      setBookingSubmitting(false);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -183,13 +276,19 @@ export default function Hostel({ user, onLoggedOut }) {
       icon: MapPin,
       label: 'Room Details',
       description: 'View your room information',
-      onClick: () => { },
+      onClick: () => setActiveTab('dashboard'),
+    },
+    {
+      icon: Shirt,
+      label: 'Laundry Services',
+      description: 'View and book laundry services',
+      onClick: () => setActiveTab('laundry'),
     },
     {
       icon: History,
       label: 'Booking History',
-      description: 'View past bookings',
-      onClick: () => { },
+      description: 'View your laundry bookings',
+      onClick: () => setActiveTab('laundry-bookings'),
     },
     {
       icon: AlertCircle,
@@ -581,7 +680,71 @@ export default function Hostel({ user, onLoggedOut }) {
                     </div>
                   </div>
 
-                  {/* Recent Bookings */}
+                  <div className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-bold text-gray-900">Laundry Services</h2>
+                      <button
+                        type="button"
+                        className="text-sm font-medium text-blue-600 hover:underline"
+                        onClick={() => setActiveTab('laundry')}
+                      >
+                        View all
+                      </button>
+                    </div>
+
+                    {laundryLoading ? (
+                      <div className="text-sm text-gray-500">Loading laundry services...</div>
+                    ) : laundryShops.length === 0 ? (
+                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                        No laundry shops are available right now.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {laundryShops.slice(0, 2).map((shop) => (
+                          <div key={shop._id} className="rounded-xl border border-gray-200 bg-white p-4">
+                            <div className="flex items-start gap-3">
+                              {shop.logoUrl ? (
+                                <img src={shop.logoUrl} alt={shop.name} className="h-14 w-14 rounded-lg object-cover border border-gray-200" />
+                              ) : (
+                                <div className="h-14 w-14 rounded-lg bg-cyan-50 border border-cyan-100 grid place-items-center">
+                                  <Shirt className="h-6 w-6 text-cyan-600" />
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <h3 className="text-sm font-semibold text-gray-900">{shop.name}</h3>
+                                <p className="text-xs text-gray-500 mt-0.5">{shop.location || 'Location not specified'}</p>
+                                <p className="text-xs text-gray-500 mt-1">{shop.shortDescription || 'Laundry services available for hostel students.'}</p>
+                              </div>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setExpandedShopId(expandedShopId === shop._id ? '' : shop._id)}
+                                className="rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                              >
+                                View Details
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openBooking(shop)}
+                                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                              >
+                                Book Laundry
+                              </button>
+                              <a
+                                href={`tel:${shop.contactNumber || ''}`}
+                                className="rounded-md bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                              >
+                                Contact
+                              </a>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Recent Notifications */}
                   <div>
                     <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Notifications</h2>
                     <div className="space-y-2">
@@ -597,8 +760,255 @@ export default function Hostel({ user, onLoggedOut }) {
                 </div>
               </div>
             )}
+            {activeTab === 'laundry' && (
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
+                <div className="p-6 border-b border-gray-200 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-cyan-50 rounded-lg">
+                      <Shirt className="h-5 w-5 text-cyan-600" />
+                    </div>
+                    <div>
+                      <h1 className="text-2xl font-bold text-gray-900">Laundry Services</h1>
+                      <p className="text-sm text-gray-500">Find laundry providers and place your booking</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={loadLaundryShops}
+                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Refresh
+                  </button>
+                </div>
+
+                <div className="p-6">
+                  {laundryError && (
+                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      {laundryError}
+                    </div>
+                  )}
+                  {laundryLoading ? (
+                    <div className="text-sm text-gray-500">Loading laundry services...</div>
+                  ) : laundryShops.length === 0 ? (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                      No laundry shops are available right now.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {laundryShops.map((shop) => (
+                        <div key={shop._id} className="rounded-xl border border-gray-200 p-4">
+                          <div className="flex items-start gap-3">
+                            {shop.logoUrl ? (
+                              <img src={shop.logoUrl} alt={shop.name} className="h-16 w-16 rounded-lg object-cover border border-gray-200" />
+                            ) : (
+                              <div className="h-16 w-16 rounded-lg bg-cyan-50 border border-cyan-100 grid place-items-center">
+                                <Shirt className="h-7 w-7 text-cyan-600" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <h3 className="text-base font-semibold text-gray-900">{shop.name}</h3>
+                              <p className="text-sm text-gray-600 mt-0.5">{shop.location || 'Location not specified'}</p>
+                              <p className="text-sm text-gray-600 mt-1">{shop.shortDescription || '-'}</p>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {(shop.availableServices || []).map((service) => (
+                              <span key={service} className="rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-700">
+                                {service === 'dry-cleaning' ? 'Dry Cleaning' : service.charAt(0).toUpperCase() + service.slice(1)}
+                              </span>
+                            ))}
+                          </div>
+
+                          <div className="mt-3 text-sm text-gray-600 space-y-1">
+                            <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {shop.contactNumber || '-'}</div>
+                            <div className="flex items-center gap-2"><Clock3 className="h-4 w-4" /> {shop.openingHours || 'Not specified'}</div>
+                            <div className="flex items-center gap-2"><Truck className="h-4 w-4" /> {shop.pickupDeliveryAvailable ? 'Pickup & Delivery: Yes' : 'Pickup & Delivery: No'}</div>
+                            <div>Price: {shop.priceInformation || 'Not specified'}</div>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedShopId(expandedShopId === shop._id ? '' : shop._id)}
+                              className="rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                            >
+                              View Details
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openBooking(shop)}
+                              className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                            >
+                              Book Laundry
+                            </button>
+                            <a
+                              href={`tel:${shop.contactNumber || ''}`}
+                              className="rounded-md bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                            >
+                              Contact
+                            </a>
+                          </div>
+
+                          {expandedShopId === shop._id && (
+                            <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
+                              <div><strong>Laundry Shop Name:</strong> {shop.name}</div>
+                              <div><strong>Location / Address:</strong> {shop.location || '-'}</div>
+                              <div><strong>Opening Hours:</strong> {shop.openingHours || '-'}</div>
+                              <div><strong>Price Information:</strong> {shop.priceInformation || '-'}</div>
+                              <div><strong>Short Description:</strong> {shop.shortDescription || '-'}</div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {activeTab === 'laundry-bookings' && (
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
+                <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Laundry Bookings</h1>
+                    <p className="text-sm text-gray-500">Track your laundry orders</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={loadMyLaundryBookings}
+                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Refresh
+                  </button>
+                </div>
+                <div className="p-6">
+                  {laundryBookingLoading ? (
+                    <div className="text-sm text-gray-500">Loading bookings...</div>
+                  ) : laundryBookings.length === 0 ? (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                      No laundry bookings found yet.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {laundryBookings.map((booking) => (
+                        <div key={booking._id} className="rounded-lg border border-gray-200 p-4">
+                          <div className="flex items-center justify-between gap-2">
+                            <div>
+                              <div className="font-semibold text-gray-900">{booking.shop?.name || 'Laundry Shop'}</div>
+                              <div className="text-xs text-gray-500">{new Date(booking.createdAt).toLocaleString()}</div>
+                            </div>
+                            <span className={`rounded-md px-2 py-1 text-xs font-medium ${booking.status === 'completed'
+                              ? 'bg-green-100 text-green-700'
+                              : booking.status === 'accepted'
+                                ? 'bg-blue-100 text-blue-700'
+                                : booking.status === 'cancelled'
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-yellow-100 text-yellow-700'
+                              }`}>
+                              {booking.status}
+                            </span>
+                          </div>
+                          <div className="mt-2 text-sm text-gray-700">
+                            Service: {booking.serviceType === 'dry-cleaning' ? 'Dry Cleaning' : booking.serviceType}
+                          </div>
+                          {(booking.floor || booking.roomNumber) && (
+                            <div className="text-sm text-gray-600 mt-1">
+                              {booking.floor ? `Floor: ${booking.floor}` : ''}{booking.floor && booking.roomNumber ? ' | ' : ''}{booking.roomNumber ? `Room: ${booking.roomNumber}` : ''}
+                            </div>
+                          )}
+                          {booking.notes ? <div className="text-sm text-gray-600 mt-1">Notes: {booking.notes}</div> : null}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             {activeTab === 'complaints' && (
               <Complaints user={user} />
+            )}
+
+            {selectedShop && (
+              <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
+                <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                  <h3 className="text-lg font-semibold text-gray-900">Book {selectedShop.name}</h3>
+                  <p className="text-sm text-gray-500 mt-1">Submit your laundry booking details</p>
+
+                  <form onSubmit={submitLaundryBooking} className="mt-4 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+                      <input
+                        type="text"
+                        value={bookingForm.contactNumber}
+                        onChange={(e) => setBookingForm((prev) => ({ ...prev, contactNumber: e.target.value }))}
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Floor</label>
+                        <input
+                          type="text"
+                          value={bookingForm.floor}
+                          onChange={(e) => setBookingForm((prev) => ({ ...prev, floor: e.target.value }))}
+                          className="w-full rounded-lg border border-gray-200 px-3 py-2"
+                          placeholder="1st Floor"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Room Number</label>
+                        <input
+                          type="text"
+                          value={bookingForm.roomNumber}
+                          onChange={(e) => setBookingForm((prev) => ({ ...prev, roomNumber: e.target.value }))}
+                          className="w-full rounded-lg border border-gray-200 px-3 py-2"
+                          placeholder="A-101"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
+                      <select
+                        value={bookingForm.serviceType}
+                        onChange={(e) => setBookingForm((prev) => ({ ...prev, serviceType: e.target.value }))}
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2"
+                      >
+                        {(selectedShop.availableServices?.length ? selectedShop.availableServices : ['washing', 'dry-cleaning', 'ironing']).map((s) => (
+                          <option key={s} value={s}>
+                            {s === 'dry-cleaning' ? 'Dry Cleaning' : s.charAt(0).toUpperCase() + s.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+                      <textarea
+                        value={bookingForm.notes}
+                        onChange={(e) => setBookingForm((prev) => ({ ...prev, notes: e.target.value }))}
+                        rows={3}
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 resize-none"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedShop(null)}
+                        className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={bookingSubmitting}
+                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-gray-400"
+                      >
+                        {bookingSubmitting ? 'Booking...' : 'Confirm Booking'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
             )}
           </div>
         </div>

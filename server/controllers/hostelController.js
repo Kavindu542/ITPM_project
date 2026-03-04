@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs');
 const HostelApplication = require('../models/HostelApplication');
 const HostelComplaint = require('../models/HostelComplaint');
 const User = require('../models/User');
+const LaundryShop = require('../models/LaundryShop');
+const LaundryBooking = require('../models/LaundryBooking');
 
 // Student: submit application
 async function applyForHostel(req, res) {
@@ -275,6 +277,17 @@ async function adminCreateLaundryShopAccount(req, res) {
       year: description ? String(description).trim() : null,
     });
 
+    await LaundryShop.findOneAndUpdate(
+      { adminUser: user._id },
+      {
+        adminUser: user._id,
+        name: normalizedName,
+        contactNumber: contactNumber ? String(contactNumber).trim() : '',
+        shortDescription: description ? String(description).trim() : '',
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
     return res.status(201).json({
       message: 'Laundry shop account created successfully',
       user: {
@@ -285,6 +298,203 @@ async function adminCreateLaundryShopAccount(req, res) {
     });
   } catch (err) {
     console.error('adminCreateLaundryShopAccount error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Laundry admin: get current laundry shop profile
+async function adminGetLaundryShopProfile(req, res) {
+  try {
+    const adminUser = req.user?._id;
+    if (!adminUser) return res.status(401).json({ message: 'Not authenticated' });
+
+    const profile = await LaundryShop.findOne({ adminUser });
+    if (!profile) return res.json(null);
+
+    return res.json(profile);
+  } catch (err) {
+    console.error('adminGetLaundryShopProfile error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Laundry admin: create or update laundry shop profile details
+async function adminUpsertLaundryShopProfile(req, res) {
+  try {
+    const adminUser = req.user?._id;
+    if (!adminUser) return res.status(401).json({ message: 'Not authenticated' });
+
+    const {
+      logoUrl,
+      name,
+      location,
+      contactNumber,
+      availableServices,
+      priceInformation,
+      openingHours,
+      pickupDeliveryAvailable,
+      shortDescription,
+      isActive,
+    } = req.body || {};
+
+    const normalizedName = String(name || '').trim();
+    const normalizedContact = String(contactNumber || '').trim();
+
+    if (!normalizedName || !normalizedContact) {
+      return res.status(400).json({ message: 'Laundry shop name and contact number are required' });
+    }
+
+    const allowedServices = ['washing', 'dry-cleaning', 'ironing'];
+    const selectedServices = Array.isArray(availableServices)
+      ? availableServices.filter((s) => allowedServices.includes(String(s)))
+      : [];
+
+    const profile = await LaundryShop.findOneAndUpdate(
+      { adminUser },
+      {
+        adminUser,
+        logoUrl: String(logoUrl || '').trim(),
+        name: normalizedName,
+        location: String(location || '').trim(),
+        contactNumber: normalizedContact,
+        availableServices: selectedServices,
+        priceInformation: String(priceInformation || '').trim(),
+        openingHours: String(openingHours || '').trim(),
+        pickupDeliveryAvailable: Boolean(pickupDeliveryAvailable),
+        shortDescription: String(shortDescription || '').trim(),
+        isActive: typeof isActive === 'boolean' ? isActive : true,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    return res.json({
+      message: 'Laundry shop profile saved successfully',
+      profile,
+    });
+  } catch (err) {
+    console.error('adminUpsertLaundryShopProfile error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Student: list all active laundry shops
+async function listLaundryShops(_req, res) {
+  try {
+    const shops = await LaundryShop.find({ isActive: true }).sort({ updatedAt: -1 });
+    return res.json(shops);
+  } catch (err) {
+    console.error('listLaundryShops error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Student: create a laundry booking
+async function createLaundryBooking(req, res) {
+  try {
+    const studentUser = req.user?._id;
+    if (!studentUser) return res.status(401).json({ message: 'Not authenticated' });
+
+    const { shopId, contactNumber, floor = '', roomNumber = '', serviceType, notes = '' } = req.body || {};
+
+    if (!shopId || !contactNumber || !serviceType) {
+      return res.status(400).json({ message: 'shopId, contactNumber and serviceType are required' });
+    }
+
+    if (!['washing', 'dry-cleaning', 'ironing'].includes(String(serviceType))) {
+      return res.status(400).json({ message: 'Invalid serviceType' });
+    }
+
+    const shop = await LaundryShop.findById(shopId);
+    if (!shop || !shop.isActive) {
+      return res.status(404).json({ message: 'Laundry shop not found' });
+    }
+
+    const booking = await LaundryBooking.create({
+      shop: shop._id,
+      studentUser,
+      studentId: req.user?.studentId || '',
+      studentName: req.user?.name || '',
+      contactNumber: String(contactNumber).trim(),
+      floor: String(floor || '').trim(),
+      roomNumber: String(roomNumber || '').trim(),
+      serviceType: String(serviceType),
+      notes: String(notes || '').trim(),
+    });
+
+    return res.status(201).json({
+      message: 'Laundry booking created successfully',
+      booking,
+    });
+  } catch (err) {
+    console.error('createLaundryBooking error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Student: get own laundry bookings
+async function getMyLaundryBookings(req, res) {
+  try {
+    const studentUser = req.user?._id;
+    if (!studentUser) return res.status(401).json({ message: 'Not authenticated' });
+
+    const bookings = await LaundryBooking.find({ studentUser })
+      .populate('shop', 'name location contactNumber logoUrl')
+      .sort({ createdAt: -1 });
+
+    return res.json(bookings);
+  } catch (err) {
+    console.error('getMyLaundryBookings error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Laundry admin: view student laundry bookings for own shop
+async function adminGetLaundryBookings(req, res) {
+  try {
+    const adminUser = req.user?._id;
+    if (!adminUser) return res.status(401).json({ message: 'Not authenticated' });
+
+    const shop = await LaundryShop.findOne({ adminUser });
+    if (!shop) return res.json([]);
+
+    const bookings = await LaundryBooking.find({ shop: shop._id })
+      .sort({ createdAt: -1 })
+      .select('studentName contactNumber floor roomNumber serviceType status createdAt notes');
+
+    return res.json(bookings);
+  } catch (err) {
+    console.error('adminGetLaundryBookings error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Laundry admin: update laundry booking status (pending approval action)
+async function adminUpdateLaundryBookingStatus(req, res) {
+  try {
+    const adminUser = req.user?._id;
+    if (!adminUser) return res.status(401).json({ message: 'Not authenticated' });
+
+    const { id } = req.params;
+    const { status } = req.body || {};
+    const allowedStatuses = ['pending', 'accepted', 'completed', 'cancelled'];
+
+    if (!allowedStatuses.includes(String(status))) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const shop = await LaundryShop.findOne({ adminUser });
+    if (!shop) return res.status(404).json({ message: 'Laundry shop not found' });
+
+    const booking = await LaundryBooking.findOneAndUpdate(
+      { _id: id, shop: shop._id },
+      { $set: { status: String(status) } },
+      { new: true }
+    );
+
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    return res.json({ message: 'Booking status updated', booking });
+  } catch (err) {
+    console.error('adminUpdateLaundryBookingStatus error', err);
     return res.status(500).json({ message: 'Server error' });
   }
 }
@@ -301,4 +511,11 @@ module.exports = {
   adminUpdateComplaintStatus,
   adminCreateMealShopAccount,
   adminCreateLaundryShopAccount,
+  adminGetLaundryShopProfile,
+  adminUpsertLaundryShopProfile,
+  listLaundryShops,
+  createLaundryBooking,
+  getMyLaundryBookings,
+  adminGetLaundryBookings,
+  adminUpdateLaundryBookingStatus,
 };

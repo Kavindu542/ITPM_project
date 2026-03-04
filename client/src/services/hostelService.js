@@ -117,4 +117,74 @@ export const hostelService = {
       throw error.response?.data || error;
     }
   },
+
+  // Laundry admin: Get own laundry shop profile
+  getLaundryShopProfile: async () => {
+    try {
+      const response = await api.get('/hostel/admin/laundry/shop-profile');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Laundry admin: Save laundry shop profile
+  saveLaundryShopProfile: async (payload) => {
+    try {
+      const response = await api.put('/hostel/admin/laundry/shop-profile', payload);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Student: List active laundry shops
+  getLaundryShops: async () => {
+    try {
+      const response = await api.get('/hostel/laundry/shops');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Student: Create a laundry booking
+  createLaundryBooking: async (payload) => {
+    try {
+      const response = await api.post('/hostel/laundry/bookings', payload);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Student: Get own laundry bookings
+  getMyLaundryBookings: async () => {
+    try {
+      const response = await api.get('/hostel/laundry/my-bookings');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Laundry admin: View student laundry bookings
+  getLaundryAdminBookings: async () => {
+    try {
+      const response = await api.get('/hostel/admin/laundry/bookings');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Laundry admin: Update booking status
+  updateLaundryBookingStatus: async (bookingId, status) => {
+    try {
+      const response = await api.put(`/hostel/admin/laundry/bookings/${bookingId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
 };

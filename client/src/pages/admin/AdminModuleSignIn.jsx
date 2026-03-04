@@ -11,7 +11,7 @@ export default function AdminModuleSignIn({ title, moduleKey, onSignedIn, initia
     const value = new URLSearchParams(location.search).get('email');
     return value ? value.trim() : '';
   }, [location.search]);
-  const [email, setEmail] = React.useState(initialEmail || queryEmail || '');
+  const [email, setEmail] = React.useState(queryEmail || initialEmail || '');
   const [password, setPassword] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -47,7 +47,7 @@ export default function AdminModuleSignIn({ title, moduleKey, onSignedIn, initia
 
   React.useEffect(() => {
     if (initialEmail || queryEmail) {
-      setEmail(initialEmail || queryEmail);
+      setEmail(queryEmail || initialEmail);
     }
   }, [initialEmail, queryEmail]);
 
