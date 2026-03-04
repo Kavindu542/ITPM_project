@@ -121,7 +121,7 @@ export default function StudyMaterialAdminLayout({ user, onLoggedOut }) {
                         className={({ isActive }) =>
                           `w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors ${
                             isActive
-                              ? 'bg-gray-900 text-white shadow-sm'
+                              ? 'bg-gradient-to-r from-slate-950 to-slate-900 text-white shadow-sm'
                               : 'text-gray-700 hover:bg-gray-50'
                           } ${collapsed ? 'lg:justify-center lg:px-2' : ''}`
                         }
@@ -129,13 +129,17 @@ export default function StudyMaterialAdminLayout({ user, onLoggedOut }) {
                         {({ isActive }) => (
                           <>
                             <div
-                              className={`h-8 w-8 rounded-lg ${isActive ? 'bg-gray-800' : 'bg-gray-100'} flex items-center justify-center ${
+                              className={`h-8 w-8 rounded-lg ${isActive ? 'bg-slate-800' : 'bg-gray-100'} flex items-center justify-center ${
                                 collapsed ? 'lg:h-10 lg:w-10' : ''
                               }`}
                             >
                               <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
                             </div>
-                            <span className={`text-sm font-medium ${collapsed ? 'lg:hidden' : ''}`}>
+                            <span
+                              className={`text-sm font-medium ${
+                                isActive ? 'text-white' : 'text-gray-900'
+                              } ${collapsed ? 'lg:hidden' : ''}`}
+                            >
                               {item.label}
                             </span>
                           </>
