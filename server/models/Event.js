@@ -10,4 +10,8 @@ const EventSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
+// Auto-delete events after the scheduled date/time.
+// Note: MongoDB TTL cleanup runs periodically (not instantly).
+EventSchema.index({ date: 1 }, { expireAfterSeconds: 0 });
+
 module.exports = mongoose.model('Event', EventSchema);

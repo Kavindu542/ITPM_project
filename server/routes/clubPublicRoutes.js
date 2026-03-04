@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const { requireAuth } = require("../middleware/authMiddleware");
 const Club = require("../models/Club");
+const User = require("../models/User");
 const ClubMembershipApplication = require("../models/ClubMembershipApplication");
 
 const router = express.Router();
@@ -53,8 +54,21 @@ router.get("/", requireAuth, async (req, res) => {
 // Submit a membership application for a club
 router.post("/:clubId/apply", requireAuth, async (req, res) => {
   try {
-    if (req.user?.role !== "student") {
-      return res.status(403).json({ message: "Only students can apply" });
+    const userId = req.user?._id || req.user?.id;
+    if (!userId || !isValidId(userId)) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const fullUser = await User.findById(userId)
+      .select("_id role name email studentId")
+      .lean();
+    if (!fullUser) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const role = String(fullUser.role || "").trim();
+    if (!["student", "club_leader"].includes(role)) {
+      return res.status(403).json({ message: "Only students and club leaders can apply" });
     }
 
     const { clubId } = req.params || {};
@@ -63,15 +77,19 @@ router.post("/:clubId/apply", requireAuth, async (req, res) => {
     }
 
     const club = await Club.findById(clubId)
-      .select("_id status members")
+      .select("_id status members leader")
       .lean();
 
     if (!club || club.status !== "Active") {
       return res.status(404).json({ message: "Club not found" });
     }
 
+    if (club.leader && String(club.leader) === String(fullUser._id)) {
+      return res.status(409).json({ message: "You are already the leader of this club" });
+    }
+
     const isMember = Array.isArray(club.members)
-      ? club.members.some((m) => String(m) === String(req.user._id))
+      ? club.members.some((m) => String(m) === String(fullUser._id))
       : false;
 
     if (isMember) {
@@ -101,23 +119,23 @@ router.post("/:clubId/apply", requireAuth, async (req, res) => {
 
     const payload = {
       club: club._id,
-      applicant: req.user._id,
+      applicant: fullUser._id,
       school: {
         university: String(body?.school?.university || body.university || "").trim(),
         faculty: String(body?.school?.faculty || body.faculty || "").trim(),
         department: String(body?.school?.department || body.department || "").trim(),
-        studentId: String(body?.school?.studentId || body.studentId || req.user.studentId || "").trim(),
+        studentId: String(body?.school?.studentId || body.studentId || fullUser.studentId || "").trim(),
         semester: String(body?.school?.semester || body.semester || "").trim(),
         year: String(body?.school?.year || body.year || "").trim(),
       },
       personal: {
-        fullName: String(body?.personal?.fullName || body.fullName || req.user.name || "").trim(),
+        fullName: String(body?.personal?.fullName || body.fullName || fullUser.name || "").trim(),
         dob: body?.personal?.dob || body.dob ? new Date(body?.personal?.dob || body.dob) : null,
         phone: String(body?.personal?.phone || body.phone || "").trim(),
         address: String(body?.personal?.address || body.address || "").trim(),
       },
       contact: {
-        email: String(body?.contact?.email || body.email || req.user.email || "").trim(),
+        email: String(body?.contact?.email || body.email || fullUser.email || "").trim(),
         alternateEmail: String(body?.contact?.alternateEmail || body.alternateEmail || "").trim(),
       },
       languages,

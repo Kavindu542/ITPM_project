@@ -61,7 +61,8 @@ router.get("/meetings", requireAuth, async (req, res) => {
     if (!club) {
       return res.status(403).json({ message: "You are not a club leader" });
     }
-    const items = await Meeting.find({ club: club._id })
+    const now = new Date();
+    const items = await Meeting.find({ club: club._id, date: { $gte: now } })
       .sort({ date: 1 })
       .lean();
     return res.json({
@@ -116,6 +117,89 @@ router.post("/meetings", requireAuth, async (req, res) => {
   }
 });
 
+// Leader Meetings: update
+router.patch("/meetings/:id", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params || {};
+    if (!id || !isValidId(id)) {
+      return res.status(400).json({ message: "Valid meeting id is required" });
+    }
+
+    const club = await Club.findOne({ leader: req.user._id }).lean();
+    if (!club) {
+      return res.status(403).json({ message: "You are not a club leader" });
+    }
+
+    const meeting = await Meeting.findById(id);
+    if (!meeting) {
+      return res.status(404).json({ message: "Meeting not found" });
+    }
+
+    if (String(meeting.club) !== String(club._id)) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+
+    const { title, date, venue, description } = req.body || {};
+
+    if (title !== undefined) {
+      if (!String(title).trim()) return res.status(400).json({ message: "title is required" });
+      meeting.title = String(title).trim();
+    }
+    if (date !== undefined) {
+      const dt = new Date(date);
+      if (!Number.isFinite(dt.getTime())) {
+        return res.status(400).json({ message: "valid date is required" });
+      }
+      meeting.date = dt;
+    }
+    if (venue !== undefined) meeting.venue = String(venue || "").trim();
+    if (description !== undefined) meeting.description = String(description || "").trim();
+
+    const saved = await meeting.save();
+    return res.json({
+      message: "Meeting updated",
+      meeting: {
+        id: saved._id,
+        title: saved.title,
+        date: saved.date,
+        venue: saved.venue || "",
+        description: saved.description || "",
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to update meeting" });
+  }
+});
+
+// Leader Meetings: delete
+router.delete("/meetings/:id", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params || {};
+    if (!id || !isValidId(id)) {
+      return res.status(400).json({ message: "Valid meeting id is required" });
+    }
+
+    const club = await Club.findOne({ leader: req.user._id }).lean();
+    if (!club) {
+      return res.status(403).json({ message: "You are not a club leader" });
+    }
+
+    const meeting = await Meeting.findById(id).lean();
+    if (!meeting) {
+      return res.status(404).json({ message: "Meeting not found" });
+    }
+
+    if (String(meeting.club) !== String(club._id)) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+
+    await Meeting.deleteOne({ _id: id });
+    return res.json({ message: "Meeting deleted" });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to delete meeting" });
+  }
+});
+
 // Leader Events: list
 router.get("/events", requireAuth, async (req, res) => {
   try {
@@ -123,7 +207,8 @@ router.get("/events", requireAuth, async (req, res) => {
     if (!club) {
       return res.status(403).json({ message: "You are not a club leader" });
     }
-    const items = await Event.find({ club: club._id }).sort({ date: 1 }).lean();
+    const now = new Date();
+    const items = await Event.find({ club: club._id, date: { $gte: now } }).sort({ date: 1 }).lean();
     return res.json({
       events: items.map((e) => ({
         id: e._id,
@@ -179,6 +264,98 @@ router.post("/events", requireAuth, async (req, res) => {
   }
 });
 
+// Leader Events: update
+router.patch("/events/:id", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params || {};
+    if (!id || !isValidId(id)) {
+      return res.status(400).json({ message: "Valid event id is required" });
+    }
+
+    const club = await Club.findOne({ leader: req.user._id }).lean();
+    if (!club) {
+      return res.status(403).json({ message: "You are not a club leader" });
+    }
+
+    const event = await Event.findById(id);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    if (String(event.club) !== String(club._id)) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+
+    const { name, date, venue, type } = req.body || {};
+
+    if (name !== undefined) {
+      if (!String(name).trim()) return res.status(400).json({ message: "name is required" });
+      event.name = String(name).trim();
+    }
+
+    if (date !== undefined) {
+      const dt = new Date(date);
+      if (!Number.isFinite(dt.getTime())) {
+        return res.status(400).json({ message: "valid date is required" });
+      }
+      event.date = dt;
+    }
+
+    if (venue !== undefined) event.venue = String(venue || "").trim();
+
+    if (type !== undefined) {
+      const cleanType = String(type || "Public").trim();
+      if (!["Members-only", "Public"].includes(cleanType)) {
+        return res.status(400).json({ message: "type must be 'Members-only' or 'Public'" });
+      }
+      event.type = cleanType;
+    }
+
+    const saved = await event.save();
+    return res.json({
+      message: "Event updated",
+      event: {
+        id: saved._id,
+        name: saved.name,
+        date: saved.date,
+        venue: saved.venue || "",
+        type: saved.type || "Public",
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to update event" });
+  }
+});
+
+// Leader Events: delete
+router.delete("/events/:id", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params || {};
+    if (!id || !isValidId(id)) {
+      return res.status(400).json({ message: "Valid event id is required" });
+    }
+
+    const club = await Club.findOne({ leader: req.user._id }).lean();
+    if (!club) {
+      return res.status(403).json({ message: "You are not a club leader" });
+    }
+
+    const event = await Event.findById(id).lean();
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    if (String(event.club) !== String(club._id)) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+
+    await Event.deleteOne({ _id: id });
+    return res.json({ message: "Event deleted" });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to delete event" });
+  }
+});
+
 // Leader: list membership applications for their club
 router.get("/membership-applications", requireAuth, async (req, res) => {
   try {
@@ -220,6 +397,39 @@ router.get("/membership-applications", requireAuth, async (req, res) => {
     return res.json({ items, count: items.length });
   } catch (err) {
     return res.status(500).json({ message: "Failed to fetch applications" });
+  }
+});
+
+// Leader: delete a membership application for their club
+router.delete("/membership-applications/:id", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params || {};
+    if (!id || !isValidId(id)) {
+      return res.status(400).json({ message: "Valid application id is required" });
+    }
+
+    const club = await Club.findOne({ leader: req.user._id })
+      .select("_id")
+      .lean();
+    if (!club) {
+      return res.status(403).json({ message: "You are not a club leader" });
+    }
+
+    const app = await ClubMembershipApplication.findById(id)
+      .select("_id club")
+      .lean();
+    if (!app) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    if (String(app.club) !== String(club._id)) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+
+    await ClubMembershipApplication.deleteOne({ _id: id });
+    return res.json({ message: "Application deleted" });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to delete application" });
   }
 });
 router.get("/eligible-students", requireAuth, async (req, res) => {

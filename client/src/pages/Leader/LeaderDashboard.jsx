@@ -18,9 +18,42 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
   const [meetings, setMeetings] = React.useState([]);
   const [events, setEvents] = React.useState([]);
   const [showAddMeeting, setShowAddMeeting] = React.useState(false);
+  const [meetingModalMode, setMeetingModalMode] = React.useState('create');
+  const [editingMeetingId, setEditingMeetingId] = React.useState(null);
   const [meetingForm, setMeetingForm] = React.useState({ title: '', date: '', venue: '', description: '' });
   const [showAddEvent, setShowAddEvent] = React.useState(false);
+  const [eventModalMode, setEventModalMode] = React.useState('create');
+  const [editingEventId, setEditingEventId] = React.useState(null);
   const [eventForm, setEventForm] = React.useState({ name: '', date: '', venue: '', type: 'Public' });
+
+  const deleteApplication = async (applicationId) => {
+    if (!applicationId) return;
+    const ok = window.confirm('Delete this application?');
+    if (!ok) return;
+    try {
+      const res = await clubService.leaderDeleteMembershipApplication(applicationId);
+      setApplications((prev) => prev.filter((a) => String(a.id) !== String(applicationId)));
+      alert(res?.message || 'Application deleted');
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Failed to delete application');
+    }
+  };
+
+  const toDateTimeLocalValue = React.useCallback((value) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (!Number.isFinite(d.getTime())) return '';
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  }, []);
+
+  const sortByDateAsc = React.useCallback((list) => {
+    return [...(Array.isArray(list) ? list : [])].sort((a, b) => {
+      const ad = new Date(a?.date).getTime();
+      const bd = new Date(b?.date).getTime();
+      return (Number.isFinite(ad) ? ad : 0) - (Number.isFinite(bd) ? bd : 0);
+    });
+  }, []);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -110,14 +143,59 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
       return;
     }
     try {
-      const res = await clubService.leaderCreateMeeting(meetingForm);
-      const m = res?.meeting;
-      if (m) setMeetings(prev => [...prev, m]);
-      setShowAddMeeting(false);
-      setMeetingForm({ title: '', date: '', venue: '', description: '' });
-      alert(res?.message || 'Meeting created');
+      if (meetingModalMode === 'edit') {
+        const res = await clubService.leaderUpdateMeeting(editingMeetingId, meetingForm);
+        const m = res?.meeting;
+        if (m) {
+          setMeetings((prev) => sortByDateAsc(prev.map((x) => (String(x.id) === String(m.id) ? m : x))));
+        }
+        setShowAddMeeting(false);
+        setMeetingModalMode('create');
+        setEditingMeetingId(null);
+        setMeetingForm({ title: '', date: '', venue: '', description: '' });
+        alert(res?.message || 'Meeting updated');
+      } else {
+        const res = await clubService.leaderCreateMeeting(meetingForm);
+        const m = res?.meeting;
+        if (m) setMeetings((prev) => sortByDateAsc([...prev, m]));
+        setShowAddMeeting(false);
+        setMeetingForm({ title: '', date: '', venue: '', description: '' });
+        alert(res?.message || 'Meeting created');
+      }
     } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to create meeting');
+      alert(err?.response?.data?.message || (meetingModalMode === 'edit' ? 'Failed to update meeting' : 'Failed to create meeting'));
+    }
+  };
+
+  const openCreateMeeting = () => {
+    setMeetingModalMode('create');
+    setEditingMeetingId(null);
+    setMeetingForm({ title: '', date: '', venue: '', description: '' });
+    setShowAddMeeting(true);
+  };
+
+  const openEditMeeting = (m) => {
+    setMeetingModalMode('edit');
+    setEditingMeetingId(m?.id);
+    setMeetingForm({
+      title: m?.title || '',
+      date: toDateTimeLocalValue(m?.date),
+      venue: m?.venue || '',
+      description: m?.description || '',
+    });
+    setShowAddMeeting(true);
+  };
+
+  const deleteMeeting = async (meetingId) => {
+    if (!meetingId) return;
+    const ok = window.confirm('Delete this meeting?');
+    if (!ok) return;
+    try {
+      const res = await clubService.leaderDeleteMeeting(meetingId);
+      setMeetings((prev) => prev.filter((m) => String(m.id) !== String(meetingId)));
+      alert(res?.message || 'Meeting deleted');
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Failed to delete meeting');
     }
   };
 
@@ -128,14 +206,59 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
       return;
     }
     try {
-      const res = await clubService.leaderCreateEvent(eventForm);
-      const ev = res?.event;
-      if (ev) setEvents(prev => [...prev, ev]);
-      setShowAddEvent(false);
-      setEventForm({ name: '', date: '', venue: '', type: 'Public' });
-      alert(res?.message || 'Event created');
+      if (eventModalMode === 'edit') {
+        const res = await clubService.leaderUpdateEvent(editingEventId, eventForm);
+        const ev = res?.event;
+        if (ev) {
+          setEvents((prev) => sortByDateAsc(prev.map((x) => (String(x.id) === String(ev.id) ? ev : x))));
+        }
+        setShowAddEvent(false);
+        setEventModalMode('create');
+        setEditingEventId(null);
+        setEventForm({ name: '', date: '', venue: '', type: 'Public' });
+        alert(res?.message || 'Event updated');
+      } else {
+        const res = await clubService.leaderCreateEvent(eventForm);
+        const ev = res?.event;
+        if (ev) setEvents((prev) => sortByDateAsc([...prev, ev]));
+        setShowAddEvent(false);
+        setEventForm({ name: '', date: '', venue: '', type: 'Public' });
+        alert(res?.message || 'Event created');
+      }
     } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to create event');
+      alert(err?.response?.data?.message || (eventModalMode === 'edit' ? 'Failed to update event' : 'Failed to create event'));
+    }
+  };
+
+  const openCreateEvent = () => {
+    setEventModalMode('create');
+    setEditingEventId(null);
+    setEventForm({ name: '', date: '', venue: '', type: 'Public' });
+    setShowAddEvent(true);
+  };
+
+  const openEditEvent = (ev) => {
+    setEventModalMode('edit');
+    setEditingEventId(ev?.id);
+    setEventForm({
+      name: ev?.name || '',
+      date: toDateTimeLocalValue(ev?.date),
+      venue: ev?.venue || '',
+      type: ev?.type || 'Public',
+    });
+    setShowAddEvent(true);
+  };
+
+  const deleteEvent = async (eventId) => {
+    if (!eventId) return;
+    const ok = window.confirm('Delete this event?');
+    if (!ok) return;
+    try {
+      const res = await clubService.leaderDeleteEvent(eventId);
+      setEvents((prev) => prev.filter((e) => String(e.id) !== String(eventId)));
+      alert(res?.message || 'Event deleted');
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Failed to delete event');
     }
   };
 
@@ -234,7 +357,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddMeeting(true)}
+                  onClick={openCreateMeeting}
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-200 bg-white text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
                 >
                   <CalendarDays className="h-4 w-4" />
@@ -242,7 +365,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowAddEvent(true)}
+                  onClick={openCreateEvent}
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-pink-200 bg-white text-sm font-semibold text-pink-700 hover:bg-pink-50"
                 >
                   <PlusCircle className="h-4 w-4" />
@@ -259,9 +382,29 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                   <ul className="divide-y divide-gray-200">
                     {meetings.map((m) => (
                       <li key={m.id} className="py-3">
-                        <div className="font-medium text-gray-900">{m.title}</div>
-                        <div className="text-xs text-gray-600">{new Date(m.date).toLocaleString()} • {m.venue || 'TBD'}</div>
-                        {m.description ? <div className="text-xs text-gray-500 mt-1">{m.description}</div> : null}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="font-medium text-gray-900 break-words">{m.title}</div>
+                            <div className="text-xs text-gray-600">{new Date(m.date).toLocaleString()} • {m.venue || 'TBD'}</div>
+                            {m.description ? <div className="text-xs text-gray-500 mt-1">{m.description}</div> : null}
+                          </div>
+                          <div className="shrink-0 flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => openEditMeeting(m)}
+                              className="px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteMeeting(m.id)}
+                              className="px-3 py-1.5 rounded-lg border border-red-200 text-xs font-semibold text-red-700 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -275,9 +418,29 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                   <ul className="divide-y divide-gray-200">
                     {events.map((ev) => (
                       <li key={ev.id} className="py-3">
-                        <div className="font-medium text-gray-900">{ev.name}</div>
-                        <div className="text-xs text-gray-600">{new Date(ev.date).toLocaleString()} • {ev.venue || 'TBD'}</div>
-                        <div className="text-xs text-gray-500 mt-1">{ev.type}</div>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="font-medium text-gray-900 break-words">{ev.name}</div>
+                            <div className="text-xs text-gray-600">{new Date(ev.date).toLocaleString()} • {ev.venue || 'TBD'}</div>
+                            <div className="text-xs text-gray-500 mt-1">{ev.type}</div>
+                          </div>
+                          <div className="shrink-0 flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => openEditEvent(ev)}
+                              className="px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteEvent(ev.id)}
+                              className="px-3 py-1.5 rounded-lg border border-red-200 text-xs font-semibold text-red-700 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -363,6 +526,16 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                           </div>
                         ) : null}
                       </div>
+
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => deleteApplication(a.id)}
+                          className="px-3 py-1.5 rounded-lg border border-red-200 text-xs font-semibold text-red-700 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -378,7 +551,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
             <div className="px-6 py-4 border-b">
-              <h3 className="text-lg font-semibold text-gray-900">Add Meeting</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{meetingModalMode === 'edit' ? 'Edit Meeting' : 'Add Meeting'}</h3>
             </div>
             <form onSubmit={createMeeting} className="px-6 py-4 space-y-4">
               <div>
@@ -423,7 +596,12 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddMeeting(false)}
+                  onClick={() => {
+                    setShowAddMeeting(false);
+                    setMeetingModalMode('create');
+                    setEditingMeetingId(null);
+                    setMeetingForm({ title: '', date: '', venue: '', description: '' });
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
                 >
                   Cancel
@@ -432,7 +610,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                   type="submit"
                   className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
                 >
-                  Add Meeting
+                  {meetingModalMode === 'edit' ? 'Save Changes' : 'Add Meeting'}
                 </button>
               </div>
             </form>
@@ -445,7 +623,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
             <div className="px-6 py-4 border-b">
-              <h3 className="text-lg font-semibold text-gray-900">Add Event</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{eventModalMode === 'edit' ? 'Edit Event' : 'Add Event'}</h3>
             </div>
             <form onSubmit={createEvent} className="px-6 py-4 space-y-4">
               <div>
@@ -491,7 +669,12 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddEvent(false)}
+                  onClick={() => {
+                    setShowAddEvent(false);
+                    setEventModalMode('create');
+                    setEditingEventId(null);
+                    setEventForm({ name: '', date: '', venue: '', type: 'Public' });
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
                 >
                   Cancel
@@ -500,7 +683,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                   type="submit"
                   className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition"
                 >
-                  Add Event
+                  {eventModalMode === 'edit' ? 'Save Changes' : 'Add Event'}
                 </button>
               </div>
             </form>

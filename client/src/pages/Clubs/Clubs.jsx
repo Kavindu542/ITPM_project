@@ -5,6 +5,13 @@ import { clubService } from '../../services/clubService';
 
 export default function Clubs({ user, onLoggedOut }) {
   const navigate = useNavigate();
+  const currentUserId = user?.id || user?._id;
+  const roleNorm = String(user?.role || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/-+/g, '_');
+  const canApply = roleNorm === 'student' || roleNorm === 'club_leader';
   const [feedLoading, setFeedLoading] = React.useState(false);
   const [hasMembership, setHasMembership] = React.useState(false);
   const [myMeetings, setMyMeetings] = React.useState([]);
@@ -179,8 +186,8 @@ export default function Clubs({ user, onLoggedOut }) {
                   <h2 className="text-lg font-bold text-gray-900">Apply for a Club</h2>
                   <p className="text-sm text-gray-500">Choose a club and submit your membership application</p>
                 </div>
-                {user?.role !== 'student' ? (
-                  <div className="text-xs text-gray-500">Only students can apply.</div>
+                {!canApply ? (
+                  <div className="text-xs text-gray-500">Only students and club leaders can apply.</div>
                 ) : null}
               </div>
 
@@ -191,8 +198,15 @@ export default function Clubs({ user, onLoggedOut }) {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {clubs.map((c) => {
-                    const disabled = c.alreadyMember || c.alreadyApplied || user?.role !== 'student';
-                    const label = c.alreadyMember ? 'Member' : c.alreadyApplied ? 'Applied' : 'Apply';
+                    const isLeaderOfClub = !!(currentUserId && c.leader?.id && String(c.leader.id) === String(currentUserId));
+                    const disabled = c.alreadyMember || c.alreadyApplied || !canApply || isLeaderOfClub;
+                    const label = isLeaderOfClub
+                      ? 'Leader'
+                      : c.alreadyMember
+                        ? 'Member'
+                        : c.alreadyApplied
+                          ? 'Applied'
+                          : 'Apply';
                     return (
                       <div key={c.id} className="rounded-2xl border border-gray-200 bg-white p-5">
                         <div className="flex items-start justify-between gap-4">
