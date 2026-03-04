@@ -23,7 +23,7 @@ export default function ContactUs() {
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent"></div>
                 </div>
                 <div className="container mx-auto px-6 text-center relative z-10">
-                    <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tighter">Get in <span className="text-blue-500">Touch</span></h1>
+                    <h1 className="text-6xl md:text-8xl font-black mb-6 tracking-tighter">Get in <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Touch</span></h1>
                     <p className="text-slate-300 text-xl md:text-2xl max-w-2xl mx-auto font-medium">
                         Have questions about CampusCore? We're here to help. Reach out to our
                         support team or visit us at our main office.

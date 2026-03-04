@@ -1,185 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Home, BookOpen, Search, Users, Globe, BookMarked, Menu
+  ArrowLeft, Home, BookOpen, Search, Users, Globe, BookMarked
 } from 'lucide-react';
-import LibraryBooks from './LibraryBooks';
-
 import SearchBooks from './SearchBooks';
 import StudyRooms from './StudyRooms';
 import DigitalResources from './DigitalResources';
 import MyLibrary from './MyLibrary';
-
-// Add styles inline with UserMenu fixes
-const styles = `
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  @keyframes scaleIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-  
-  @keyframes blob {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    25% { transform: translate(20px, -50px) scale(1.1); }
-    50% { transform: translate(-20px, 20px) scale(0.9); }
-    75% { transform: translate(50px, 50px) scale(1.05); }
-  }
-  
-  @keyframes slideInFromLeft {
-    from {
-      opacity: 0;
-      transform: translateX(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-  
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-  }
-  
-  .animate-fade-in {
-    animation: fadeIn 0.6s ease-out forwards;
-  }
-  
-  .animate-fade-in-up {
-    animation: fadeInUp 0.6s ease-out forwards;
-  }
-  
-  .animate-slide-down {
-    animation: slideDown 0.6s ease-out forwards;
-  }
-  
-  .animate-scale-in {
-    animation: scaleIn 0.5s ease-out forwards;
-  }
-  
-  .animate-blob {
-    animation: blob 7s infinite;
-  }
-  
-  .animate-slide-in-left {
-    animation: slideInFromLeft 0.5s ease-out forwards;
-  }
-  
-  .animate-pulse-soft {
-    animation: pulse 3s ease-in-out infinite;
-  }
-  
-  .animation-delay-100 { animation-delay: 100ms; }
-  .animation-delay-200 { animation-delay: 200ms; }
-  .animation-delay-300 { animation-delay: 300ms; }
-  .animation-delay-400 { animation-delay: 400ms; }
-  .animation-delay-500 { animation-delay: 500ms; }
-  .animation-delay-2000 { animation-delay: 2s; }
-  .animation-delay-4000 { animation-delay: 4s; }
-  
-  .group:hover img {
-    transform: scale(1.1) !important;
-    transition: transform 0.5s ease-out;
-  }
-  
-  .hover-lift:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
-    transition: all 0.3s ease-out;
-  }
-  
-  .hover-scale:hover {
-    transform: scale(1.05);
-    transition: all 0.3s ease-out;
-  }
-
-  /* Fix UserMenu dropdown positioning and visibility */
-  .user-menu-container {
-    position: relative;
-    z-index: 9999 !important;
-  }
-  
-  .user-menu-dropdown {
-    position: absolute !important;
-    top: 100% !important;
-    right: 0 !important;
-    margin-top: 8px !important;
-    z-index: 9999 !important;
-    min-width: 200px !important;
-    background: white !important;
-    border: 1px solid #e5e7eb !important;
-    border-radius: 12px !important;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-    backdrop-filter: blur(20px) !important;
-  }
-  
-  .user-menu-item {
-    display: flex !important;
-    align-items: center !important;
-    gap: 12px !important;
-    width: 100% !important;
-    padding: 12px 16px !important;
-    text-align: left !important;
-    color: #374151 !important;
-    font-size: 14px !important;
-    font-weight: 500 !important;
-    transition: all 0.2s ease !important;
-    border: none !important;
-    background: none !important;
-    cursor: pointer !important;
-  }
-  
-  .user-menu-item:hover {
-    background-color: #f3f4f6 !important;
-    color: #111827 !important;
-  }
-  
-  .user-menu-item:first-child {
-    border-radius: 12px 12px 0 0 !important;
-  }
-  
-  .user-menu-item:last-child {
-    border-radius: 0 0 12px 12px !important;
-    color: #ef4444 !important;
-  }
-  
-  .user-menu-item:last-child:hover {
-    background-color: #fef2f2 !important;
-    color: #dc2626 !important;
-  }
-`;
 
 export default function LibrarySystem({ user, onLoggedOut }) {
   const navigate = useNavigate();
@@ -188,14 +15,6 @@ export default function LibrarySystem({ user, onLoggedOut }) {
       return localStorage.getItem('cc_library_active_nav') || 'dashboard';
     } catch {
       return 'dashboard';
-    }
-  });
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    try {
-      const v = localStorage.getItem('cc_library_sidebar_open');
-      return v ? v === 'true' : true;
-    } catch {
-      return true;
     }
   });
 
@@ -213,6 +32,8 @@ export default function LibrarySystem({ user, onLoggedOut }) {
     { id: 'digital', label: 'Digital Resources', icon: Globe },
     { id: 'mylibrary', label: 'My Library', icon: BookMarked }
   ];
+
+  const activeItem = navItems.find((item) => item.id === activeNav) || navItems[0];
 
   // Render different content based on activeNav
   const renderContent = () => {
@@ -247,87 +68,113 @@ export default function LibrarySystem({ user, onLoggedOut }) {
   };
 
   return (
-    <>
-      <style>{styles}</style>
-      <div className="flex h-screen bg-gray-50">
-        {/* SIDEBAR */}
-        <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col fixed h-screen left-0 top-0 z-40 shadow-lg animate-slide-in-left`}>
-          {/* Logo */}
-          <div className="p-6 border-b border-gray-200 animate-fade-in">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#25f194] rounded-lg transform hover:scale-110 transition-transform duration-300 animate-scale-in">
-                <BookOpen className="h-6 w-6 text-white" />
-              </div>
-              {sidebarOpen && (
-                <div className="animate-fade-in">
-                  <h1 className="font-bold text-gray-900">Library</h1>
-                  <p className="text-xs text-gray-500">Module page</p>
-                </div>
-              )}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans">
+      {/* Background Pattern (match Study Materials) */}
+      <div className="fixed inset-0 opacity-5 pointer-events-none">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+          }}
+        />
+      </div>
+
+      <div className="relative w-full p-6">
+        {/* Top bar */}
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 backdrop-blur border border-gray-200 hover:bg-white transition-colors"
+            onClick={() => navigate('/')}
+          >
+            <ArrowLeft className="h-4 w-4 text-gray-700" />
+            <span className="font-medium text-gray-800">Back</span>
+          </button>
+        </div>
+
+        {/* Header */}
+        <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white/80 backdrop-blur shadow-sm">
+          <div className="p-6 sm:p-8 flex items-start gap-4">
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-600 to-[#25f194] shadow-lg">
+              <BookOpen className="h-6 w-6 text-white" />
             </div>
-          </div>
 
-          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            {navItems.map((item, idx) => (
-              <button
-                key={item.id}
-                onClick={() => handleNavChange(item.id)}
-                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-3 hover:translate-x-1 animate-fade-in-up ${activeNav === item.id
-                  ? 'bg-[#25f194] text-gray-900 shadow-md'
-                  : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                title={!sidebarOpen ? item.label : ''}
-                style={{ animationDelay: `${idx * 50}ms` }}
-              >
-                <item.icon size={18} className="flex-shrink-0" />
-                {sidebarOpen && <span>{item.label}</span>}
-              </button>
-            ))}
-          </nav>
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Library System</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Search books, reserve study rooms, access digital resources, and manage your activity.
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                  <Search className="h-3.5 w-3.5" />
+                  Smart search & filters
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                  <Users className="h-3.5 w-3.5" />
+                  Reserve study rooms
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                  <Globe className="h-3.5 w-3.5" />
+                  Digital resources
+                </span>
+              </div>
+            </div>
 
-          {/* Sidebar Toggle */}
-          <div className="p-4 border-t border-gray-200 animate-fade-in">
-            <button
-              onClick={() => {
-                const v = !sidebarOpen;
-                setSidebarOpen(v);
-                try { localStorage.setItem('cc_library_sidebar_open', String(v)); } catch { }
-              }}
-              className="w-full px-4 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
-              title={sidebarOpen ? 'Collapse' : 'Expand'}
-            >
-              <Menu size={18} />
-            </button>
+            <div className="hidden sm:flex flex-col items-end gap-1">
+              <div className="text-xs text-gray-500">
+                Welcome back{user?.firstName ? `, ${user.firstName}` : ''}.
+              </div>
+              <div className="text-xs text-gray-400">Use the menu to switch sections.</div>
+            </div>
           </div>
         </div>
 
-        {/* MAIN CONTENT */}
-        <div className={`flex-1 flex flex-col overflow-hidden ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300`}>
-          {/* Top Header */}
-          <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm animate-slide-down relative z-50">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {navItems.find(item => item.id === activeNav)?.label}
-              </h2>
-              <p className="text-sm text-gray-500">Welcome back!</p>
+        {/* Sidebar + Content */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Sidebar */}
+          <div className="lg:col-span-3">
+            <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+              <div className="p-5 border-b border-gray-200">
+                <div className="text-sm font-bold text-gray-900">Menu</div>
+                <div className="text-xs text-gray-500 mt-1">Navigate library features</div>
+              </div>
+              <div className="p-3 space-y-1">
+                {navItems.map((item) => {
+                  const isActive = activeNav === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => handleNavChange(item.id)}
+                      className={`w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive
+                        ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm'
+                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                        }`}
+                    >
+                      <item.icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
+                      <span className={isActive ? 'text-white' : 'text-gray-800'}>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          {/* Page Content */}
-          <div className="flex-1 overflow-auto">
-            {renderContent()}
+          {/* Content */}
+          <div className="lg:col-span-9">
+            <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+              <div className="p-5 border-b border-gray-200">
+                <h2 className="text-lg font-bold text-gray-900">{activeItem?.label}</h2>
+                <p className="text-xs text-gray-500 mt-1">Welcome back!</p>
+              </div>
+              <div>
+                {renderContent()}
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </>
-  );
-}
-
-// LibraryBooks Wrapper
-function LibraryBooksWrapper({ user, onLoggedOut }) {
-  return (
-    <div className="p-6">
-      <LibraryBooks user={user} onLoggedOut={onLoggedOut} showBackButton={false} />
     </div>
   );
 }
