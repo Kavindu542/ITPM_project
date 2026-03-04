@@ -1,5 +1,6 @@
 import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 
 import Home from './pages/Home.jsx';
 import Profile from './pages/Profile.jsx';
@@ -13,14 +14,15 @@ import ReviewsCenter from './pages/StudyMaterial/ReviewsCenter.jsx';
 import ForumSupport from './pages/StudyMaterial/ForumSupport.jsx';
 import Hostel from './pages/Hostel/Hostel.jsx';
 import LibrarySystem from './pages/LibrarySystem/LibrarySystem.jsx';
+import LibraryBooks from './pages/LibrarySystem/LibraryBooks.jsx';
+import SearchBooks from './pages/LibrarySystem/SearchBooks.jsx';
+import StudyRooms from './pages/LibrarySystem/StudyRooms.jsx';
 import Clubs from './pages/Clubs/Clubs.jsx';
 import LeaderDashboard from './pages/Leader/LeaderDashboard.jsx';
 import AdminSignIn from './pages/admin/AdminSignIn.jsx';
 import AdminModuleSignIn from './pages/admin/AdminModuleSignIn.jsx';
 import HostelAdmins from './pages/admin/HostelAdmins.jsx';
-import RequireAuth from './components/RequireAuth.jsx';
-import RequireModuleAuth from './components/RequireModuleAuth.jsx';
-import { authService } from './services/authService';
+import HostelTermsAndConditions from './pages/Hostel/TermsAndConditions.jsx';
 
 import StudyMaterialAdminLayout from './pages/admindashboard/studyMaterial/StudyMaterialAdminLayout.jsx';
 import StudyMaterialAdminDashboardPage from './pages/admindashboard/studyMaterial/DashboardPage.jsx';
@@ -33,9 +35,63 @@ import RequestsManagementPage from './pages/admindashboard/studyMaterial/Request
 import ReviewsManagementPage from './pages/admindashboard/studyMaterial/ReviewsManagementPage.jsx';
 import ForumManagementPage from './pages/admindashboard/studyMaterial/ForumManagementPage.jsx';
 import LibraryDashboard from './pages/admindashboard/LibraryM/LibraryDashboard.jsx';
+import LibraryAdminLayout from './pages/admindashboard/LibraryM/LibraryAdminLayout.jsx';
 import ClubAndSocietyDashboard from './pages/admindashboard/Club/ClubAndSocietyDashboard.jsx';
-import HostelWardenDashboard from './pages/admindashboard/Hostel/warden/HostelWardenDashboard.jsx';
-import HostelTermsAndConditions from './pages/Hostel/TermsAndConditions.jsx';
+import HostelWardenDashboard from './pages/admindashboard/Hostel/HostelWardenDashboard.jsx';
+import BookManagement from './pages/admindashboard/LibraryM/BookManagement.jsx';
+import StudyRoomManagement from './pages/admindashboard/LibraryM/StudyRoomManagement.jsx';
+import DigitalResourcesManagement from './pages/admindashboard/LibraryM/DigitalResourcesManagement.jsx';
+import ReservationManagement from './pages/admindashboard/LibraryM/ReservationManagement.jsx';
+
+import { authService } from './services/authService';
+
+// ============================================================================
+// INLINE COMPONENTS - No separate files needed
+// ============================================================================
+
+// RequireAuth Component
+function RequireAuth({ user, children }) {
+  if (!user) {
+    return <Navigate to="/signin" replace />;
+  }
+  return children;
+}
+
+// RequireModuleAuth Component
+function RequireModuleAuth({ user, moduleKey, redirectTo = '/admin/signin', children }) {
+  if (!user || user.module !== moduleKey) {
+    return <Navigate to={redirectTo} replace />;
+  }
+  return children;
+}
+
+// UserMenu Component
+function UserMenu({ user, onLoggedOut }) {
+  return (
+    <div className="flex items-center gap-4">
+      <div className="text-right">
+        <p className="text-sm font-semibold text-gray-900">{user?.name}</p>
+        <p className="text-xs text-gray-500">ID: {user?.studentId}</p>
+      </div>
+      <img
+        src={user?.avatar || 'https://via.placeholder.com/40'}
+        alt={user?.name}
+        className="w-10 h-10 rounded-full border-2 border-gray-200"
+      />
+      <button
+        onClick={onLoggedOut}
+        className="p-2 hover:bg-gray-100 rounded-lg transition"
+        title="Logout"
+      >
+        <LogOut size={18} className="text-gray-600" />
+      </button>
+    </div>
+  );
+}
+
+// ============================================================================
+// MAIN APP COMPONENT
+// ============================================================================
 
 export default function App() {
   const [user, setUser] = React.useState(null);
@@ -56,6 +112,12 @@ export default function App() {
   React.useEffect(() => {
     let cancelled = false;
 
+    const withTimeout = (promise, ms = 6000) =>
+      Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), ms)),
+      ]);
+
     const load = async () => {
       if (!authService.hasSessionHint()) {
         if (!cancelled) {
@@ -66,9 +128,9 @@ export default function App() {
       }
 
       try {
-        const me = await authService.me();
+        const me = await withTimeout(authService.me(), 6000);
         if (!cancelled) setUser(me?.user ?? null);
-      } catch (e) {
+      } catch (_e) {
         if (!cancelled) setUser(null);
       } finally {
         if (!cancelled) setLoading(false);
@@ -76,34 +138,25 @@ export default function App() {
     };
 
     load();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   if (loading) {
     return (
-      <div className="container">
-        <div className="appLoadingWrap">
-          <div role="status" aria-live="polite" aria-busy="true">
-            <div className="appSpinner" aria-hidden="true" />
-            <span className="sr-only">Loading…</span>
-          </div>
-        </div>
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', fontFamily: 'sans-serif' }}>
+        <div>Loading application...</div>
       </div>
     );
   }
 
   return (
     <Routes>
+      {/* Materials Routes */}
       <Route
         path="/materials"
         element={
           <RequireAuth user={user}>
-            <StudyMaterial
-              user={user}
-              onLoggedOut={() => setUser(null)}
-            />
+            <StudyMaterial user={user} onLoggedOut={() => setUser(null)} />
           </RequireAuth>
         }
       />
@@ -111,10 +164,7 @@ export default function App() {
         path="/materials/:section"
         element={
           <RequireAuth user={user}>
-            <StudyMaterial
-              user={user}
-              onLoggedOut={() => setUser(null)}
-            />
+            <StudyMaterial user={user} onLoggedOut={() => setUser(null)} />
           </RequireAuth>
         }
       />
@@ -122,10 +172,7 @@ export default function App() {
         path="/materials/requests"
         element={
           <RequireAuth user={user}>
-            <RequestsCenter
-              user={user}
-              onLoggedOut={() => setUser(null)}
-            />
+            <RequestsCenter user={user} onLoggedOut={() => setUser(null)} />
           </RequireAuth>
         }
       />
@@ -133,10 +180,7 @@ export default function App() {
         path="/materials/reviews"
         element={
           <RequireAuth user={user}>
-            <ReviewsCenter
-              user={user}
-              onLoggedOut={() => setUser(null)}
-            />
+            <ReviewsCenter user={user} onLoggedOut={() => setUser(null)} />
           </RequireAuth>
         }
       />
@@ -144,33 +188,27 @@ export default function App() {
         path="/materials/forum"
         element={
           <RequireAuth user={user}>
-            <ForumSupport
-              user={user}
-              onLoggedOut={() => setUser(null)}
-            />
+            <ForumSupport user={user} onLoggedOut={() => setUser(null)} />
           </RequireAuth>
         }
       />
+
+      {/* Profile Route */}
       <Route
         path="/profile"
         element={
           <RequireAuth user={user}>
-            <Profile
-              user={user}
-              onUserUpdated={setUser}
-              onLoggedOut={() => setUser(null)}
-            />
+            <Profile user={user} onUserUpdated={setUser} onLoggedOut={() => setUser(null)} />
           </RequireAuth>
         }
       />
+
+      {/* Hostel Routes */}
       <Route
         path="/hostel"
         element={
           <RequireAuth user={user}>
-            <Hostel
-              user={user}
-              onLoggedOut={() => setUser(null)}
-            />
+            <Hostel user={user} onLoggedOut={() => setUser(null)} />
           </RequireAuth>
         }
       />
@@ -182,29 +220,52 @@ export default function App() {
           </RequireAuth>
         }
       />
+
+      {/* LIBRARY ROUTES */}
       <Route
         path="/library"
         element={
           <RequireAuth user={user}>
-            <LibrarySystem
-              user={user}
-              onLoggedOut={() => setUser(null)}
-            />
+            <LibrarySystem user={user} onLoggedOut={() => setUser(null)} />
           </RequireAuth>
         }
       />
       <Route
-        path="/clubs"
+        path="/library/books"
         element={
           <RequireAuth user={user}>
-            <Clubs
-              user={user}
-              onLoggedOut={() => setUser(null)}
-            />
+            <LibraryBooks user={user} onLoggedOut={() => setUser(null)} />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/library/search"
+        element={
+          <RequireAuth user={user}>
+            <SearchBooks user={user} onLoggedOut={() => setUser(null)} />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/library/study-rooms"
+        element={
+          <RequireAuth user={user}>
+            <StudyRooms user={user} onLoggedOut={() => setUser(null)} />
           </RequireAuth>
         }
       />
 
+      {/* Clubs Route */}
+      <Route
+        path="/clubs"
+        element={
+          <RequireAuth user={user}>
+            <Clubs user={user} onLoggedOut={() => setUser(null)} />
+          </RequireAuth>
+        }
+      />
+
+      {/* Leader Dashboard */}
       <Route
         path="/leader/dashboard"
         element={
@@ -217,6 +278,8 @@ export default function App() {
           </RequireAuth>
         }
       />
+
+      {/* Admin Routes */}
       <Route
         path="/admin/study-material"
         element={
@@ -236,14 +299,23 @@ export default function App() {
         <Route path="reviews" element={<ReviewsManagementPage />} />
         <Route path="forum" element={<ForumManagementPage />} />
       </Route>
+
       <Route
-        path="/admin/library/dashboard"
+        path="/admin/library"
         element={
           <RequireModuleAuth user={user} moduleKey="library">
-            <LibraryDashboard user={user} onLoggedOut={() => setUser(null)} />
+            <LibraryAdminLayout user={user} onLoggedOut={() => setUser(null)} />
           </RequireModuleAuth>
         }
-      />
+      >
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<LibraryDashboard user={user} />} />
+        <Route path="books" element={<BookManagement />} />
+        <Route path="study-rooms" element={<StudyRoomManagement />} />
+        <Route path="digital-resources" element={<DigitalResourcesManagement />} />
+        <Route path="reservations" element={<ReservationManagement />} />
+      </Route>
+
       <Route
         path="/admin/club-and-society/dashboard"
         element={
@@ -252,17 +324,20 @@ export default function App() {
           </RequireModuleAuth>
         }
       />
+
       <Route
         path="/admin/hostel/warden/dashboard"
         element={
-          <RequireModuleAuth user={user} moduleKey="hostel-warden" redirectTo="/admin/hostel/warden">
+          <RequireModuleAuth user={user} moduleKey="hostel-warden" redirectTo="/admin/hostel">
             <HostelWardenDashboard user={user} onLoggedOut={() => setUser(null)} />
           </RequireModuleAuth>
         }
       />
 
+      {/* Admin SignIn Routes */}
       <Route path="/admin" element={<Navigate to="/admin/signin" replace />} />
       <Route path="/admin/login" element={<Navigate to="/admin/signin" replace />} />
+
       <Route
         path="/admin/study-material/signin"
         element={
@@ -273,11 +348,9 @@ export default function App() {
           )
         }
       />
-      <Route
-        path="/admin/hostel/signin"
-        element={<Navigate to="/admin/hostel" replace />}
-      />
+
       <Route path="/admin/hostel" element={<HostelAdmins />} />
+
       <Route
         path="/admin/hostel/warden/signin"
         element={
@@ -288,6 +361,7 @@ export default function App() {
           )
         }
       />
+
       <Route
         path="/admin/hostel/laundry/signin"
         element={
@@ -298,6 +372,7 @@ export default function App() {
           )
         }
       />
+
       <Route
         path="/admin/hostel/meals-shop/signin"
         element={
@@ -308,6 +383,7 @@ export default function App() {
           )
         }
       />
+
       <Route
         path="/admin/library/signin"
         element={
@@ -318,6 +394,7 @@ export default function App() {
           )
         }
       />
+
       <Route
         path="/admin/club-and-society/signin"
         element={
@@ -328,6 +405,7 @@ export default function App() {
           )
         }
       />
+
       <Route
         path="/admin/signin"
         element={
@@ -342,6 +420,8 @@ export default function App() {
           )
         }
       />
+
+      {/* Auth Routes */}
       <Route
         path="/signin"
         element={user ? <Navigate to="/" replace /> : <SignIn onSignedIn={(u) => setUser(u)} />}
@@ -358,6 +438,8 @@ export default function App() {
         path="/signup"
         element={user ? <Navigate to="/" replace /> : <SignUp onSignedIn={(u) => setUser(u)} />}
       />
+
+      {/* Home Route */}
       <Route
         path="/"
         element={
@@ -365,14 +447,13 @@ export default function App() {
             <Navigate to={adminDashboardForModule(user.module)} replace />
           ) : (
             <RequireAuth user={user}>
-              <Home
-                user={user}
-                onLoggedOut={() => setUser(null)}
-              />
+              <Home user={user} onLoggedOut={() => setUser(null)} />
             </RequireAuth>
           )
         }
       />
+
+      {/* Catch All */}
       <Route
         path="*"
         element={

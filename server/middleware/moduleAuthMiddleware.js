@@ -3,13 +3,13 @@ const requireModuleAdmin = (moduleKey) => {
     if (!moduleKey) {
       return res.status(500).json({ message: "Server misconfiguration" });
     }
-
     if (!req.user) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    // Allow if the JWT has the correct module claim (module-scoped login)
-    if (req.auth?.module === moduleKey) {
+    // Check for module claim from various possible locations
+    const moduleVal = req.user?.mod || req.user?.module || req.auth?.module || "";
+    if (moduleVal === moduleKey) {
       return next();
     }
 

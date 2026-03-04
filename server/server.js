@@ -4,15 +4,20 @@ const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 const mongoose = require("mongoose");
+const path = require('path');
 
 const { connectDB } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const studyMaterialRoutes = require("./routes/studyMaterialRoutes");
 
+// Import library routes
+const libraryRoutes = require('./routes/libraryRoutes');
+
 // All routes (merged correctly)
 const adminClubRoutes = require("./routes/adminClubRoutes");
 const leaderClubRoutes = require("./routes/leaderClubRoutes");
 const clubFeedRoutes = require("./routes/clubFeedRoutes");
+const clubPublicRoutes = require("./routes/clubPublicRoutes");
 const hostelRoutes = require("./routes/hostelRoutes");
 
 const { errorHandler } = require("./middleware/errorMiddleware");
@@ -60,9 +65,13 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/study-material", studyMaterialRoutes);
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/api/library", libraryRoutes);
+
 app.use("/api/admin", adminClubRoutes);
 app.use("/api/leader", leaderClubRoutes);
 app.use("/api/club-feed", clubFeedRoutes);
+app.use("/api/clubs", clubPublicRoutes);
 app.use("/api/hostel", hostelRoutes);
 
 app.use(errorHandler);
@@ -146,5 +155,11 @@ connectDB(process.env.MONGODB_URI)
   .then(() => startListening())
   .catch((err) => {
     console.error("Failed to start server:", err.message);
-    process.exit(1);
+    console.warn("Starting server without database connection (degraded mode)");
+    try {
+      startListening();
+    } catch (e) {
+      console.error("Unable to start HTTP server:", e.message);
+      process.exit(1);
+    }
   });

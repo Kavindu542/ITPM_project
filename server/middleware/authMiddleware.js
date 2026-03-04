@@ -1,39 +1,25 @@
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const jwt = require('jsonwebtoken');
 
-const getTokenFromRequest = (req) => {
-  const cookieToken = req.cookies?.token;
-  if (cookieToken) return cookieToken;
-
-  const authHeader = req.header("Authorization");
-  if (!authHeader) return null;
-
-  const [scheme, token] = authHeader.split(" ");
-  if (scheme?.toLowerCase() !== "bearer") return null;
-  return token || null;
+const getToken = (req) => {
+  if (req.cookies?.token) return req.cookies.token;
+  const auth = req.headers.authorization || '';
+  if (auth.startsWith('Bearer ')) return auth.slice(7).trim();
+  return null;
 };
 
-const requireAuth = async (req, res, next) => {
+const requireAuth = (req, res, next) => {
   try {
-    const token = getTokenFromRequest(req);
-    if (!token) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
+    const token = getToken(req);
+    if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(payload.sub).select(
-      "_id studentId name email avatarUrl role semester enrolledModules",
-    );
-    if (!user) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    req.user = user;
-    req.auth = { module: payload.mod || null };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    if (decoded.sub && !decoded.id) req.user.id = decoded.sub;
+    if (decoded.sub && !decoded._id) req.user._id = decoded.sub;
     next();
-  } catch (err) {
-    return res.status(401).json({ message: "Not authenticated" });
+  } catch {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
   }
 };
 
-module.exports = { requireAuth };
+module.exports = { requireAuth, protect: requireAuth };

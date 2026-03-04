@@ -66,16 +66,25 @@ export const authService = {
 
   async login({ email, password }) {
     const res = await api.post("/auth/login", { email, password });
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("moduleToken");
+    localStorage.removeItem("token");
     setHasSession(true);
     return res.data;
   },
 
   async moduleLogin({ module, email, password }) {
-    const res = await api.post("/auth/module-login", {
-      module,
-      email,
-      password,
-    });
+    const payload = { module, email, password };
+
+    const res = await api.post("/auth/module-login", payload);
+
+    const token =
+      res?.data?.token ||
+      res?.data?.accessToken ||
+      res?.data?.data?.token;
+
+    if (token) localStorage.setItem("moduleToken", token);
+
     setHasSession(true);
     return res.data;
   },
@@ -112,6 +121,9 @@ export const authService = {
 
   async logout() {
     const res = await api.post("/auth/logout");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("moduleToken");
+    localStorage.removeItem("token");
     setHasSession(false);
     return res.data;
   },

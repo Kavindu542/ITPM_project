@@ -185,13 +185,47 @@ export default function StudyMaterial({ user, onLoggedOut }) {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const downloadFile = (m) => {
+  const downloadFile = async (m) => {
     if (!m?.id) return;
     const url = studyMaterialService.fileUrl(m.id, {
       versionId: m?.currentVersion?.id,
       disposition: 'attachment',
     });
-    window.open(url, '_blank', 'noopener,noreferrer');
+    const filename = String(m?.title || 'material').replace(/[^a-z0-9_\-\.]/gi, '_');
+    try {
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error('network');
+      const blob = await res.blob();
+      if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+        window.navigator.msSaveOrOpenBlob(blob, filename);
+        return;
+      }
+      const objUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = filename;
+      a.target = '_blank';
+      a.rel = 'noopener,noreferrer';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(objUrl);
+    } catch (e) {
+      try {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.target = '_blank';
+        a.rel = 'noopener,noreferrer';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    }
   };
 
   const toggleVersions = async (id) => {
