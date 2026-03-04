@@ -24,16 +24,16 @@ export const hostelService = {
       const response = await api.get('/hostel/my-application');
       return response.data;
     } catch (error) {
+      // Handle 404 silently - no application exists yet (expected for new users)
+      if (error.response?.status === 404) {
+        return null;
+      }
+
       console.error('getMyApplication error:', {
         status: error.response?.status,
         data: error.response?.data,
         message: error.message,
       });
-      // Handle 404 - no application exists yet
-      if (error.response?.status === 404) {
-        console.log('No application found (404) - this is expected for new users');
-        return null;
-      }
       throw error.response?.data || error;
     }
   },

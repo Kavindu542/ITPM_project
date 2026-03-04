@@ -37,7 +37,7 @@ import ForumManagementPage from './pages/admindashboard/studyMaterial/ForumManag
 import LibraryDashboard from './pages/admindashboard/LibraryM/LibraryDashboard.jsx';
 import LibraryAdminLayout from './pages/admindashboard/LibraryM/LibraryAdminLayout.jsx';
 import ClubAndSocietyDashboard from './pages/admindashboard/Club/ClubAndSocietyDashboard.jsx';
-import HostelWardenDashboard from './pages/admindashboard/Hostel/HostelWardenDashboard.jsx';
+import HostelWardenDashboard from './pages/admindashboard/Hostel/warden/HostelWardenDashboard.jsx';
 import BookManagement from './pages/admindashboard/LibraryM/BookManagement.jsx';
 import StudyRoomManagement from './pages/admindashboard/LibraryM/StudyRoomManagement.jsx';
 import DigitalResourcesManagement from './pages/admindashboard/LibraryM/DigitalResourcesManagement.jsx';

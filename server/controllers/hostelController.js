@@ -53,7 +53,7 @@ async function getMyApplication(req, res) {
     if (!userId) return res.status(401).json({ message: 'Not authenticated' });
 
     const app = await HostelApplication.findOne({ user: userId }).sort({ createdAt: -1 });
-    if (!app) return res.status(404).json({ message: 'Not found' });
+    if (!app) return res.status(200).json(null);
     return res.json({
       id: app._id,
       status: app.status,
