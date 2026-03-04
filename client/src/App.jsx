@@ -34,7 +34,7 @@ import ReviewsManagementPage from './pages/admindashboard/studyMaterial/ReviewsM
 import ForumManagementPage from './pages/admindashboard/studyMaterial/ForumManagementPage.jsx';
 import LibraryDashboard from './pages/admindashboard/LibraryM/LibraryDashboard.jsx';
 import ClubAndSocietyDashboard from './pages/admindashboard/Club/ClubAndSocietyDashboard.jsx';
-import HostelWardenDashboard from './pages/admindashboard/Hostel/HostelWardenDashboard.jsx';
+import HostelWardenDashboard from './pages/admindashboard/Hostel/warden/HostelWardenDashboard.jsx';
 import HostelTermsAndConditions from './pages/Hostel/TermsAndConditions.jsx';
 
 export default function App() {
@@ -255,7 +255,7 @@ export default function App() {
       <Route
         path="/admin/hostel/warden/dashboard"
         element={
-          <RequireModuleAuth user={user} moduleKey="hostel-warden" redirectTo="/admin/hostel">
+          <RequireModuleAuth user={user} moduleKey="hostel-warden" redirectTo="/admin/hostel/warden">
             <HostelWardenDashboard user={user} onLoggedOut={() => setUser(null)} />
           </RequireModuleAuth>
         }
