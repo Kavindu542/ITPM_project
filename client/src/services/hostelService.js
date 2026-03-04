@@ -187,4 +187,14 @@ export const hostelService = {
       throw error.response?.data || error;
     }
   },
+
+  // Laundry admin: Delete booking row
+  deleteLaundryBooking: async (bookingId) => {
+    try {
+      const response = await api.delete(`/hostel/admin/laundry/bookings/${bookingId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
 };

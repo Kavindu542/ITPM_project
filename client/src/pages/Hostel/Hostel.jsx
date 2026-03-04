@@ -39,6 +39,7 @@ export default function Hostel({ user, onLoggedOut }) {
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [expandedShopId, setExpandedShopId] = useState('');
   const [bookingForm, setBookingForm] = useState({
+    studentName: '',
     contactNumber: '',
     floor: '',
     roomNumber: '',
@@ -183,7 +184,8 @@ export default function Hostel({ user, onLoggedOut }) {
   const openBooking = (shop) => {
     setSelectedShop(shop);
     setBookingForm({
-      contactNumber: user?.studentId || '',
+      studentName: user?.name || '',
+      contactNumber: user?.contactNumber || '',
       floor: '',
       roomNumber: '',
       serviceType: shop?.availableServices?.[0] || 'washing',
@@ -199,6 +201,7 @@ export default function Hostel({ user, onLoggedOut }) {
     try {
       await hostelService.createLaundryBooking({
         shopId: selectedShop._id,
+        studentName: bookingForm.studentName,
         contactNumber: bookingForm.contactNumber,
         floor: bookingForm.floor,
         roomNumber: bookingForm.roomNumber,
@@ -911,6 +914,9 @@ export default function Hostel({ user, onLoggedOut }) {
                           <div className="mt-2 text-sm text-gray-700">
                             Service: {booking.serviceType === 'dry-cleaning' ? 'Dry Cleaning' : booking.serviceType}
                           </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            Contact: {booking.contactNumber || '-'}
+                          </div>
                           {(booking.floor || booking.roomNumber) && (
                             <div className="text-sm text-gray-600 mt-1">
                               {booking.floor ? `Floor: ${booking.floor}` : ''}{booking.floor && booking.roomNumber ? ' | ' : ''}{booking.roomNumber ? `Room: ${booking.roomNumber}` : ''}
@@ -936,12 +942,24 @@ export default function Hostel({ user, onLoggedOut }) {
 
                   <form onSubmit={submitLaundryBooking} className="mt-4 space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Student Name *</label>
                       <input
                         type="text"
+                        value={bookingForm.studentName}
+                        onChange={(e) => setBookingForm((prev) => ({ ...prev, studentName: e.target.value }))}
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2"
+                        placeholder="Enter your name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number *</label>
+                      <input
+                        type="tel"
                         value={bookingForm.contactNumber}
                         onChange={(e) => setBookingForm((prev) => ({ ...prev, contactNumber: e.target.value }))}
                         className="w-full rounded-lg border border-gray-200 px-3 py-2"
+                        placeholder="07X XXX XXXX"
                         required
                       />
                     </div>

@@ -19,6 +19,7 @@ const {
   getMyLaundryBookings,
   adminGetLaundryBookings,
   adminUpdateLaundryBookingStatus,
+  adminDeleteLaundryBooking,
 } = require('../controllers/hostelController');
 
 const router = express.Router();
@@ -44,5 +45,6 @@ router.get('/admin/laundry/shop-profile', requireAuth, requireModuleAdmin('hoste
 router.put('/admin/laundry/shop-profile', requireAuth, requireModuleAdmin('hostel-laundry'), adminUpsertLaundryShopProfile);
 router.get('/admin/laundry/bookings', requireAuth, requireModuleAdmin('hostel-laundry'), adminGetLaundryBookings);
 router.put('/admin/laundry/bookings/:id/status', requireAuth, requireModuleAdmin('hostel-laundry'), adminUpdateLaundryBookingStatus);
+router.delete('/admin/laundry/bookings/:id', requireAuth, requireModuleAdmin('hostel-laundry'), adminDeleteLaundryBooking);
 
 module.exports = router;

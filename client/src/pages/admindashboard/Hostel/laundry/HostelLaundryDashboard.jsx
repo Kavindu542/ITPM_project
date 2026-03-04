@@ -15,6 +15,7 @@ export default function HostelLaundryDashboard({ user, onLoggedOut }) {
   const [logoPreview, setLogoPreview] = React.useState('');
   const [bookingsLoading, setBookingsLoading] = React.useState(false);
   const [approvingBookingId, setApprovingBookingId] = React.useState('');
+  const [deletingBookingId, setDeletingBookingId] = React.useState('');
   const [bookings, setBookings] = React.useState([]);
   const [form, setForm] = React.useState({
     logoUrl: '',
@@ -83,6 +84,22 @@ export default function HostelLaundryDashboard({ user, onLoggedOut }) {
       setError(e?.message || 'Failed to approve booking');
     } finally {
       setApprovingBookingId('');
+    }
+  };
+
+  const handleDeleteBooking = async (bookingId) => {
+    const ok = window.confirm('Delete this booking row?');
+    if (!ok) return;
+
+    try {
+      setDeletingBookingId(bookingId);
+      setError('');
+      await hostelService.deleteLaundryBooking(bookingId);
+      await loadLaundryBookings();
+    } catch (e) {
+      setError(e?.message || 'Failed to delete booking');
+    } finally {
+      setDeletingBookingId('');
     }
   };
 
@@ -440,18 +457,28 @@ export default function HostelLaundryDashboard({ user, onLoggedOut }) {
                               </td>
                               <td className="px-3 py-3 text-gray-600">{new Date(booking.createdAt).toLocaleString()}</td>
                               <td className="px-3 py-3">
-                                {booking.status === 'pending' ? (
+                                <div className="flex items-center gap-2">
+                                  {booking.status === 'pending' ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handlePendingApproval(booking._id)}
+                                      disabled={approvingBookingId === booking._id}
+                                      className="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600 disabled:bg-gray-400"
+                                    >
+                                      {approvingBookingId === booking._id ? 'Approving...' : 'Pending Approval'}
+                                    </button>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">-</span>
+                                  )}
                                   <button
                                     type="button"
-                                    onClick={() => handlePendingApproval(booking._id)}
-                                    disabled={approvingBookingId === booking._id}
-                                    className="rounded-md bg-amber-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600 disabled:bg-gray-400"
+                                    onClick={() => handleDeleteBooking(booking._id)}
+                                    disabled={deletingBookingId === booking._id}
+                                    className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:bg-gray-400"
                                   >
-                                    {approvingBookingId === booking._id ? 'Approving...' : 'Pending Approval'}
+                                    {deletingBookingId === booking._id ? 'Deleting...' : 'Delete'}
                                   </button>
-                                ) : (
-                                  <span className="text-xs text-gray-400">-</span>
-                                )}
+                                </div>
                               </td>
                             </tr>
                           ))}

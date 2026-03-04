@@ -394,7 +394,7 @@ async function createLaundryBooking(req, res) {
     const studentUser = req.user?._id;
     if (!studentUser) return res.status(401).json({ message: 'Not authenticated' });
 
-    const { shopId, contactNumber, floor = '', roomNumber = '', serviceType, notes = '' } = req.body || {};
+    const { shopId, studentName = '', contactNumber, floor = '', roomNumber = '', serviceType, notes = '' } = req.body || {};
 
     if (!shopId || !contactNumber || !serviceType) {
       return res.status(400).json({ message: 'shopId, contactNumber and serviceType are required' });
@@ -413,7 +413,7 @@ async function createLaundryBooking(req, res) {
       shop: shop._id,
       studentUser,
       studentId: req.user?.studentId || '',
-      studentName: req.user?.name || '',
+      studentName: String(studentName || req.user?.name || '').trim(),
       contactNumber: String(contactNumber).trim(),
       floor: String(floor || '').trim(),
       roomNumber: String(roomNumber || '').trim(),
@@ -455,11 +455,12 @@ async function adminGetLaundryBookings(req, res) {
     if (!adminUser) return res.status(401).json({ message: 'Not authenticated' });
 
     const shop = await LaundryShop.findOne({ adminUser });
-    if (!shop) return res.json([]);
+    const filter = shop ? { shop: shop._id } : {};
 
-    const bookings = await LaundryBooking.find({ shop: shop._id })
+    const bookings = await LaundryBooking.find(filter)
       .sort({ createdAt: -1 })
-      .select('studentName contactNumber floor roomNumber serviceType status createdAt notes');
+      .populate('shop', 'name')
+      .select('studentName contactNumber floor roomNumber serviceType status createdAt notes shop');
 
     return res.json(bookings);
   } catch (err) {
@@ -483,18 +484,34 @@ async function adminUpdateLaundryBookingStatus(req, res) {
     }
 
     const shop = await LaundryShop.findOne({ adminUser });
-    if (!shop) return res.status(404).json({ message: 'Laundry shop not found' });
+    const filter = shop ? { _id: id, shop: shop._id } : { _id: id };
 
-    const booking = await LaundryBooking.findOneAndUpdate(
-      { _id: id, shop: shop._id },
-      { $set: { status: String(status) } },
-      { new: true }
-    );
+    const booking = await LaundryBooking.findOneAndUpdate(filter, { $set: { status: String(status) } }, { new: true });
 
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
     return res.json({ message: 'Booking status updated', booking });
   } catch (err) {
     console.error('adminUpdateLaundryBookingStatus error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Laundry admin: delete a booking row
+async function adminDeleteLaundryBooking(req, res) {
+  try {
+    const adminUser = req.user?._id;
+    if (!adminUser) return res.status(401).json({ message: 'Not authenticated' });
+
+    const { id } = req.params;
+    const shop = await LaundryShop.findOne({ adminUser });
+    const filter = shop ? { _id: id, shop: shop._id } : { _id: id };
+
+    const deleted = await LaundryBooking.findOneAndDelete(filter);
+    if (!deleted) return res.status(404).json({ message: 'Booking not found' });
+
+    return res.json({ message: 'Booking deleted' });
+  } catch (err) {
+    console.error('adminDeleteLaundryBooking error', err);
     return res.status(500).json({ message: 'Server error' });
   }
 }
@@ -518,4 +535,5 @@ module.exports = {
   getMyLaundryBookings,
   adminGetLaundryBookings,
   adminUpdateLaundryBookingStatus,
+  adminDeleteLaundryBooking,
 };
