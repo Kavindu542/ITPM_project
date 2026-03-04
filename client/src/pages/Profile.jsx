@@ -150,19 +150,6 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans">
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/campuscore-logo.png" alt="CampusCore" className="h-10 w-auto object-contain" />
-            <div className="text-xs text-gray-500">Profile</div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Removed dark mode toggle button */}
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-7xl mx-auto p-6">
         <div className="space-y-6">
           <div>
