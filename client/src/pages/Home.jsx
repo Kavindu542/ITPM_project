@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { clubService } from '../services/clubService';
 import UserMenu from '../components/UserMenu';
-import { 
+import {
   LogOut,
   BookOpen,
   Bell,
@@ -65,35 +65,35 @@ export default function Home({ user, onLoggedOut }) {
 
   // Quick Actions with images
   const quickActions = [
-    { 
-      icon: BookText, 
+    {
+      icon: BookText,
       image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      label: 'Study Materials', 
-      color: 'from-blue-500 to-blue-600', 
+      label: 'Study Materials',
+      color: 'from-blue-500 to-blue-600',
       path: '/materials',
       description: 'Access course materials, notes, and resources'
     },
-    { 
-      icon: Building2, 
+    {
+      icon: Building2,
       image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      label: 'Hostel Portal', 
-      color: 'from-emerald-500 to-emerald-600', 
+      label: 'Hostel Portal',
+      color: 'from-emerald-500 to-emerald-600',
       path: '/hostel?view=apply',
       description: 'Manage accommodation, complaints, and facilities'
     },
-    { 
-      icon: GraduationCap, 
+    {
+      icon: GraduationCap,
       image: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      label: 'Library', 
-      color: 'from-[#25f194] to-[#25f194]', 
+      label: 'Library',
+      color: 'from-[#25f194] to-[#25f194]',
       path: '/library',
       description: 'Browse books, reserve, and check due dates'
     },
-    { 
-      icon: Users2, 
+    {
+      icon: Users2,
       image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-      label: 'Clubs', 
-      color: 'from-pink-500 to-pink-600', 
+      label: 'Clubs',
+      color: 'from-pink-500 to-pink-600',
       path: '/clubs',
       description: 'Join campus clubs and societies'
     },
@@ -218,7 +218,7 @@ export default function Home({ user, onLoggedOut }) {
             <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-[#25f194] to-[#25f194] rounded-3xl p-6 lg:p-8 text-white shadow-xl shadow-blue-200/40">
               <div className="absolute right-0 top-0 bottom-0 w-1/3">
                 <div className="absolute inset-0 bg-gradient-to-l from-blue-600/50 to-transparent"></div>
-                <img 
+                <img
                   src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
                   alt="Campus"
                   className="w-full h-full object-cover opacity-20"
@@ -235,8 +235,8 @@ export default function Home({ user, onLoggedOut }) {
                     <span className="px-3 py-1 rounded-full bg-white/15 border border-white/20 text-xs font-medium">Quick Access</span>
                   </div>
                 </div>
-               
-                
+
+
               </div>
             </div>
           </div>
@@ -338,7 +338,7 @@ export default function Home({ user, onLoggedOut }) {
                   </button>
                 </div>
               </div>
-              
+
               <div className="p-6">
                 {/* Image Gallery */}
                 <div className="grid grid-cols-3 gap-3 mb-6">
@@ -394,7 +394,7 @@ export default function Home({ user, onLoggedOut }) {
                   </button>
                 </div>
               </div>
-              
+
               <div className="p-6">
                 {/* Main Hostel Image */}
                 <div className="relative h-48 rounded-xl overflow-hidden mb-6">
@@ -455,7 +455,7 @@ export default function Home({ user, onLoggedOut }) {
                   </button>
                 </div>
               </div>
-              
+
               <div className="p-6">
                 {/* Library Image */}
                 <div className="relative h-48 rounded-xl overflow-hidden mb-6">
@@ -511,7 +511,7 @@ export default function Home({ user, onLoggedOut }) {
                   </button>
                 </div>
               </div>
-              
+
               <div className="p-6">
                 {/* Club Images Carousel */}
                 <div className="relative h-48 rounded-xl overflow-hidden mb-6">
@@ -539,8 +539,8 @@ export default function Home({ user, onLoggedOut }) {
                     <div key={club.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="text-lg">
-                          {club.category === 'Technology' ? '💻' : 
-                           club.category === 'Arts' ? '🎭' : '⚽'}
+                          {club.category === 'Technology' ? '💻' :
+                            club.category === 'Arts' ? '🎭' : '⚽'}
                         </div>
                         <div>
                           <div className="font-medium text-gray-900">{club.name}</div>
@@ -593,11 +593,11 @@ export default function Home({ user, onLoggedOut }) {
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn"
           onClick={() => setShowLogoutConfirm(false)}
         >
-          <div 
+          <div
             className="bg-white rounded-2xl w-full max-w-md mx-4 animate-slideUp"
             onClick={(e) => e.stopPropagation()}
           >
@@ -608,15 +608,15 @@ export default function Home({ user, onLoggedOut }) {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900">Confirm Logout</h3>
               </div>
-              
+
               <p className="text-gray-600 mb-6">Are you sure you want to logout from your account? You'll need to sign in again to access your dashboard.</p>
-              
+
               {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm mb-4">
                   {error}
                 </div>
               )}
-              
+
               <div className="flex justify-end gap-3">
                 <button
                   className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
@@ -637,6 +637,7 @@ export default function Home({ user, onLoggedOut }) {
           </div>
         </div>
       )}
+
     </div>
   );
 }

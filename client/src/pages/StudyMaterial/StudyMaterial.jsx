@@ -16,6 +16,7 @@ import {
 import { authService } from '../../services/authService';
 import UserMenu from '../../components/UserMenu';
 import { studyMaterialService } from '../../services/studyMaterialService';
+import AIChatBot from '../../components/AIChatBot';
 // Removed AI PDF export utilities
 
 export default function StudyMaterial({ user, onLoggedOut }) {
@@ -1027,7 +1028,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
       </div>
     ) : null}
 
-    {/* AI assistant removed */}
+    <AIChatBot />
     </>
   );
 }

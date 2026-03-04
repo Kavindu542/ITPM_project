@@ -1,7 +1,24 @@
 import { api } from "./api";
 
+const isLoopbackHost = (host) => host === "localhost" || host === "127.0.0.1";
+
+const normalizeLocalBaseUrl = (rawUrl) => {
+  try {
+    const parsed = new URL(String(rawUrl));
+    if (typeof window !== "undefined") {
+      const uiHost = window.location.hostname || "localhost";
+      if (isLoopbackHost(parsed.hostname) && isLoopbackHost(uiHost)) {
+        parsed.hostname = uiHost;
+      }
+    }
+    return parsed.toString().replace(/\/+$/, "");
+  } catch {
+    return String(rawUrl).replace(/\/+$/, "");
+  }
+};
+
 const getBase = () => {
-  if (import.meta.env.VITE_API_URL) return String(import.meta.env.VITE_API_URL);
+  if (import.meta.env.VITE_API_URL) return normalizeLocalBaseUrl(import.meta.env.VITE_API_URL);
   if (typeof window === "undefined") return "http://127.0.0.1:5000";
   return `${window.location.protocol}//${window.location.hostname}:5000`;
 };
@@ -344,5 +361,9 @@ export const studyMaterialService = {
     return res.data;
   },
 
-  // AI chatbot removed
+  // AI Chatbot
+  async aiChat(message) {
+    const res = await api.post("/study-material/ai-chat", { message });
+    return res.data;
+  },
 };
