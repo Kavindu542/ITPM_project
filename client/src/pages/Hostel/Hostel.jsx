@@ -226,10 +226,102 @@ export default function Hostel({ user, onLoggedOut }) {
   };
 
   const statusBadgeClass = (status) => {
-    if (status === 'accepted') return 'bg-blue-100 text-blue-700';
+    if (status === 'accepted') return 'bg-green-100 text-green-700';
     if (status === 'completed') return 'bg-green-100 text-green-700';
     if (status === 'cancelled') return 'bg-red-100 text-red-700';
     return 'bg-yellow-100 text-yellow-700';
+  };
+
+  const statusLabel = (status) => (status === 'accepted' ? 'Approved' : String(status || 'Pending'));
+
+  const renderLaundryCard = (shop, compact = false) => {
+    const latestBooking = getLatestBookingForShop(shop._id);
+    const services = Array.isArray(shop.availableServices) ? shop.availableServices : [];
+
+    return (
+      <div
+        key={shop._id}
+        className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:shadow-md"
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-xs font-medium text-gray-500">Your approval status</span>
+          {latestBooking ? (
+            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadgeClass(latestBooking.status)}`}>
+              {statusLabel(latestBooking.status)}
+            </span>
+          ) : (
+            <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">Not booked</span>
+          )}
+        </div>
+
+        <div className="flex items-start gap-3">
+          {shop.logoUrl ? (
+            <img
+              src={shop.logoUrl}
+              alt={shop.name}
+              className={`${compact ? 'h-14 w-14' : 'h-16 w-16'} rounded-xl object-cover border border-gray-200`}
+            />
+          ) : (
+            <div className={`${compact ? 'h-14 w-14' : 'h-16 w-16'} rounded-xl bg-cyan-50 border border-cyan-100 grid place-items-center`}>
+              <Shirt className={`${compact ? 'h-6 w-6' : 'h-7 w-7'} text-cyan-600`} />
+            </div>
+          )}
+          <div className="min-w-0">
+            <h3 className={`${compact ? 'text-sm' : 'text-base'} font-bold text-gray-900`}>{shop.name}</h3>
+            <p className={`${compact ? 'text-xs' : 'text-sm'} text-gray-500 mt-0.5`}>{shop.location || 'Location not specified'}</p>
+            <p className={`${compact ? 'text-xs' : 'text-sm'} text-gray-600 mt-1 line-clamp-2`}>{shop.shortDescription || 'Laundry services available for hostel students.'}</p>
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {services.length > 0 ? services.map((service) => (
+            <span key={service} className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
+              {service === 'dry-cleaning' ? 'Dry Cleaning' : service.charAt(0).toUpperCase() + service.slice(1)}
+            </span>
+          )) : <span className="text-xs text-gray-500">No services listed</span>}
+        </div>
+
+        <div className={`${compact ? 'text-xs' : 'text-sm'} mt-3 space-y-1.5 text-gray-600`}>
+          <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {shop.contactNumber || '-'}</div>
+          <div className="flex items-center gap-2"><Clock3 className="h-4 w-4" /> {shop.openingHours || 'Not specified'}</div>
+          <div className="flex items-center gap-2"><Truck className="h-4 w-4" /> Pickup & Delivery: {shop.pickupDeliveryAvailable ? 'Yes' : 'No'}</div>
+          <div className="font-semibold text-blue-700">{shop.priceInformation || 'Price not specified'}</div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setExpandedShopId(expandedShopId === shop._id ? '' : shop._id)}
+            className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200"
+          >
+            View Details
+          </button>
+          <button
+            type="button"
+            onClick={() => openBooking(shop)}
+            className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+          >
+            Book Laundry
+          </button>
+          <a
+            href={`tel:${shop.contactNumber || ''}`}
+            className="rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-200"
+          >
+            Contact
+          </a>
+        </div>
+
+        {expandedShopId === shop._id && (
+          <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
+            <div><strong>Laundry Shop Name:</strong> {shop.name}</div>
+            <div><strong>Location / Address:</strong> {shop.location || '-'}</div>
+            <div><strong>Opening Hours:</strong> {shop.openingHours || '-'}</div>
+            <div><strong>Price Information:</strong> {shop.priceInformation || '-'}</div>
+            <div><strong>Short Description:</strong> {shop.shortDescription || '-'}</div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const handleInputChange = (e) => {
@@ -718,54 +810,7 @@ export default function Hostel({ user, onLoggedOut }) {
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {laundryShops.slice(0, 2).map((shop) => (
-                          <div key={shop._id} className="rounded-xl border border-gray-200 bg-white p-4">
-                            {getLatestBookingForShop(shop._id) ? (
-                              <div className="mb-2 flex items-center justify-between">
-                                <span className="text-xs text-gray-500">Your approval status</span>
-                                <span className={`rounded-md px-2 py-1 text-xs font-medium capitalize ${statusBadgeClass(getLatestBookingForShop(shop._id)?.status)}`}>
-                                  {getLatestBookingForShop(shop._id)?.status}
-                                </span>
-                              </div>
-                            ) : null}
-                            <div className="flex items-start gap-3">
-                              {shop.logoUrl ? (
-                                <img src={shop.logoUrl} alt={shop.name} className="h-14 w-14 rounded-lg object-cover border border-gray-200" />
-                              ) : (
-                                <div className="h-14 w-14 rounded-lg bg-cyan-50 border border-cyan-100 grid place-items-center">
-                                  <Shirt className="h-6 w-6 text-cyan-600" />
-                                </div>
-                              )}
-                              <div className="min-w-0">
-                                <h3 className="text-sm font-semibold text-gray-900">{shop.name}</h3>
-                                <p className="text-xs text-gray-500 mt-0.5">{shop.location || 'Location not specified'}</p>
-                                <p className="text-xs text-gray-500 mt-1">{shop.shortDescription || 'Laundry services available for hostel students.'}</p>
-                              </div>
-                            </div>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setExpandedShopId(expandedShopId === shop._id ? '' : shop._id)}
-                                className="rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200"
-                              >
-                                View Details
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => openBooking(shop)}
-                                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-                              >
-                                Book Laundry
-                              </button>
-                              <a
-                                href={`tel:${shop.contactNumber || ''}`}
-                                className="rounded-md bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
-                              >
-                                Contact
-                              </a>
-                            </div>
-                          </div>
-                        ))}
+                        {laundryShops.slice(0, 2).map((shop) => renderLaundryCard(shop, true))}
                       </div>
                     )}
                   </div>
@@ -821,80 +866,7 @@ export default function Hostel({ user, onLoggedOut }) {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {laundryShops.map((shop) => (
-                        <div key={shop._id} className="rounded-xl border border-gray-200 p-4">
-                          {getLatestBookingForShop(shop._id) ? (
-                            <div className="mb-2 flex items-center justify-between">
-                              <span className="text-xs text-gray-500">Your approval status</span>
-                              <span className={`rounded-md px-2 py-1 text-xs font-medium capitalize ${statusBadgeClass(getLatestBookingForShop(shop._id)?.status)}`}>
-                                {getLatestBookingForShop(shop._id)?.status}
-                              </span>
-                            </div>
-                          ) : null}
-                          <div className="flex items-start gap-3">
-                            {shop.logoUrl ? (
-                              <img src={shop.logoUrl} alt={shop.name} className="h-16 w-16 rounded-lg object-cover border border-gray-200" />
-                            ) : (
-                              <div className="h-16 w-16 rounded-lg bg-cyan-50 border border-cyan-100 grid place-items-center">
-                                <Shirt className="h-7 w-7 text-cyan-600" />
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <h3 className="text-base font-semibold text-gray-900">{shop.name}</h3>
-                              <p className="text-sm text-gray-600 mt-0.5">{shop.location || 'Location not specified'}</p>
-                              <p className="text-sm text-gray-600 mt-1">{shop.shortDescription || '-'}</p>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {(shop.availableServices || []).map((service) => (
-                              <span key={service} className="rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-700">
-                                {service === 'dry-cleaning' ? 'Dry Cleaning' : service.charAt(0).toUpperCase() + service.slice(1)}
-                              </span>
-                            ))}
-                          </div>
-
-                          <div className="mt-3 text-sm text-gray-600 space-y-1">
-                            <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {shop.contactNumber || '-'}</div>
-                            <div className="flex items-center gap-2"><Clock3 className="h-4 w-4" /> {shop.openingHours || 'Not specified'}</div>
-                            <div className="flex items-center gap-2"><Truck className="h-4 w-4" /> {shop.pickupDeliveryAvailable ? 'Pickup & Delivery: Yes' : 'Pickup & Delivery: No'}</div>
-                            <div>Price: {shop.priceInformation || 'Not specified'}</div>
-                          </div>
-
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setExpandedShopId(expandedShopId === shop._id ? '' : shop._id)}
-                              className="rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200"
-                            >
-                              View Details
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => openBooking(shop)}
-                              className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-                            >
-                              Book Laundry
-                            </button>
-                            <a
-                              href={`tel:${shop.contactNumber || ''}`}
-                              className="rounded-md bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
-                            >
-                              Contact
-                            </a>
-                          </div>
-
-                          {expandedShopId === shop._id && (
-                            <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
-                              <div><strong>Laundry Shop Name:</strong> {shop.name}</div>
-                              <div><strong>Location / Address:</strong> {shop.location || '-'}</div>
-                              <div><strong>Opening Hours:</strong> {shop.openingHours || '-'}</div>
-                              <div><strong>Price Information:</strong> {shop.priceInformation || '-'}</div>
-                              <div><strong>Short Description:</strong> {shop.shortDescription || '-'}</div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                      {laundryShops.map((shop) => renderLaundryCard(shop))}
                     </div>
                   )}
                 </div>
