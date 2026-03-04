@@ -97,4 +97,14 @@ export const hostelService = {
       throw error.response?.data || error;
     }
   },
+
+  // Admin (warden): Create meal shop login account
+  createMealShopAccount: async (payload) => {
+    try {
+      const response = await api.post('/hostel/admin/meal-shop-accounts', payload);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
 };
