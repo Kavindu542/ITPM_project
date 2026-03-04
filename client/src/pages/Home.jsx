@@ -214,8 +214,9 @@ export default function Home({ user, onLoggedOut }) {
                   Smart Campus Hub v2.0
                 </div>
                 <h1 className="text-5xl lg:text-8xl font-black leading-[1.05] tracking-tight">
-                  Welcome back,<br />
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-emerald-400 to-indigo-400">
+                  <span className="block">Welcome</span>
+                  <span className="block">back,</span>
+                  <span className="block bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-emerald-400 to-indigo-400">
                     {user?.name || 'Student'}
                   </span>
                 </h1>
@@ -282,7 +283,7 @@ export default function Home({ user, onLoggedOut }) {
         {/* MAIN CONTENT AREA (Centered Container) */}
         <div className="container mx-auto px-4 relative z-10 pb-24">
           {/* 2. STATS BAR (Social Proof & Impact) */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-24 -mt-16 relative z-20 px-4 md:px-0">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-24 -mt-6 md:-mt-10 relative z-20 px-4 md:px-0">
             {[
               { icon: Users2, label: 'Active Students', value: '12,400+', color: 'text-blue-600', bg: 'bg-blue-50' },
               { icon: BookOpen, label: 'Study Resources', value: '45,000+', color: 'text-emerald-600', bg: 'bg-emerald-50' },

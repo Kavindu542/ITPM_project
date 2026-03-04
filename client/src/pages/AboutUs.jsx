@@ -14,7 +14,7 @@ export default function AboutUs() {
             <section className="relative pb-32 pt-16 overflow-hidden bg-slate-900 text-white">
                 <div className="absolute inset-0 z-0">
                     <img
-                        src="https://images.unsplash.com/photo-1541339907198-e08759df9a13?auto=format&fit=crop&w=1600&q=80"
+                        src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80"
                         alt="Campus"
                         className="w-full h-full object-cover opacity-50"
                     />
