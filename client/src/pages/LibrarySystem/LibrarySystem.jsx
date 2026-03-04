@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Home, BookOpen, Search, Users, Globe, BookMarked, Menu, User, LogOut
+  Home, BookOpen, Search, Users, Globe, BookMarked, Menu
 } from 'lucide-react';
-import { authService } from '../../services/authService';
 import LibraryBooks from './LibraryBooks';
 
 import SearchBooks from './SearchBooks';
@@ -182,128 +181,6 @@ const styles = `
   }
 `;
 
-// Custom UserMenu component with settings removed
-function CustomUserMenu({ user, onProfile, onLogout }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleProfileClick = () => {
-    setIsOpen(false);
-    onProfile();
-  };
-
-  const handleLogoutClick = () => {
-    setIsOpen(false);
-    onLogout();
-  };
-
-  // Get first letter of name
-  const getInitial = () => {
-    if (user?.firstName) return user.firstName[0].toUpperCase();
-    if (user?.name) return user.name[0].toUpperCase();
-    return 'D'; // Default to 'D' for Dineth
-  };
-
-  // Get display name
-  const getDisplayName = () => {
-    if (user?.firstName && user?.lastName) {
-      return `${user.firstName} ${user.lastName}`;
-    }
-    if (user?.name) return user.name;
-    return 'Dineth'; // Default name
-  };
-
-  // Get student ID
-  const getStudentId = () => {
-    if (user?.studentId) return user.studentId;
-    if (user?.id) return user.id;
-    return 'IT23165120'; // Default ID as shown in image
-  };
-
-  return (
-    <div className="user-menu-container">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#25f194] focus:ring-opacity-50"
-      >
-        {/* Circular Avatar - Exact format from image */}
-        <div className="w-10 h-10 bg-[#1DB584] rounded-full flex items-center justify-center font-bold text-white text-lg shadow-md">
-          {getInitial()}
-        </div>
-
-        {/* User Info */}
-        <div className="text-left hidden md:block">
-          <p className="text-sm font-semibold text-gray-900 leading-tight">
-            {getDisplayName()}
-          </p>
-          <p className="text-xs text-gray-500 leading-tight">
-            ID: {getStudentId()}
-          </p>
-        </div>
-
-        {/* Dropdown Arrow */}
-        <div className="hidden md:block">
-          <svg
-            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </button>
-
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-[9998]"
-            onClick={() => setIsOpen(false)}
-          />
-
-          {/* Dropdown Menu */}
-          <div className="user-menu-dropdown">
-            {/* User Info Header in Dropdown */}
-            <div className="px-4 py-3 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-[#1DB584] rounded-full flex items-center justify-center font-bold text-white">
-                  {getInitial()}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">
-                    {getDisplayName()}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    ID: {getStudentId()}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="py-1">
-              <button
-                onClick={handleProfileClick}
-                className="user-menu-item"
-              >
-                <User size={16} />
-                <span>View Profile</span>
-              </button>
-
-              <button
-                onClick={handleLogoutClick}
-                className="user-menu-item text-red-600 hover:bg-red-50"
-              >
-                <LogOut size={16} />
-                <span>Logout</span>
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 export default function LibrarySystem({ user, onLoggedOut }) {
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState(() => {
@@ -327,23 +204,6 @@ export default function LibrarySystem({ user, onLoggedOut }) {
     try {
       localStorage.setItem('cc_library_active_nav', navId);
     } catch { }
-  };
-
-  const logout = async () => {
-    try {
-      await authService.logout();
-      onLoggedOut?.();
-      navigate('/signin', { replace: true });
-    } catch (error) {
-      console.error('Logout failed:', error);
-      // Force logout even if API fails
-      onLoggedOut?.();
-      navigate('/signin', { replace: true });
-    }
-  };
-
-  const handleProfile = () => {
-    navigate('/profile');
   };
 
   const navItems = [
@@ -451,13 +311,6 @@ export default function LibrarySystem({ user, onLoggedOut }) {
               </h2>
               <p className="text-sm text-gray-500">Welcome back!</p>
             </div>
-
-            {/* Replace UserMenu with CustomUserMenu */}
-            <CustomUserMenu
-              user={user}
-              onProfile={handleProfile}
-              onLogout={logout}
-            />
           </div>
 
           {/* Page Content */}

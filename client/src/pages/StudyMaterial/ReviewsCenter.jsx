@@ -13,9 +13,6 @@ import {
   Star,
   UploadCloud,
 } from 'lucide-react';
-
-import UserMenu from '../../components/UserMenu';
-import { authService } from '../../services/authService';
 import { studyMaterialService } from '../../services/studyMaterialService';
 
 export default function ReviewsCenter({ user, onLoggedOut }) {
@@ -32,12 +29,6 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
 
   const [reviewForm, setReviewForm] = React.useState({ rating: 5, reviewText: '' });
   const [reviewModalOpen, setReviewModalOpen] = React.useState(false);
-
-  const logout = async () => {
-    await authService.logout();
-    onLoggedOut?.();
-    navigate('/signin', { replace: true });
-  };
 
   const loadMaterials = React.useCallback(async () => {
     setLoading(true);
@@ -154,7 +145,6 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
               <ArrowLeft className="h-4 w-4 text-gray-700" />
               <span className="font-medium text-gray-800">Back to Materials</span>
             </button>
-            <UserMenu user={user} onProfile={() => navigate('/profile')} onLogout={logout} theme="light" idLabel="ID" />
           </div>
 
           {/* Header */}

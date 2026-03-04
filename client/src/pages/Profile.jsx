@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 
 import { authService } from '../services/authService';
-import UserMenu from '../components/UserMenu';
 
 export default function Profile({ user, onUserUpdated, onLoggedOut }) {
   const navigate = useNavigate();
@@ -51,12 +50,6 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
         : ''
     );
   }, [user?.name, user?.avatarUrl]);
-
-  const doLogout = async () => {
-    await authService.logout();
-    onLoggedOut?.();
-    navigate('/signin', { replace: true });
-  };
 
   const onSelectAvatar = async (file) => {
     if (!file) return;
@@ -166,13 +159,6 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
 
           <div className="flex items-center gap-3">
             {/* Removed dark mode toggle button */}
-
-            <UserMenu
-              user={user}
-              onProfile={() => navigate('/profile')}
-              onLogout={doLogout}
-              idLabel="ID"
-            />
           </div>
         </div>
       </header>

@@ -13,8 +13,6 @@ import {
   Star,
   UploadCloud,
 } from 'lucide-react';
-import { authService } from '../../services/authService';
-import UserMenu from '../../components/UserMenu';
 import { studyMaterialService } from '../../services/studyMaterialService';
 import AIChatBot from '../../components/AIChatBot';
 // Removed AI PDF export utilities
@@ -160,12 +158,6 @@ export default function StudyMaterial({ user, onLoggedOut }) {
       document.body.style.overflow = prev;
     };
   }, [uploadModalOpen]);
-
-  const logout = async () => {
-    await authService.logout();
-    onLoggedOut?.();
-    navigate('/signin', { replace: true });
-  };
 
   const onToggleBookmark = async (id) => {
     try {
@@ -344,8 +336,6 @@ export default function StudyMaterial({ user, onLoggedOut }) {
               <ArrowLeft className="h-4 w-4 text-gray-700" />
               <span className="font-medium text-gray-800">Back</span>
             </button>
-
-            <UserMenu user={user} onProfile={() => navigate('/profile')} onLogout={logout} theme="light" idLabel="ID" />
           </div>
 
           {/* Header */}

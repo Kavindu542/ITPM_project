@@ -13,9 +13,7 @@ import {
   Loader,
   CheckCircle,
 } from 'lucide-react';
-import { authService } from '../../services/authService';
 import { hostelService } from '../../services/hostelService';
-import UserMenu from '../../components/UserMenu';
 import Complaints from './Complaints';
 
 export default function Hostel({ user, onLoggedOut }) {
@@ -168,12 +166,6 @@ export default function Hostel({ user, onLoggedOut }) {
     }
   };
 
-  const logout = async () => {
-    await authService.logout();
-    onLoggedOut?.();
-    navigate('/signin', { replace: true });
-  };
-
   const menuItems = [
     {
       icon: Home,
@@ -233,14 +225,6 @@ export default function Hostel({ user, onLoggedOut }) {
               <ArrowLeft className="h-4 w-4 text-gray-700" />
               <span className="font-medium text-gray-800">Back</span>
             </button>
-
-            <UserMenu
-              user={user}
-              onProfile={() => navigate('/profile')}
-              onLogout={logout}
-              theme="light"
-              idLabel="ID"
-            />
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
@@ -538,14 +522,6 @@ export default function Hostel({ user, onLoggedOut }) {
                 <ArrowLeft className="h-4 w-4 text-gray-700" />
                 <span className="font-medium text-gray-800">Back</span>
               </button>
-
-              <UserMenu
-                user={user}
-                onProfile={() => navigate('/profile')}
-                onLogout={logout}
-                theme="light"
-                idLabel="ID"
-              />
             </div>
 
             {/* Page Content */}

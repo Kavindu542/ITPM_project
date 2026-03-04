@@ -1,8 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, Users2 } from 'lucide-react';
-import { authService } from '../../services/authService';
-import UserMenu from '../../components/UserMenu';
 import { clubService } from '../../services/clubService';
 
 export default function Clubs({ user, onLoggedOut }) {
@@ -40,12 +38,6 @@ export default function Clubs({ user, onLoggedOut }) {
     sportsQualifications: '',
     notes: '',
   });
-
-  const logout = async () => {
-    await authService.logout();
-    onLoggedOut?.();
-    navigate('/signin', { replace: true });
-  };
 
   React.useEffect(() => {
     let cancelled = false;
@@ -155,36 +147,30 @@ export default function Clubs({ user, onLoggedOut }) {
               <span className="font-medium text-gray-800">Back</span>
             </button>
           </div>
-          <div className="flex items-center gap-3">
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="p-6 border-b border-gray-200 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 bg-pink-50 rounded-lg">
+                <Users className="h-5 w-5 text-pink-600" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold text-gray-900 truncate">Clubs Dashboard</h1>
+                <p className="text-sm text-gray-500">Events and member updates</p>
+              </div>
+            </div>
+
             {user?.role === 'club_leader' ? (
               <button
                 type="button"
                 onClick={() => navigate('/leader/dashboard')}
-                className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-indigo-200 bg-white text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-indigo-200 bg-white text-sm font-semibold text-indigo-700 hover:bg-indigo-50 whitespace-nowrap"
               >
                 Leader Dashboard
                 <span aria-hidden="true">→</span>
               </button>
             ) : null}
-            <UserMenu
-              user={user}
-              onProfile={() => navigate('/profile')}
-              onLogout={logout}
-              theme="light"
-              idLabel="ID"
-            />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="p-6 border-b border-gray-200 flex items-center gap-3">
-            <div className="p-2 bg-pink-50 rounded-lg">
-              <Users className="h-5 w-5 text-pink-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Clubs Dashboard</h1>
-              <p className="text-sm text-gray-500">Events and member updates</p>
-            </div>
           </div>
           <div className="p-6">
             <div className="mb-6">

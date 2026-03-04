@@ -3,7 +3,6 @@ import { Moon, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { clubService } from '../services/clubService';
-import UserMenu from '../components/UserMenu';
 import {
   LogOut,
   BookOpen,

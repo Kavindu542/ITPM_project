@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 
 import Home from './pages/Home.jsx';
@@ -100,6 +100,8 @@ function UserMenu({ user, onLoggedOut }) {
 export default function App() {
   const [user, setUser] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
+  const [postLogoutRedirect, setPostLogoutRedirect] = React.useState(null);
+  const navigate = useNavigate();
 
   const adminDashboardForModule = React.useCallback((moduleKey) => {
     const map = {
@@ -145,6 +147,27 @@ export default function App() {
     return () => { cancelled = true; };
   }, []);
 
+  const requestLogout = React.useCallback(
+    async (redirectTo = '/admin/signin') => {
+      setPostLogoutRedirect(redirectTo);
+      try {
+        await authService.logout();
+      } catch {
+        // Ignore logout API errors; still clear local app state.
+      } finally {
+        setUser(null);
+      }
+    },
+    []
+  );
+
+  React.useEffect(() => {
+    if (!postLogoutRedirect) return;
+    if (user) return;
+    navigate(postLogoutRedirect, { replace: true });
+    setPostLogoutRedirect(null);
+  }, [navigate, postLogoutRedirect, user]);
+
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', fontFamily: 'sans-serif' }}>
@@ -156,7 +179,7 @@ export default function App() {
   return (
     <Routes>
       <Route
-        element={<UserLayout user={user} onLoggedOut={() => setUser(null)} />}
+        element={<UserLayout user={user} onLoggedOut={requestLogout} />}
       >
         {/* Home Route */}
         <Route
@@ -166,7 +189,7 @@ export default function App() {
               <Navigate to={adminDashboardForModule(user.module)} replace />
             ) : (
               <RequireAuth user={user}>
-                <Home user={user} onLoggedOut={() => setUser(null)} />
+                <Home user={user} onLoggedOut={requestLogout} />
               </RequireAuth>
             )
           }
@@ -177,7 +200,7 @@ export default function App() {
           path="/materials"
           element={
             <RequireAuth user={user}>
-              <StudyMaterial user={user} onLoggedOut={() => setUser(null)} />
+              <StudyMaterial user={user} onLoggedOut={requestLogout} />
             </RequireAuth>
           }
         />
@@ -185,7 +208,7 @@ export default function App() {
           path="/materials/:section"
           element={
             <RequireAuth user={user}>
-              <StudyMaterial user={user} onLoggedOut={() => setUser(null)} />
+              <StudyMaterial user={user} onLoggedOut={requestLogout} />
             </RequireAuth>
           }
         />
@@ -193,7 +216,7 @@ export default function App() {
           path="/materials/requests"
           element={
             <RequireAuth user={user}>
-              <RequestsCenter user={user} onLoggedOut={() => setUser(null)} />
+              <RequestsCenter user={user} onLoggedOut={requestLogout} />
             </RequireAuth>
           }
         />
@@ -201,7 +224,7 @@ export default function App() {
           path="/materials/reviews"
           element={
             <RequireAuth user={user}>
-              <ReviewsCenter user={user} onLoggedOut={() => setUser(null)} />
+              <ReviewsCenter user={user} onLoggedOut={requestLogout} />
             </RequireAuth>
           }
         />
@@ -209,7 +232,7 @@ export default function App() {
           path="/materials/forum"
           element={
             <RequireAuth user={user}>
-              <ForumSupport user={user} onLoggedOut={() => setUser(null)} />
+              <ForumSupport user={user} onLoggedOut={requestLogout} />
             </RequireAuth>
           }
         />
@@ -219,7 +242,7 @@ export default function App() {
           path="/profile"
           element={
             <RequireAuth user={user}>
-              <Profile user={user} onUserUpdated={setUser} onLoggedOut={() => setUser(null)} />
+              <Profile user={user} onUserUpdated={setUser} onLoggedOut={requestLogout} />
             </RequireAuth>
           }
         />
@@ -229,7 +252,7 @@ export default function App() {
           path="/hostel"
           element={
             <RequireAuth user={user}>
-              <Hostel user={user} onLoggedOut={() => setUser(null)} />
+              <Hostel user={user} onLoggedOut={requestLogout} />
             </RequireAuth>
           }
         />
@@ -247,7 +270,7 @@ export default function App() {
           path="/library"
           element={
             <RequireAuth user={user}>
-              <LibrarySystem user={user} onLoggedOut={() => setUser(null)} />
+              <LibrarySystem user={user} onLoggedOut={requestLogout} />
             </RequireAuth>
           }
         />
@@ -255,7 +278,7 @@ export default function App() {
           path="/library/books"
           element={
             <RequireAuth user={user}>
-              <LibraryBooks user={user} onLoggedOut={() => setUser(null)} />
+              <LibraryBooks user={user} onLoggedOut={requestLogout} />
             </RequireAuth>
           }
         />
@@ -263,7 +286,7 @@ export default function App() {
           path="/library/search"
           element={
             <RequireAuth user={user}>
-              <SearchBooks user={user} onLoggedOut={() => setUser(null)} />
+              <SearchBooks user={user} onLoggedOut={requestLogout} />
             </RequireAuth>
           }
         />
@@ -271,7 +294,7 @@ export default function App() {
           path="/library/study-rooms"
           element={
             <RequireAuth user={user}>
-              <StudyRooms user={user} onLoggedOut={() => setUser(null)} />
+              <StudyRooms user={user} onLoggedOut={requestLogout} />
             </RequireAuth>
           }
         />
@@ -281,7 +304,21 @@ export default function App() {
           path="/clubs"
           element={
             <RequireAuth user={user}>
-              <Clubs user={user} onLoggedOut={() => setUser(null)} />
+              <Clubs user={user} onLoggedOut={requestLogout} />
+            </RequireAuth>
+          }
+        />
+
+        {/* Leader Dashboard */}
+        <Route
+          path="/leader/dashboard"
+          element={
+            <RequireAuth user={user}>
+              {user?.role === 'club_leader' ? (
+                <LeaderDashboard user={user} onLoggedOut={requestLogout} />
+              ) : (
+                <Navigate to="/" replace />
+              )}
             </RequireAuth>
           }
         />
@@ -292,26 +329,12 @@ export default function App() {
         <Route path="/faq" element={<FAQ />} />
       </Route>
 
-      {/* Leader Dashboard */}
-      <Route
-        path="/leader/dashboard"
-        element={
-          <RequireAuth user={user}>
-            {user?.role === 'club_leader' ? (
-              <LeaderDashboard user={user} onLoggedOut={() => setUser(null)} />
-            ) : (
-              <Navigate to="/" replace />
-            )}
-          </RequireAuth>
-        }
-      />
-
       {/* Admin Routes */}
       <Route
         path="/admin/study-material"
         element={
           <RequireModuleAuth user={user} moduleKey="study-material">
-            <StudyMaterialAdminLayout user={user} onLoggedOut={() => setUser(null)} />
+            <StudyMaterialAdminLayout user={user} onLoggedOut={requestLogout} />
           </RequireModuleAuth>
         }
       >
@@ -331,7 +354,7 @@ export default function App() {
         path="/admin/library"
         element={
           <RequireModuleAuth user={user} moduleKey="library">
-            <LibraryAdminLayout user={user} onLoggedOut={() => setUser(null)} />
+            <LibraryAdminLayout user={user} onLoggedOut={requestLogout} />
           </RequireModuleAuth>
         }
       >
@@ -347,7 +370,7 @@ export default function App() {
         path="/admin/club-and-society/dashboard"
         element={
           <RequireModuleAuth user={user} moduleKey="club-and-society">
-            <ClubAndSocietyDashboard user={user} onLoggedOut={() => setUser(null)} />
+            <ClubAndSocietyDashboard user={user} onLoggedOut={requestLogout} />
           </RequireModuleAuth>
         }
       />
@@ -356,7 +379,7 @@ export default function App() {
         path="/admin/hostel/warden/dashboard"
         element={
           <RequireModuleAuth user={user} moduleKey="hostel-warden" redirectTo="/admin/hostel">
-            <HostelWardenDashboard user={user} onLoggedOut={() => setUser(null)} />
+            <HostelWardenDashboard user={user} onLoggedOut={requestLogout} />
           </RequireModuleAuth>
         }
       />

@@ -16,9 +16,6 @@ import {
   ThumbsUp,
   Heart,
 } from 'lucide-react';
-
-import UserMenu from '../../components/UserMenu';
-import { authService } from '../../services/authService';
 import { studyMaterialService } from '../../services/studyMaterialService';
 
 
@@ -38,12 +35,6 @@ export default function RequestsCenter({ user, onLoggedOut }) {
     syllabusLink: '',
   });
   const [requestModalOpen, setRequestModalOpen] = React.useState(false);
-
-  const logout = async () => {
-    await authService.logout();
-    onLoggedOut?.();
-    navigate('/signin', { replace: true });
-  };
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -155,7 +146,6 @@ export default function RequestsCenter({ user, onLoggedOut }) {
               <ArrowLeft className="h-4 w-4 text-gray-700" />
               <span className="font-medium text-gray-800">Back to Materials</span>
             </button>
-            <UserMenu user={user} onProfile={() => navigate('/profile')} onLogout={logout} theme="light" idLabel="ID" />
           </div>
 
           {/* Header */}

@@ -1,8 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, CalendarDays, PlusCircle } from 'lucide-react';
-import UserMenu from '../../components/UserMenu';
-import { authService } from '../../services/authService';
 import { clubService } from '../../services/clubService';
 
 export default function LeaderDashboard({ user, onLoggedOut }) {
@@ -23,12 +21,6 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
   const [meetingForm, setMeetingForm] = React.useState({ title: '', date: '', venue: '', description: '' });
   const [showAddEvent, setShowAddEvent] = React.useState(false);
   const [eventForm, setEventForm] = React.useState({ name: '', date: '', venue: '', type: 'Public' });
-
-  const logout = async () => {
-    await authService.logout();
-    onLoggedOut?.();
-    navigate('/signin', { replace: true });
-  };
 
   React.useEffect(() => {
     let cancelled = false;
@@ -178,13 +170,6 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
               <div className="text-xs text-white/80">Welcome, {user?.name}</div>
             </div>
           </div>
-          <UserMenu
-            user={user}
-            onProfile={() => navigate('/profile')}
-            onLogout={logout}
-            theme="light"
-            idLabel="ID"
-          />
         </div>
       </header>
 
