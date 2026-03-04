@@ -7,7 +7,7 @@ const { requireAuth } = require("../middleware/authMiddleware");
 const { requireModuleAdmin } = require("../middleware/moduleAuthMiddleware");
 const controller = require("../controllers/studyMaterialController");
 const community = require("../controllers/studyMaterialCommunityController");
-// AI chatbot removed
+const aiChatController = require("../controllers/aiChatController");
 
 const router = express.Router();
 
@@ -44,7 +44,8 @@ router.get("/me/uploads", requireAuth, controller.listMyUploads);
 router.get("/me/bookmarks", requireAuth, controller.listBookmarks);
 router.get("/me/history", requireAuth, controller.listHistory);
 
-// AI endpoints removed
+// AI chatbot
+router.post("/ai-chat", requireAuth, aiChatController.aiChat);
 
 // Missing resource requests (student)
 router.get("/requests", requireAuth, community.listRequests);
