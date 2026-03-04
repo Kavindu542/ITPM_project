@@ -137,7 +137,7 @@ export default function Home({ user, onLoggedOut }) {
   }).format(now);
   const totalClubMembers = clubs.reduce((sum, club) => sum + club.members, 0);
 
-  const [publicEvents, setPublicEvents] = React.useState([]);
+  const [allEvents, setAllEvents] = React.useState([]);
   const [feedLoading, setFeedLoading] = React.useState(false);
 
   React.useEffect(() => {
@@ -145,12 +145,36 @@ export default function Home({ user, onLoggedOut }) {
     const load = async () => {
       setFeedLoading(true);
       try {
-        const pe = await clubService.publicEvents();
+        const fetchPromises = [clubService.publicEvents()];
+        if (user) {
+          fetchPromises.push(clubService.myEvents());
+        }
+
+        const results = await Promise.allSettled(fetchPromises);
         if (cancelled) return;
-        setPublicEvents(pe?.events || []);
+
+        let combinedEvents = [];
+        const publicRes = results[0];
+        if (publicRes.status === 'fulfilled') {
+          combinedEvents = [...(publicRes.value?.events || [])];
+        }
+
+        if (user && results[1]?.status === 'fulfilled') {
+          const myEvents = results[1].value?.events || [];
+          // Merge and avoid duplicates
+          myEvents.forEach(me => {
+            if (!combinedEvents.find(ce => ce.id === me.id)) {
+              combinedEvents.push(me);
+            }
+          });
+        }
+
+        // Sort by date soonest first
+        combinedEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+        setAllEvents(combinedEvents);
       } catch (e) {
         if (cancelled) return;
-        setPublicEvents([]);
+        setAllEvents([]);
       } finally {
         if (!cancelled) setFeedLoading(false);
       }
@@ -159,7 +183,7 @@ export default function Home({ user, onLoggedOut }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950 font-sans">
@@ -170,421 +194,286 @@ export default function Home({ user, onLoggedOut }) {
         }}></div>
       </div>
 
-      {/* Main Layout */}
-      <div className="container mx-auto px-4">
-        {/* Top Navigation */}
-        <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-slate-700">
-          <div className="px-6 py-4">
-            <div className="flex items-center justify-between">
-              {/* Left: Brand */}
-              <div className="flex items-center gap-3">
-                <img src="/campuscore-logo.png" alt="CampusCore" className="h-30 w-auto " />
-              </div>
+      <div className="relative z-10">
+        {/* 1. HERO SECTION (Cinematic & Personalized - FULL SCREEN WIDTH) */}
+        <section className="relative overflow-hidden min-h-[75vh] flex items-center bg-slate-900 text-white shadow-2xl shadow-blue-500/20">
+          {/* Pro Background */}
+          <div className="absolute inset-0 z-0">
+            <img
+              src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1600&q=80"
+              alt="Campus"
+              className="w-full h-full object-cover opacity-50 scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/40 to-transparent"></div>
+          </div>
 
-              {/* Right: User & Actions */}
-              <div className="flex items-center gap-4">
-                {/* Removed dark mode toggle button */}
-                {/* Notifications */}
-                <button className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors">
-                  <Bell className="h-5 w-5 text-gray-600" />
-                </button>
-                {user?.role === 'club_leader' ? (
+          <div className="container mx-auto px-8 lg:px-20 relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center w-full">
+              <div className="text-center lg:text-left space-y-8">
+                <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-300 text-sm font-bold backdrop-blur-md animate-pulse">
+                  <span className="h-2 w-2 rounded-full bg-blue-400"></span>
+                  Smart Campus Hub v2.0
+                </div>
+                <h1 className="text-5xl lg:text-8xl font-black leading-[1.05] tracking-tight">
+                  Welcome back,<br />
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-emerald-400 to-indigo-400">
+                    {user?.name || 'Student'}
+                  </span>
+                </h1>
+                <p className="text-xl md:text-2xl text-slate-300 max-w-xl leading-relaxed font-medium">
+                  Your all-in-one portal for a smarter, more connected university experience.
+                  Manage studies, accommodation, and campus life in one place.
+                </p>
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6">
                   <button
-                    type="button"
-                    onClick={() => navigate('/leader/dashboard')}
-                    className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-indigo-200 bg-white text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
-                    title="Leader Dashboard"
+                    onClick={() => navigate('/materials')}
+                    className="group px-10 py-5 bg-white text-slate-900 font-black rounded-2xl hover:bg-blue-50 transition-all flex items-center gap-3 shadow-xl"
                   >
-                    Leader Dashboard
-                    <span aria-hidden="true">→</span>
+                    Access Modules
+                    <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
                   </button>
-                ) : null}
-
-                <UserMenu
-                  user={user}
-                  onProfile={() => navigate('/profile')}
-                  onLogout={() => setShowLogoutConfirm(true)}
-                  idLabel="ID"
-                />
+                  <button
+                    onClick={() => navigate('/faq')}
+                    className="px-10 py-5 bg-slate-800/40 border-2 border-slate-700/50 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all backdrop-blur-md"
+                  >
+                    Quick Help
+                  </button>
+                </div>
               </div>
-            </div>
-          </div>
-        </header>
 
-        {/* Main Content */}
-        <div className="p-6">
-          {/* Welcome & Stats Banner */}
-          <div className="mb-8">
-            <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-[#25f194] to-[#25f194] rounded-3xl p-6 lg:p-8 text-white shadow-xl shadow-blue-200/40">
-              <div className="absolute right-0 top-0 bottom-0 w-1/3">
-                <div className="absolute inset-0 bg-gradient-to-l from-blue-600/50 to-transparent"></div>
-                <img
-                  src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                  alt="Campus"
-                  className="w-full h-full object-cover opacity-20"
-                />
-              </div>
-              <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <div className="max-w-xl">
-                  <p className="text-blue-100 text-sm mb-2">{todayLabel}</p>
-                  <h1 className="text-3xl lg:text-4xl font-bold mb-2">{greeting}, {user?.name || 'Student'} 👋</h1>
-                  <p className="text-blue-100/95">Everything important for your campus day is organized here.</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="px-3 py-1 rounded-full bg-white/15 border border-white/20 text-xs font-medium">Smart Dashboard</span>
-                    <span className="px-3 py-1 rounded-full bg-white/15 border border-white/20 text-xs font-medium">Live Activity</span>
-                    <span className="px-3 py-1 rounded-full bg-white/15 border border-white/20 text-xs font-medium">Quick Access</span>
+              <div className="hidden lg:block relative h-[500px]">
+                <div className="absolute top-0 right-0 w-64 p-6 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[2rem] shadow-2xl animate-float">
+                  <div className="flex items-center gap-4 mb-3">
+                    <div className="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/40">
+                      <BookText className="text-white" size={24} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Next Study</p>
+                      <p className="font-bold text-sm">Calculus II</p>
+                    </div>
+                  </div>
+                  <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full w-2/3 bg-blue-500"></div>
                   </div>
                 </div>
 
-
-              </div>
-            </div>
-          </div>
-
-          {/* Club Updates */}
-          <div className="grid grid-cols-1 gap-6 mb-8">
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-pink-50 rounded-lg">
-                    <Users2 className="h-5 w-5 text-pink-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900">Campus Club Events</h2>
-                    <p className="text-sm text-gray-500">Public events open to everyone</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-6">
-                {feedLoading ? (
-                  <div className="text-gray-500">Loading…</div>
-                ) : publicEvents.length === 0 ? (
-                  <div className="text-gray-500 text-sm">No public events yet.</div>
-                ) : (
-                  <ul className="divide-y divide-gray-200">
-                    {publicEvents.slice(0, 3).map((e) => (
-                      <li key={e.id} className="py-3">
-                        <div className="font-medium text-gray-900">{e.name}</div>
-                        <div className="text-xs text-gray-600">
-                          {new Date(e.date).toLocaleString()} • {e.venue || 'TBD'} • {e.club?.name || 'Club'}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions Grid */}
-          <div className="mb-8">
-            <div className="flex items-end justify-between mb-4">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Quick Access</h2>
-                <p className="text-sm text-gray-500 mt-1">Open any campus module in one click</p>
-              </div>
-              <span className="hidden md:inline-flex px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100">Personalized for you</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {quickActions.map((action, index) => (
-                <button
-                  key={index}
-                  className="group bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-blue-300 ring-1 ring-gray-100 hover:ring-blue-200 transition-all duration-300 text-left"
-                  onClick={() => navigate(action.path)}
-                >
-                  <div className="relative h-40 overflow-hidden">
-                    <img
-                      src={action.image}
-                      alt={action.label}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                    <div className="absolute top-4 right-4">
-                      <div className={`p-2 rounded-lg bg-gradient-to-br ${action.color} shadow-lg`}>
-                        <action.icon className="h-5 w-5 text-white" />
+                <div className="absolute bottom-10 -left-10 w-72 p-6 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[2rem] shadow-2xl animate-float-delayed">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/40">
+                      <Building2 className="text-white" size={28} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Room Status</p>
+                      <p className="font-bold text-lg">{hostelInfo.room}</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span className="text-[10px] text-emerald-300 font-bold uppercase">All Safe</span>
                       </div>
                     </div>
                   </div>
-                  <div className="p-5">
-                    <h3 className="font-bold text-gray-900 text-lg mb-2">{action.label}</h3>
-                    <p className="text-sm text-gray-600 mb-4">{action.description}</p>
-                    <div className="flex items-center text-blue-600 font-medium text-sm">
-                      <span>Open module</span>
-                      <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                </div>
+
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] border-2 border-dashed border-white/10 rounded-full animate-[spin_20s_linear_infinite]"></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-blue-600/20 blur-[80px]"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* MAIN CONTENT AREA (Centered Container) */}
+        <div className="container mx-auto px-4 relative z-10 pb-24">
+          {/* 2. STATS BAR (Social Proof & Impact) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-24 -mt-16 relative z-20 px-4 md:px-0">
+            {[
+              { icon: Users2, label: 'Active Students', value: '12,400+', color: 'text-blue-600', bg: 'bg-blue-50' },
+              { icon: BookOpen, label: 'Study Resources', value: '45,000+', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+              { icon: Bell, label: 'Daily Events', value: '85+', color: 'text-indigo-600', bg: 'bg-indigo-50' },
+              { icon: GraduationCap, label: 'Average GPA', value: '3.8', color: 'text-pink-600', bg: 'bg-pink-50' },
+            ].map((stat, idx) => (
+              <div key={idx} className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col items-center text-center group hover:-translate-y-2 transition-all">
+                <div className={`h-16 w-16 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                  <stat.icon size={32} />
+                </div>
+                <div className="text-3xl font-black text-slate-900 mb-1">{stat.value}</div>
+                <div className="text-slate-500 font-bold text-sm uppercase tracking-wider">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* 3. CORE MODULES (Feature Showcase) */}
+          <div className="space-y-12 mb-28">
+            <div className="text-center space-y-4 max-w-2xl mx-auto">
+              <h2 className="text-4xl lg:text-5xl font-black text-slate-900 leading-tight">Your Campus, <span className="text-blue-600">Unified</span></h2>
+              <p className="text-slate-500 text-lg font-medium">Explore the key pillars of CampusCore designed to streamline your university experience.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {quickActions.map((action, index) => (
+                <div
+                  key={index}
+                  className="group relative bg-white rounded-[2.5rem] p-4 border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
+                  onClick={() => navigate(action.path)}
+                >
+                  <div className="relative h-64 rounded-3xl overflow-hidden mb-6">
+                    <img
+                      src={action.image}
+                      alt={action.label}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
+                    <div className="absolute bottom-6 left-6 right-6">
+                      <div className={`inline-flex p-3 rounded-2xl bg-gradient-to-br ${action.color} text-white shadow-lg mb-3`}>
+                        <action.icon size={24} />
+                      </div>
+                      <h3 className="text-xl font-black text-white">{action.label}</h3>
                     </div>
                   </div>
-                </button>
+                  <div className="px-4 pb-4">
+                    <p className="text-slate-500 text-sm leading-relaxed mb-6 font-medium">
+                      {action.description}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-blue-600 font-black text-sm uppercase tracking-wider">Explore Module</span>
+                      <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-50 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        <ChevronRight size={18} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Detailed Sections Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Study Materials Section */}
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                      <BookText className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-900">Study Materials</h2>
-                      <p className="text-sm text-gray-500">Access your course resources</p>
-                    </div>
-                  </div>
-                  <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                    View All →
-                  </button>
+          {/* 4. LIVE ACTIVITY & NEWS (Two-Column Layout) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mb-28">
+            <div className="lg:col-span-2 space-y-8">
+              <div className="flex items-end justify-between">
+                <div>
+                  <h2 className="text-3xl font-black text-slate-900">Upcoming Events</h2>
+                  <p className="text-slate-500 font-medium">Don't miss out on campus activities</p>
                 </div>
+                <button className="px-6 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-colors">
+                  Full Calendar
+                </button>
               </div>
 
-              <div className="p-6">
-                {/* Image Gallery */}
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  {studyMaterialImages.map((img, index) => (
-                    <div key={index} className="relative h-24 rounded-lg overflow-hidden group cursor-pointer">
-                      <img
-                        src={img}
-                        alt={`Study Material ${index + 1}`}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors"></div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Recent Materials */}
-                <div className="space-y-3">
-                  {studyMaterials.map((material) => (
-                    <div key={material.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="text-lg">
-                          {material.type === 'pdf' ? '📄' : '📝'}
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">{material.title}</div>
-                          <div className="text-sm text-gray-500">{material.subject}</div>
-                        </div>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {material.downloads} downloads
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Hostel Section */}
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-50 rounded-lg">
-                      <Building2 className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-900">Hostel</h2>
-                      <p className="text-sm text-gray-500">Your accommodation details</p>
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {feedLoading ? (
+                  <div className="p-12 text-center col-span-2">Loading events...</div>
+                ) : allEvents.length === 0 ? (
+                  <div className="p-12 text-center col-span-2 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 text-slate-400">
+                    No upcoming events scheduled.
                   </div>
-                  <button className="text-emerald-600 hover:text-emerald-700 font-medium text-sm" onClick={() => navigate('/hostel?view=apply')}>
-                    Portal →
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-6">
-                {/* Main Hostel Image */}
-                <div className="relative h-48 rounded-xl overflow-hidden mb-6">
-                  <img
-                    src={hostelImages[0]}
-                    alt="Hostel"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                  <div className="absolute bottom-4 left-4 text-white">
-                    <div className="text-2xl font-bold">{hostelInfo.room}</div>
-                    <div className="text-sm">{hostelInfo.block}</div>
-                  </div>
-                </div>
-
-                {/* Hostel Details */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <div className="text-sm text-gray-600">Warden</div>
-                      <div className="font-medium text-gray-900">{hostelInfo.warden}</div>
-                    </div>
-                    <div className="text-right space-y-1">
-                      <div className="text-sm text-gray-600">Contact</div>
-                      <div className="font-medium text-gray-900">{hostelInfo.contact}</div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-sm font-medium text-gray-700 mb-2">Facilities</div>
-                    <div className="flex flex-wrap gap-2">
-                      {hostelInfo.facilities.map((facility, index) => (
-                        <span key={index} className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-sm">
-                          {facility}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Library Section */}
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-[#25f194] rounded-lg">
-                      <GraduationCap className="h-5 w-5 text-[#25f194]" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-900">Library</h2>
-                      <p className="text-sm text-gray-500">Books & Resources</p>
-                    </div>
-                  </div>
-                  <button className="text-[#25f194] hover:text-[#25f194] font-medium text-sm">
-                    Visit Library →
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-6">
-                {/* Library Image */}
-                <div className="relative h-48 rounded-xl overflow-hidden mb-6">
-                  <img
-                    src={libraryImages[0]}
-                    alt="Library"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                  <div className="absolute bottom-4 left-4 text-white">
-                    <div className="text-2xl font-bold">24/7 Access</div>
-                    <div className="text-sm">Digital & Physical Resources</div>
-                  </div>
-                </div>
-
-                {/* Library Stats */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-gray-50 rounded-xl p-4 text-center">
-                    <div className="text-2xl font-bold text-gray-900">{libraryStats.borrowed}</div>
-                    <div className="text-sm text-gray-600">Books Borrowed</div>
-                  </div>
-                  <div className="bg-amber-50 rounded-xl p-4 text-center">
-                    <div className="text-2xl font-bold text-amber-600">{libraryStats.due}</div>
-                    <div className="text-sm text-amber-600">Due Soon</div>
-                  </div>
-                  <div className="bg-green-50 rounded-xl p-4 text-center">
-                    <div className="text-2xl font-bold text-green-600">{libraryStats.reserved}</div>
-                    <div className="text-sm text-green-600">Reserved</div>
-                  </div>
-                  <div className="bg-red-50 rounded-xl p-4 text-center">
-                    <div className="text-2xl font-bold text-red-600">{libraryStats.fine}</div>
-                    <div className="text-sm text-red-600">Pending Fine</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Clubs Section */}
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-pink-50 rounded-lg">
-                      <Users2 className="h-5 w-5 text-pink-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-900">Clubs & Societies</h2>
-                      <p className="text-sm text-gray-500">Get involved on campus</p>
-                    </div>
-                  </div>
-                  <button className="text-pink-600 hover:text-pink-700 font-medium text-sm">
-                    Explore All →
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-6">
-                {/* Club Images Carousel */}
-                <div className="relative h-48 rounded-xl overflow-hidden mb-6">
-                  <div className="absolute inset-0 flex">
-                    {clubImages.map((img, index) => (
-                      <div
-                        key={index}
-                        className="relative w-1/3 h-full overflow-hidden group"
-                        style={{ transform: `translateX(${index * -33.33}%)` }}
-                      >
+                ) : (
+                  allEvents.slice(0, 4).map((e) => (
+                    <div key={e.id} className="group bg-white rounded-[2.5rem] border border-slate-100 p-6 flex flex-col hover:shadow-xl transition-all">
+                      <div className="relative h-48 rounded-2xl overflow-hidden mb-6">
                         <img
-                          src={img}
-                          alt={`Club ${index + 1}`}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          src={e.imageUrl || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=600&q=80"}
+                          alt={e.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Clubs List */}
-                <div className="space-y-3">
-                  {clubs.map((club) => (
-                    <div key={club.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="text-lg">
-                          {club.category === 'Technology' ? '💻' :
-                            club.category === 'Arts' ? '🎭' : '⚽'}
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">{club.name}</div>
-                          <div className="text-sm text-gray-500">{club.category}</div>
+                        <div className="absolute top-4 left-4 px-4 py-2 rounded-xl bg-white/90 backdrop-blur-md text-slate-900 font-black text-xs uppercase shadow-sm">
+                          {new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </div>
                       </div>
-                      <div className="text-sm text-gray-500 font-medium">
-                        {club.members} members
+                      <h3 className="text-xl font-black text-slate-900 mb-2">{e.name}</h3>
+                      <div className="flex items-center gap-2 text-slate-500 text-sm font-medium mb-4">
+                        <Building2 size={16} />
+                        <span>{e.venue || 'Main Auditorium'}</span>
+                      </div>
+                      <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
+                        <span className="px-3 py-1 rounded-lg bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-wider">{e.club?.name || 'Academic'}</span>
+                        <button className="text-blue-600 font-bold text-sm">Join Event →</button>
                       </div>
                     </div>
-                  ))}
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              <h2 className="text-3xl font-black text-slate-900">Campus Alerts</h2>
+              <div className="space-y-4">
+                {[
+                  { title: 'Library Maintenance', time: '2 hours ago', type: 'System', color: 'bg-amber-500' },
+                  { title: 'New Materials: Math 101', time: '5 hours ago', type: 'Academic', color: 'bg-blue-500' },
+                  { title: 'Hostel WiFi Upgrade', time: '1 day ago', type: 'Facility', color: 'bg-emerald-500' },
+                ].map((alert, idx) => (
+                  <div key={idx} className="bg-white p-6 rounded-[2rem] border border-slate-100 flex gap-4 hover:shadow-lg transition-all">
+                    <div className={`h-3 w-3 rounded-full ${alert.color} mt-1.5 flex-shrink-0 animate-pulse`}></div>
+                    <div>
+                      <h4 className="font-bold text-slate-900">{alert.title}</h4>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-slate-400">{alert.time}</span>
+                        <span className="text-[10px] uppercase font-black text-slate-300 tracking-widest">•</span>
+                        <span className="text-[10px] uppercase font-black text-blue-600">{alert.type}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="relative group p-8 rounded-[2rem] bg-gradient-to-br from-indigo-600 to-blue-700 text-white overflow-hidden">
+                  <div className="relative z-10">
+                    <h4 className="text-xl font-black mb-2">Study break?</h4>
+                    <p className="text-blue-100 text-sm mb-6">Check out the latest campus club activities.</p>
+                    <button
+                      onClick={() => navigate('/clubs')}
+                      className="px-6 py-3 bg-white text-blue-600 font-black rounded-xl text-sm shadow-xl"
+                    >
+                      Browse Clubs
+                    </button>
+                  </div>
+                  <Users2 size={120} className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform" />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Recent Activity */}
-          <div className="mt-8">
-            <div className="bg-gradient-to-r from-blue-50 to-[#25f194] rounded-2xl p-8 border border-blue-100">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Campus Highlights</h2>
-                  <p className="text-gray-600">Latest updates and upcoming events • {totalClubMembers}+ active club members</p>
+          {/* 5. USER TESTIMONIALS (Social Proof) */}
+          <div className="bg-white rounded-[4rem] p-12 lg:p-24 border border-slate-100 mb-28 text-center space-y-16">
+            <div className="space-y-4">
+              <h2 className="text-4xl lg:text-5xl font-black text-slate-900">Voices of <span className="text-blue-600">CampusCore</span></h2>
+              <p className="text-slate-500 text-lg font-medium">Join thousands of students who have transformed their university journey.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-left">
+              {[
+                { name: 'Sarah J.', role: 'Engineering Student', text: "CampusCore made managing my hostel life so much easier. I can finally focus on my grades!" },
+                { name: 'David M.', role: 'Club President', text: "The clubs module is a game changer. We've seen a 50% increase in event attendance." },
+                { name: 'Elena R.', role: 'Postgrad Student', text: "Seamless library reservations and easy access to digital notes. It's the companion every student needs." },
+              ].map((t, idx) => (
+                <div key={idx} className="space-y-6">
+                  <div className="flex gap-1 text-amber-400">
+                    {[...Array(5)].map((_, i) => <span key={i}>★</span>)}
+                  </div>
+                  <p className="text-xl font-medium text-slate-700 leading-relaxed italic">"{t.text}"</p>
+                  <div>
+                    <div className="font-black text-slate-900">{t.name}</div>
+                    <div className="text-sm text-slate-400 font-bold uppercase tracking-wider">{t.role}</div>
+                  </div>
                 </div>
-                <button className="text-blue-600 hover:text-blue-700 font-medium">
-                  View Calendar →
+              ))}
+            </div>
+          </div>
+
+          {/* 6. FINAL CTA (Conversion) */}
+          <div className="relative overflow-hidden bg-blue-600 rounded-[4rem] p-12 lg:p-24 text-center text-white shadow-2xl shadow-blue-500/40">
+            <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-[100px] -ml-48 -mt-48"></div>
+            <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-400/10 rounded-full blur-[100px] -mr-48 -mb-48"></div>
+
+            <div className="relative z-10 max-w-3xl mx-auto space-y-10">
+              <h2 className="text-5xl lg:text-7xl font-black leading-tight tracking-tighter">Ready to own your <br /> campus day?</h2>
+              <p className="text-blue-100 text-xl md:text-2xl font-medium">Download the mobile app or continue exploring the web dashboard.</p>
+              <div className="flex flex-wrap items-center justify-center gap-6">
+                <button className="px-10 py-5 bg-white text-blue-600 font-black rounded-[2rem] hover:bg-white/90 transition-all shadow-xl">
+                  Get Started (Free)
                 </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
-                  <div className="text-sm text-blue-600 font-medium mb-2">Tomorrow • 3 PM</div>
-                  <div className="font-bold text-gray-900 mb-2">Tech Symposium</div>
-                  <div className="text-sm text-gray-600">Computer Science Department</div>
-                </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
-                  <div className="text-sm text-green-600 font-medium mb-2">Oct 15 • 10 AM</div>
-                  <div className="font-bold text-gray-900 mb-2">Sports Day</div>
-                  <div className="text-sm text-gray-600">Main Ground</div>
-                </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
-                  <div className="text-sm text-[#25f194] font-medium mb-2">Oct 20 • 6 PM</div>
-                  <div className="font-bold text-gray-900 mb-2">Cultural Fest</div>
-                  <div className="text-sm text-gray-600">Auditorium</div>
-                </div>
+                <button
+                  onClick={() => navigate('/contact')}
+                  className="px-10 py-5 bg-transparent border-2 border-white/30 font-black rounded-[2rem] hover:bg-white/10 transition-all"
+                >
+                  Contact Admin
+                </button>
               </div>
             </div>
           </div>
@@ -637,7 +526,6 @@ export default function Home({ user, onLoggedOut }) {
           </div>
         </div>
       )}
-
     </div>
   );
 }

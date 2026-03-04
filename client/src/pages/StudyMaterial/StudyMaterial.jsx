@@ -322,713 +322,705 @@ export default function StudyMaterial({ user, onLoggedOut }) {
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans">
-      {/* Background Pattern */}
-      <div className="fixed inset-0 opacity-5 pointer-events-none">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage:
-              'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-          }}
-        />
-      </div>
-
-      <div className="relative w-full p-6">
-        {/* Top bar */}
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 backdrop-blur border border-gray-200 hover:bg-white transition-colors"
-            onClick={() => navigate('/')}
-          >
-            <ArrowLeft className="h-4 w-4 text-gray-700" />
-            <span className="font-medium text-gray-800">Back</span>
-          </button>
-
-          <UserMenu user={user} onProfile={() => navigate('/profile')} onLogout={logout} theme="light" idLabel="ID" />
+        {/* Background Pattern */}
+        <div className="fixed inset-0 opacity-5 pointer-events-none">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+            }}
+          />
         </div>
 
-        {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white/80 backdrop-blur shadow-sm">
-          <div className="p-6 sm:p-8 flex items-start gap-4">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-600 to-[#25f194] shadow-lg">
-              <BookOpen className="h-6 w-6 text-white" />
-            </div>
+        <div className="relative w-full p-6">
+          {/* Top bar */}
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 backdrop-blur border border-gray-200 hover:bg-white transition-colors"
+              onClick={() => navigate('/')}
+            >
+              <ArrowLeft className="h-4 w-4 text-gray-700" />
+              <span className="font-medium text-gray-800">Back</span>
+            </button>
 
-            <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Study Materials</h1>
-              <p className="mt-1 text-sm text-gray-600">
-                Browse resources by module/semester, preview, download, and contribute your own.
-              </p>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                  <FolderOpen className="h-3.5 w-3.5" />
-                  Filter by module & semester
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                  <Clock className="h-3.5 w-3.5" />
-                  Preview before downloading
-                </span>
-                {/* Removed 'Missing resource requests' and 'Academic support forum' buttons as requested */}
-              </div>
-            </div>
-
-            <div className="hidden sm:flex flex-col items-end gap-2">
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md"
-                onClick={() => navigate('/materials/contribute')}
-              >
-                <UploadCloud className="h-4 w-4" />
-                Contribute
-              </button>
-              <p className="text-xs text-gray-500">Uploads go for admin approval</p>
-            </div>
+            <UserMenu user={user} onProfile={() => navigate('/profile')} onLogout={logout} theme="light" idLabel="ID" />
           </div>
-        </div>
 
-        {/* Sidebar + Content */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Sidebar */}
-          <div className="lg:col-span-3">
-            <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-              <div className="p-5 border-b border-gray-200">
-                <div className="text-sm font-bold text-gray-900">Menu</div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {user?.semester ? `Your semester: ${user.semester}` : 'Set your semester in Profile for access rules.'}
+          {/* Header */}
+          <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white/80 backdrop-blur shadow-sm">
+            <div className="p-6 sm:p-8 flex items-start gap-4">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-600 to-[#25f194] shadow-lg">
+                <BookOpen className="h-6 w-6 text-white" />
+              </div>
+
+              <div className="flex-1">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Study Materials</h1>
+                <p className="mt-1 text-sm text-gray-600">
+                  Browse resources by module/semester, preview, download, and contribute your own.
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                    <FolderOpen className="h-3.5 w-3.5" />
+                    Filter by module & semester
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                    <Clock className="h-3.5 w-3.5" />
+                    Preview before downloading
+                  </span>
+                  {/* Removed 'Missing resource requests' and 'Academic support forum' buttons as requested */}
                 </div>
               </div>
-              <div className="p-3 space-y-1">
-                <NavLink
-                  to="/materials/all"
-                  className={({ isActive }) =>
-                    `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <FolderOpen className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                      <span className={isActive ? 'text-white' : 'text-gray-800'}>All materials</span>
-                    </>
-                  )}
-                </NavLink>
-                <NavLink
-                  to="/materials/favs"
-                  className={({ isActive }) =>
-                    `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <Heart className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                      <span className={isActive ? 'text-white' : 'text-gray-800'}>Favourites</span>
-                    </>
-                  )}
-                </NavLink>
-                <NavLink
-                  to="/materials/history"
-                  className={({ isActive }) =>
-                    `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <Clock className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                      <span className={isActive ? 'text-white' : 'text-gray-800'}>History</span>
-                    </>
-                  )}
-                </NavLink>
-                <NavLink
-                  to="/materials/contribute"
-                  className={({ isActive }) =>
-                    `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <UploadCloud className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                      <span className={isActive ? 'text-white' : 'text-gray-800'}>Contribute</span>
-                    </>
-                  )}
-                </NavLink>
-                <NavLink
-                  to="/materials/requests"
-                  className={({ isActive }) =>
-                    `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <MessageSquare className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                      <span className={isActive ? 'text-white' : 'text-gray-800'}>Missing resource requests</span>
-                    </>
-                  )}
-                </NavLink>
-                <NavLink
-                  to="/materials/reviews"
-                  className={({ isActive }) =>
-                    `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <Star className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                      <span className={isActive ? 'text-white' : 'text-gray-800'}>Ratings & reviews</span>
-                    </>
-                  )}
-                </NavLink>
-                <NavLink
-                  to="/materials/forum"
-                  className={({ isActive }) =>
-                    `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
-                      isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <MessagesSquare className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                      <span className={isActive ? 'text-white' : 'text-gray-800'}>Academic support forum</span>
-                    </>
-                  )}
-                </NavLink>
-              </div>
-            </div>
-          </div>
 
-          {/* Content */}
-          <div className="lg:col-span-9 bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-            <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3">
-              <div className="text-sm font-bold text-gray-900">
-                {tab === 'all'
-                  ? 'All materials'
-                  : tab === 'favs'
-                    ? 'Favourites'
-                    : tab === 'history'
-                      ? 'History'
-                      : 'Contribute'}
-              </div>
-              {tab !== 'contribute' ? (
+              <div className="hidden sm:flex flex-col items-end gap-2">
                 <button
                   type="button"
-                  className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md"
                   onClick={() => navigate('/materials/contribute')}
                 >
                   <UploadCloud className="h-4 w-4" />
                   Contribute
                 </button>
-              ) : null}
+                <p className="text-xs text-gray-500">Uploads go for admin approval</p>
+              </div>
             </div>
+          </div>
 
-            {error ? (
-              <div className="p-5 text-sm text-red-700 bg-red-50 border-b border-red-100">{error}</div>
-            ) : null}
-
-            {tab === 'all' ? (
-              <>
+          {/* Sidebar + Content */}
+          <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Sidebar */}
+            <div className="lg:col-span-3">
+              <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
                 <div className="p-5 border-b border-gray-200">
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                    <div className="sm:col-span-2 relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                      <input
-                        value={filters.q}
-                        onChange={(e) => setFilters((p) => ({ ...p, q: e.target.value }))}
-                        placeholder="Search title/description..."
-                        className="w-full pl-10 pr-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
-                      />
-                    </div>
-
-                    <input
-                      value={filters.moduleCode}
-                      onChange={(e) => setFilters((p) => ({ ...p, moduleCode: e.target.value }))}
-                      placeholder="Module code (e.g. SE3020)"
-                      className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
-                    />
-
-                    <div className="flex gap-3">
-                      <select
-                        value={filters.semester}
-                        onChange={(e) => setFilters((p) => ({ ...p, semester: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
-                      >
-                        <option value="">Any semester</option>
-                        {Array.from({ length: 12 }).map((_, i) => (
-                          <option key={i + 1} value={i + 1}>
-                            Semester {i + 1}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={filters.category}
-                        onChange={(e) => setFilters((p) => ({ ...p, category: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
-                      >
-                        {categories.map((c) => (
-                          <option key={c.id || 'all'} value={c.id}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="text-xs text-gray-500">
-                      {loading
-                        ? 'Loading…'
-                        : `${items.length} items • Showing ${(currentPage - 1) * pageSize + (items.length ? 1 : 0)}-${Math.min(currentPage * pageSize, items.length)}`}
-                    </div>
-                    <button
-                      type="button"
-                      className="px-3 py-1.5 rounded-xl bg-gray-900 text-white text-sm font-semibold"
-                      onClick={loadAll}
-                      disabled={loading}
-                    >
-                      Refresh
-                    </button>
+                  <div className="text-sm font-bold text-gray-900">Menu</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {user?.semester ? `Your semester: ${user.semester}` : 'Set your semester in Profile for access rules.'}
                   </div>
                 </div>
+                <div className="p-3 space-y-1">
+                  <NavLink
+                    to="/materials/all"
+                    className={({ isActive }) =>
+                      `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <FolderOpen className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
+                        <span className={isActive ? 'text-white' : 'text-gray-800'}>All materials</span>
+                      </>
+                    )}
+                  </NavLink>
+                  <NavLink
+                    to="/materials/favs"
+                    className={({ isActive }) =>
+                      `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <Heart className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
+                        <span className={isActive ? 'text-white' : 'text-gray-800'}>Favourites</span>
+                      </>
+                    )}
+                  </NavLink>
+                  <NavLink
+                    to="/materials/history"
+                    className={({ isActive }) =>
+                      `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <Clock className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
+                        <span className={isActive ? 'text-white' : 'text-gray-800'}>History</span>
+                      </>
+                    )}
+                  </NavLink>
+                  <NavLink
+                    to="/materials/contribute"
+                    className={({ isActive }) =>
+                      `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <UploadCloud className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
+                        <span className={isActive ? 'text-white' : 'text-gray-800'}>Contribute</span>
+                      </>
+                    )}
+                  </NavLink>
+                  <NavLink
+                    to="/materials/requests"
+                    className={({ isActive }) =>
+                      `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <MessageSquare className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
+                        <span className={isActive ? 'text-white' : 'text-gray-800'}>Missing resource requests</span>
+                      </>
+                    )}
+                  </NavLink>
+                  <NavLink
+                    to="/materials/reviews"
+                    className={({ isActive }) =>
+                      `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <Star className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
+                        <span className={isActive ? 'text-white' : 'text-gray-800'}>Ratings & reviews</span>
+                      </>
+                    )}
+                  </NavLink>
+                  <NavLink
+                    to="/materials/forum"
+                    className={({ isActive }) =>
+                      `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <MessagesSquare className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
+                        <span className={isActive ? 'text-white' : 'text-gray-800'}>Academic support forum</span>
+                      </>
+                    )}
+                  </NavLink>
+                </div>
+              </div>
+            </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Title</th>
-                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Module</th>
-                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Semester</th>
-                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Downloads</th>
-                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginatedItems.map((m) => (
-                        <React.Fragment key={m.id}>
-                          <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                            <td className="py-3 px-5">
-                              <div className="font-semibold text-gray-900 text-sm">{m.title}</div>
-                              <div className="text-xs text-gray-500 mt-0.5">{m.description || '—'}</div>
-                            </td>
-                            <td className="py-3 px-5 text-sm text-gray-700">{m.moduleCode || '—'}</td>
-                            <td className="py-3 px-5 text-sm text-gray-700">{m.semester ?? '—'}</td>
-                            <td className="py-3 px-5 text-sm text-gray-700">{m.downloadCount ?? 0}</td>
-                            <td className="py-3 px-5">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <button
-                                  type="button"
-                                  className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                                  onClick={() => openPreview(m)}
-                                >
-                                  Preview
-                                </button>
-                                <button
-                                  type="button"
-                                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-sm font-semibold"
-                                  onClick={() => downloadFile(m)}
-                                >
-                                  <Download className="h-4 w-4" />
-                                  Download
-                                </button>
-                                <button
-                                  type="button"
-                                  className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                                  onClick={() => toggleVersions(m.id)}
-                                >
-                                  Versions
-                                </button>
-                                <button
-                                  type="button"
-                                  className={`p-2 rounded-xl border ${
-                                    m.bookmarked ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'
-                                  } hover:bg-gray-50`}
-                                  onClick={() => onToggleBookmark(m.id)}
-                                  title={m.bookmarked ? 'Remove from favourites' : 'Add to favourites'}
-                                >
-                                  <Star className={`h-4 w-4 ${m.bookmarked ? 'text-yellow-600' : 'text-gray-700'}`} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
+            {/* Content */}
+            <div className="lg:col-span-9 bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+              <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3">
+                <div className="text-sm font-bold text-gray-900">
+                  {tab === 'all'
+                    ? 'All materials'
+                    : tab === 'favs'
+                      ? 'Favourites'
+                      : tab === 'history'
+                        ? 'History'
+                        : 'Contribute'}
+                </div>
+                {tab !== 'contribute' ? (
+                  <button
+                    type="button"
+                    className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md"
+                    onClick={() => navigate('/materials/contribute')}
+                  >
+                    <UploadCloud className="h-4 w-4" />
+                    Contribute
+                  </button>
+                ) : null}
+              </div>
 
-                          {expandedId === m.id ? (
-                            <tr className="border-b border-gray-200 bg-gray-50/40">
-                              <td colSpan={5} className="py-4 px-5">
-                                <div className="text-sm font-semibold text-gray-900 mb-2">Versions</div>
-                                <div className="space-y-2">
-                                  {(detailsById[m.id]?.versions || []).map((v) => (
-                                    <div
-                                      key={v.id}
-                                      className="rounded-xl border border-gray-200 bg-white px-4 py-3 flex items-center justify-between gap-3"
-                                    >
-                                      <div>
-                                        <div className="text-sm font-semibold text-gray-900">{v.originalName}</div>
-                                        <div className="text-xs text-gray-500 mt-0.5">
-                                          {v.note ? `${v.note} • ` : ''}
-                                          {v.createdAt ? new Date(v.createdAt).toLocaleString() : ''}
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <button
-                                          type="button"
-                                          className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                                          onClick={() =>
-                                            window.open(
-                                              studyMaterialService.fileUrl(m.id, {
-                                                versionId: v.id,
-                                                disposition: 'inline',
-                                              }),
-                                              '_blank',
-                                              'noopener,noreferrer',
-                                            )
-                                          }
-                                        >
-                                          Preview
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ))}
-                                  {detailsById[m.id] && (detailsById[m.id]?.versions || []).length === 0 ? (
-                                    <div className="text-sm text-gray-600">No versions found.</div>
-                                  ) : null}
-                                  {!detailsById[m.id] ? (
-                                    <div className="text-sm text-gray-600">Loading versions…</div>
-                                  ) : null}
+              {error ? (
+                <div className="p-5 text-sm text-red-700 bg-red-50 border-b border-red-100">{error}</div>
+              ) : null}
+
+              {tab === 'all' ? (
+                <>
+                  <div className="p-5 border-b border-gray-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                      <div className="sm:col-span-2 relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                        <input
+                          value={filters.q}
+                          onChange={(e) => setFilters((p) => ({ ...p, q: e.target.value }))}
+                          placeholder="Search title/description..."
+                          className="w-full pl-10 pr-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
+                        />
+                      </div>
+
+                      <input
+                        value={filters.moduleCode}
+                        onChange={(e) => setFilters((p) => ({ ...p, moduleCode: e.target.value }))}
+                        placeholder="Module code (e.g. SE3020)"
+                        className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
+                      />
+
+                      <div className="flex gap-3">
+                        <select
+                          value={filters.semester}
+                          onChange={(e) => setFilters((p) => ({ ...p, semester: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
+                        >
+                          <option value="">Any semester</option>
+                          {Array.from({ length: 12 }).map((_, i) => (
+                            <option key={i + 1} value={i + 1}>
+                              Semester {i + 1}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={filters.category}
+                          onChange={(e) => setFilters((p) => ({ ...p, category: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
+                        >
+                          {categories.map((c) => (
+                            <option key={c.id || 'all'} value={c.id}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="text-xs text-gray-500">
+                        {loading
+                          ? 'Loading…'
+                          : `${items.length} items • Showing ${(currentPage - 1) * pageSize + (items.length ? 1 : 0)}-${Math.min(currentPage * pageSize, items.length)}`}
+                      </div>
+                      <button
+                        type="button"
+                        className="px-3 py-1.5 rounded-xl bg-gray-900 text-white text-sm font-semibold"
+                        onClick={loadAll}
+                        disabled={loading}
+                      >
+                        Refresh
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Title</th>
+                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Module</th>
+                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Semester</th>
+                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Downloads</th>
+                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedItems.map((m) => (
+                          <React.Fragment key={m.id}>
+                            <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                              <td className="py-3 px-5">
+                                <div className="font-semibold text-gray-900 text-sm">{m.title}</div>
+                                <div className="text-xs text-gray-500 mt-0.5">{m.description || '—'}</div>
+                              </td>
+                              <td className="py-3 px-5 text-sm text-gray-700">{m.moduleCode || '—'}</td>
+                              <td className="py-3 px-5 text-sm text-gray-700">{m.semester ?? '—'}</td>
+                              <td className="py-3 px-5 text-sm text-gray-700">{m.downloadCount ?? 0}</td>
+                              <td className="py-3 px-5">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <button
+                                    type="button"
+                                    className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                                    onClick={() => openPreview(m)}
+                                  >
+                                    Preview
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-sm font-semibold"
+                                    onClick={() => downloadFile(m)}
+                                  >
+                                    <Download className="h-4 w-4" />
+                                    Download
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                                    onClick={() => toggleVersions(m.id)}
+                                  >
+                                    Versions
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className={`p-2 rounded-xl border ${m.bookmarked ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'
+                                      } hover:bg-gray-50`}
+                                    onClick={() => onToggleBookmark(m.id)}
+                                    title={m.bookmarked ? 'Remove from favourites' : 'Add to favourites'}
+                                  >
+                                    <Star className={`h-4 w-4 ${m.bookmarked ? 'text-yellow-600' : 'text-gray-700'}`} />
+                                  </button>
                                 </div>
                               </td>
                             </tr>
-                          ) : null}
-                        </React.Fragment>
-                      ))}
 
-                      {!loading && items.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="py-10 px-5 text-center text-sm text-gray-600">
-                            No materials found for your filters.
-                          </td>
-                        </tr>
-                      ) : null}
-                    </tbody>
-                  </table>
-                </div>
+                            {expandedId === m.id ? (
+                              <tr className="border-b border-gray-200 bg-gray-50/40">
+                                <td colSpan={5} className="py-4 px-5">
+                                  <div className="text-sm font-semibold text-gray-900 mb-2">Versions</div>
+                                  <div className="space-y-2">
+                                    {(detailsById[m.id]?.versions || []).map((v) => (
+                                      <div
+                                        key={v.id}
+                                        className="rounded-xl border border-gray-200 bg-white px-4 py-3 flex items-center justify-between gap-3"
+                                      >
+                                        <div>
+                                          <div className="text-sm font-semibold text-gray-900">{v.originalName}</div>
+                                          <div className="text-xs text-gray-500 mt-0.5">
+                                            {v.note ? `${v.note} • ` : ''}
+                                            {v.createdAt ? new Date(v.createdAt).toLocaleString() : ''}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <button
+                                            type="button"
+                                            className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                                            onClick={() =>
+                                              window.open(
+                                                studyMaterialService.fileUrl(m.id, {
+                                                  versionId: v.id,
+                                                  disposition: 'inline',
+                                                }),
+                                                '_blank',
+                                                'noopener,noreferrer',
+                                              )
+                                            }
+                                          >
+                                            Preview
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                    {detailsById[m.id] && (detailsById[m.id]?.versions || []).length === 0 ? (
+                                      <div className="text-sm text-gray-600">No versions found.</div>
+                                    ) : null}
+                                    {!detailsById[m.id] ? (
+                                      <div className="text-sm text-gray-600">Loading versions…</div>
+                                    ) : null}
+                                  </div>
+                                </td>
+                              </tr>
+                            ) : null}
+                          </React.Fragment>
+                        ))}
 
-                {!loading && items.length > 0 ? (
-                  <div className="p-5 border-t border-gray-200 flex items-center justify-between gap-3">
-                    <div className="text-sm text-gray-600">
-                      Page {currentPage} of {totalPages}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        onClick={() => {
-                          setExpandedId(null);
-                          setCurrentPage((p) => Math.max(1, p - 1));
-                        }}
-                        disabled={currentPage === 1}
-                      >
-                        Back
-                      </button>
-                      <button
-                        type="button"
-                        className="px-3 py-1.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                        onClick={() => {
-                          setExpandedId(null);
-                          setCurrentPage((p) => Math.min(totalPages, p + 1));
-                        }}
-                        disabled={currentPage === totalPages}
-                      >
-                        Next
-                      </button>
-                    </div>
+                        {!loading && items.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="py-10 px-5 text-center text-sm text-gray-600">
+                              No materials found for your filters.
+                            </td>
+                          </tr>
+                        ) : null}
+                      </tbody>
+                    </table>
                   </div>
-                ) : null}
-              </>
-            ) : null}
 
-            {tab === 'favs' ? (
-              <div className="p-5">
-                <div className="text-sm text-gray-700 mb-3">Saved materials for quick access.</div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                  {bookmarks.map((m) => (
-                    <div key={m.id} className="rounded-2xl border border-gray-200 bg-white p-4 flex items-center justify-between gap-3">
-                      <div>
-                        <div className="font-semibold text-gray-900 text-sm">{m.title}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          {m.moduleCode || '—'} {m.semester ? `• Semester ${m.semester}` : ''}
-                        </div>
+                  {!loading && items.length > 0 ? (
+                    <div className="p-5 border-t border-gray-200 flex items-center justify-between gap-3">
+                      <div className="text-sm text-gray-600">
+                        Page {currentPage} of {totalPages}
                       </div>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
+                          className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() => {
+                            setExpandedId(null);
+                            setCurrentPage((p) => Math.max(1, p - 1));
+                          }}
+                          disabled={currentPage === 1}
+                        >
+                          Back
+                        </button>
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() => {
+                            setExpandedId(null);
+                            setCurrentPage((p) => Math.min(totalPages, p + 1));
+                          }}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+
+              {tab === 'favs' ? (
+                <div className="p-5">
+                  <div className="text-sm text-gray-700 mb-3">Saved materials for quick access.</div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {bookmarks.map((m) => (
+                      <div key={m.id} className="rounded-2xl border border-gray-200 bg-white p-4 flex items-center justify-between gap-3">
+                        <div>
+                          <div className="font-semibold text-gray-900 text-sm">{m.title}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {m.moduleCode || '—'} {m.semester ? `• Semester ${m.semester}` : ''}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                            onClick={() => openPreview(m)}
+                          >
+                            Preview
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-sm font-semibold"
+                            onClick={() => downloadFile(m)}
+                          >
+                            <Download className="h-4 w-4" />
+                            Download
+                          </button>
+                          <button
+                            type="button"
+                            className="p-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50"
+                            onClick={() => onToggleBookmark(m.id)}
+                            title="Remove"
+                          >
+                            <Star className="h-4 w-4 text-yellow-600" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {!loading && bookmarks.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">
+                        No favourites yet.
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
+              {tab === 'history' ? (
+                <div className="p-5">
+                  <div className="text-sm text-gray-700 mb-3">Your download history (latest 100).</div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {history.map((h, idx) => (
+                      <div key={`${h?.material?.id}-${idx}`} className="rounded-2xl border border-gray-200 bg-white p-4 flex items-center justify-between gap-3">
+                        <div>
+                          <div className="font-semibold text-gray-900 text-sm">{h?.material?.title}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {h?.material?.moduleCode || '—'} {h?.material?.semester ? `• Semester ${h.material.semester}` : ''}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Version: {h?.version?.note || h?.version?.originalName || '—'}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1">
+                            Downloaded {new Date(h.downloadedAt).toLocaleString()}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
                           className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                          onClick={() => openPreview(m)}
+                          onClick={() => openPreview({ id: h?.material?.id, currentVersion: h?.version })}
                         >
                           Preview
                         </button>
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-sm font-semibold"
-                          onClick={() => downloadFile(m)}
-                        >
-                          <Download className="h-4 w-4" />
-                          Download
-                        </button>
-                        <button
-                          type="button"
-                          className="p-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50"
-                          onClick={() => onToggleBookmark(m.id)}
-                          title="Remove"
-                        >
-                          <Star className="h-4 w-4 text-yellow-600" />
-                        </button>
                       </div>
-                    </div>
-                  ))}
-                  {!loading && bookmarks.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">
-                      No favourites yet.
-                    </div>
-                  ) : null}
+                    ))}
+                    {!loading && history.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">
+                        No downloads yet.
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
 
-            {tab === 'history' ? (
-              <div className="p-5">
-                <div className="text-sm text-gray-700 mb-3">Your download history (latest 100).</div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                  {history.map((h, idx) => (
-                    <div key={`${h?.material?.id}-${idx}`} className="rounded-2xl border border-gray-200 bg-white p-4 flex items-center justify-between gap-3">
-                      <div>
-                        <div className="font-semibold text-gray-900 text-sm">{h?.material?.title}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          {h?.material?.moduleCode || '—'} {h?.material?.semester ? `• Semester ${h.material.semester}` : ''}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          Version: {h?.version?.note || h?.version?.originalName || '—'}
-                        </div>
-                        <div className="text-xs text-gray-400 mt-1">
-                          Downloaded {new Date(h.downloadedAt).toLocaleString()}
-                        </div>
+              {tab === 'contribute' ? (
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="text-sm text-gray-700">
+                      Upload your notes/resources for admin approval (moderation queue).
+                      <div className="text-xs text-gray-500 mt-1">
+                        You’ll see status updates here after review.
                       </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                        onClick={() => openPreview({ id: h?.material?.id, currentVersion: h?.version })}
+                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md disabled:opacity-60"
+                        onClick={() => setUploadModalOpen(true)}
+                        disabled={loading}
                       >
-                        Preview
+                        <UploadCloud className="h-4 w-4" />
+                        Upload new
+                      </button>
+                      <button
+                        type="button"
+                        className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-60"
+                        onClick={loadMyUploads}
+                        disabled={loading}
+                      >
+                        Refresh
                       </button>
                     </div>
-                  ))}
-                  {!loading && history.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">
-                      No downloads yet.
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-
-            {tab === 'contribute' ? (
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div className="text-sm text-gray-700">
-                    Upload your notes/resources for admin approval (moderation queue).
-                    <div className="text-xs text-gray-500 mt-1">
-                      You’ll see status updates here after review.
-                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md disabled:opacity-60"
-                      onClick={() => setUploadModalOpen(true)}
-                      disabled={loading}
-                    >
-                      <UploadCloud className="h-4 w-4" />
-                      Upload new
-                    </button>
-                    <button
-                      type="button"
-                      className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-60"
-                      onClick={loadMyUploads}
-                      disabled={loading}
-                    >
-                      Refresh
-                    </button>
+                  <div className="mt-5 overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Title</th>
+                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Module</th>
+                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Semester</th>
+                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Category</th>
+                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Status</th>
+                          <th className="text-right py-3 px-5 text-xs font-semibold text-gray-600">Submitted</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {myUploads.map((m, idx) => (
+                          <tr key={`${m?.id || idx}`} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                            <td className="py-3 px-5">
+                              <div className="font-semibold text-gray-900 text-sm">{m.title || '—'}</div>
+                              <div className="text-xs text-gray-500 mt-0.5">{m.description || '—'}</div>
+                            </td>
+                            <td className="py-3 px-5 text-sm text-gray-700">{m.moduleCode || '—'}</td>
+                            <td className="py-3 px-5 text-sm text-gray-700">{m.semester ?? '—'}</td>
+                            <td className="py-3 px-5 text-sm text-gray-700">{m.category || '—'}</td>
+                            <td className="py-3 px-5">
+                              <div className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${statusBadgeClass(m.status)}`}>
+                                {String(m.status || 'pending')}
+                              </div>
+                              {String(m.status || '').toLowerCase() === 'rejected' && m?.moderation?.decisionReason ? (
+                                <div className="text-xs text-gray-500 mt-1">Reason: {m.moderation.decisionReason}</div>
+                              ) : null}
+                            </td>
+                            <td className="py-3 px-5 text-sm text-gray-700 text-right">
+                              {m.createdAt ? new Date(m.createdAt).toLocaleString() : '—'}
+                            </td>
+                          </tr>
+                        ))}
+
+                        {!loading && myUploads.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-10 px-5 text-center text-sm text-gray-600">
+                              You haven’t uploaded anything yet.
+                            </td>
+                          </tr>
+                        ) : null}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-
-                <div className="mt-5 overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Title</th>
-                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Module</th>
-                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Semester</th>
-                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Category</th>
-                        <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Status</th>
-                        <th className="text-right py-3 px-5 text-xs font-semibold text-gray-600">Submitted</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {myUploads.map((m, idx) => (
-                        <tr key={`${m?.id || idx}`} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                          <td className="py-3 px-5">
-                            <div className="font-semibold text-gray-900 text-sm">{m.title || '—'}</div>
-                            <div className="text-xs text-gray-500 mt-0.5">{m.description || '—'}</div>
-                          </td>
-                          <td className="py-3 px-5 text-sm text-gray-700">{m.moduleCode || '—'}</td>
-                          <td className="py-3 px-5 text-sm text-gray-700">{m.semester ?? '—'}</td>
-                          <td className="py-3 px-5 text-sm text-gray-700">{m.category || '—'}</td>
-                          <td className="py-3 px-5">
-                            <div className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${statusBadgeClass(m.status)}`}>
-                              {String(m.status || 'pending')}
-                            </div>
-                            {String(m.status || '').toLowerCase() === 'rejected' && m?.moderation?.decisionReason ? (
-                              <div className="text-xs text-gray-500 mt-1">Reason: {m.moderation.decisionReason}</div>
-                            ) : null}
-                          </td>
-                          <td className="py-3 px-5 text-sm text-gray-700 text-right">
-                            {m.createdAt ? new Date(m.createdAt).toLocaleString() : '—'}
-                          </td>
-                        </tr>
-                      ))}
-
-                      {!loading && myUploads.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="py-10 px-5 text-center text-sm text-gray-600">
-                            You haven’t uploaded anything yet.
-                          </td>
-                        </tr>
-                      ) : null}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    {uploadModalOpen ? (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Upload study material"
-      >
-        <div className="absolute inset-0" onClick={() => setUploadModalOpen(false)} />
-        <div className="relative w-full max-w-5xl rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-md shadow-xl overflow-hidden flex flex-col max-h-[calc(100vh-2rem)]">
-          <div className="p-5 border-b border-gray-200 bg-white flex items-start justify-between gap-4">
-            <div>
-              <div className="text-sm font-bold text-gray-900">Upload new material</div>
-              <div className="text-xs text-gray-500 mt-1">Uploads go for admin approval</div>
+      {uploadModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Upload study material"
+        >
+          <div className="absolute inset-0" onClick={() => setUploadModalOpen(false)} />
+          <div className="relative w-full max-w-5xl rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-md shadow-xl overflow-hidden flex flex-col max-h-[calc(100vh-2rem)]">
+            <div className="p-5 border-b border-gray-200 bg-white flex items-start justify-between gap-4">
+              <div>
+                <div className="text-sm font-bold text-gray-900">Upload new material</div>
+                <div className="text-xs text-gray-500 mt-1">Uploads go for admin approval</div>
+              </div>
+              <button
+                type="button"
+                className="h-10 w-10 inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                onClick={() => setUploadModalOpen(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
             </div>
-            <button
-              type="button"
-              className="h-10 w-10 inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-              onClick={() => setUploadModalOpen(false)}
-              aria-label="Close"
-            >
-              ×
-            </button>
-          </div>
 
-          <div className="p-5 flex-1 overflow-y-auto">
-            <form onSubmit={submitContribution} className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  value={contrib.title}
-                  onChange={(e) => setContrib((p) => ({ ...p, title: e.target.value }))}
-                  placeholder="Title"
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
-                />
-                <input
-                  value={contrib.moduleCode}
-                  onChange={(e) => setContrib((p) => ({ ...p, moduleCode: e.target.value }))}
-                  placeholder="Module code"
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
-                />
-                <select
-                  value={contrib.semester}
-                  onChange={(e) => setContrib((p) => ({ ...p, semester: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
-                >
-                  <option value="">Semester (optional)</option>
-                  {semesterOptions.map((semester) => (
-                    <option key={semester} value={semester}>
-                      Semester {semester}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={contrib.category}
-                  onChange={(e) => setContrib((p) => ({ ...p, category: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
-                >
-                  {categories
-                    .filter((c) => c.id)
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.label}
+            <div className="p-5 flex-1 overflow-y-auto">
+              <form onSubmit={submitContribution} className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input
+                    value={contrib.title}
+                    onChange={(e) => setContrib((p) => ({ ...p, title: e.target.value }))}
+                    placeholder="Title"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
+                  />
+                  <input
+                    value={contrib.moduleCode}
+                    onChange={(e) => setContrib((p) => ({ ...p, moduleCode: e.target.value }))}
+                    placeholder="Module code"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
+                  />
+                  <select
+                    value={contrib.semester}
+                    onChange={(e) => setContrib((p) => ({ ...p, semester: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
+                  >
+                    <option value="">Semester (optional)</option>
+                    {semesterOptions.map((semester) => (
+                      <option key={semester} value={semester}>
+                        Semester {semester}
                       </option>
                     ))}
-                </select>
-              </div>
+                  </select>
+                  <select
+                    value={contrib.category}
+                    onChange={(e) => setContrib((p) => ({ ...p, category: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
+                  >
+                    {categories
+                      .filter((c) => c.id)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.label}
+                        </option>
+                      ))}
+                  </select>
+                </div>
 
-              <textarea
-                value={contrib.description}
-                onChange={(e) => setContrib((p) => ({ ...p, description: e.target.value }))}
-                placeholder="Description (optional)"
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none min-h-[90px]"
-              />
-
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <label className="text-sm text-gray-700 inline-flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={contrib.suggested}
-                    onChange={(e) => setContrib((p) => ({ ...p, suggested: e.target.checked }))}
-                  />
-                  Suggested
-                </label>
-
-                <input
-                  type="file"
-                  onChange={(e) => setContrib((p) => ({ ...p, file: e.target.files?.[0] || null }))}
-                  className="text-sm"
+                <textarea
+                  value={contrib.description}
+                  onChange={(e) => setContrib((p) => ({ ...p, description: e.target.value }))}
+                  placeholder="Description (optional)"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none min-h-[90px]"
                 />
-              </div>
 
-              <button
-                type="submit"
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md disabled:opacity-60"
-                disabled={loading}
-              >
-                <UploadCloud className="h-4 w-4" />
-                Submit for approval
-              </button>
-            </form>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <label className="text-sm text-gray-700 inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={contrib.suggested}
+                      onChange={(e) => setContrib((p) => ({ ...p, suggested: e.target.checked }))}
+                    />
+                    Suggested
+                  </label>
+
+                  <input
+                    type="file"
+                    onChange={(e) => setContrib((p) => ({ ...p, file: e.target.files?.[0] || null }))}
+                    className="text-sm"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md disabled:opacity-60"
+                  disabled={loading}
+                >
+                  <UploadCloud className="h-4 w-4" />
+                  Submit for approval
+                </button>
+              </form>
+            </div>
           </div>
         </div>
-      </div>
-    ) : null}
+      ) : null}
 
-    <AIChatBot />
+      <AIChatBot />
     </>
   );
 }
