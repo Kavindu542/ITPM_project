@@ -11,6 +11,7 @@ const {
   adminListComplaints,
   adminUpdateComplaintStatus,
   adminCreateMealShopAccount,
+  adminCreateLaundryShopAccount,
 } = require('../controllers/hostelController');
 
 const router = express.Router();
@@ -28,5 +29,6 @@ router.put('/admin/applications/:id', requireAuth, requireModuleAdmin('hostel-wa
 router.get('/admin/all-complaints', requireAuth, requireModuleAdmin('hostel-warden'), adminListComplaints);
 router.put('/admin/complaints/:id', requireAuth, requireModuleAdmin('hostel-warden'), adminUpdateComplaintStatus);
 router.post('/admin/meal-shop-accounts', requireAuth, requireModuleAdmin('hostel-warden'), adminCreateMealShopAccount);
+router.post('/admin/laundry-shop-accounts', requireAuth, requireModuleAdmin('hostel-warden'), adminCreateLaundryShopAccount);
 
 module.exports = router;

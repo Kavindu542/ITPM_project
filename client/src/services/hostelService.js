@@ -107,4 +107,14 @@ export const hostelService = {
       throw error.response?.data || error;
     }
   },
+
+  // Admin (warden): Create laundry shop login account
+  createLaundryShopAccount: async (payload) => {
+    try {
+      const response = await api.post('/hostel/admin/laundry-shop-accounts', payload);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
 };
