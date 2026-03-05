@@ -104,6 +104,13 @@ export default function App() {
   const [loading, setLoading] = React.useState(true);
   const [postLogoutRedirect, setPostLogoutRedirect] = React.useState(null);
   const navigate = useNavigate();
+  const lastCreatedMealShopEmail = React.useMemo(() => {
+    try {
+      return localStorage.getItem('cc_last_meal_shop_email') || '';
+    } catch {
+      return '';
+    }
+  }, [user?.email, user?.module]);
 
   const adminDashboardForModule = React.useCallback((moduleKey) => {
     const map = {
@@ -458,7 +465,7 @@ export default function App() {
               title="Meals Shop"
               moduleKey="hostel-meals-shop"
               onSignedIn={(u) => setUser(u)}
-              initialEmail={user?.email}
+              initialEmail={lastCreatedMealShopEmail || user?.email}
             />
           )
         }

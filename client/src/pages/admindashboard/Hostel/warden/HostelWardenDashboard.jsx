@@ -109,9 +109,16 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
       });
 
       setMealShopSuccess('Meal shop account created successfully. You can now sign in to Meals Shop.');
-      setCreatedMealShopEmail(mealShopForm.email);
+      const createdEmail = String(mealShopForm.email || '').trim().toLowerCase();
+      setCreatedMealShopEmail(createdEmail);
+      try {
+        localStorage.setItem('cc_last_meal_shop_email', createdEmail);
+      } catch {
+        // Ignore storage errors
+      }
       setMealShopForm({ email: '', password: '', name: '', contactNumber: '', description: '' });
       setShopLogo(null);
+      navigate(`/admin/hostel/meals-shop/signin?email=${encodeURIComponent(createdEmail)}`);
 
       setTimeout(() => setMealShopSuccess(''), 4000);
     } catch (e) {
