@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { PDFParse } = require("pdf-parse");
+const pdfParse = require("pdf-parse");
 const StudyMaterial = require("../models/StudyMaterial");
 const StudyMaterialDownload = require("../models/StudyMaterialDownload");
 const StudyMaterialBookmark = require("../models/StudyMaterialBookmark");
@@ -14,22 +14,8 @@ const MAX_PDF_EXTRACT_BYTES = 15 * 1024 * 1024; // 15MB
 const MAX_EXTRACTED_TEXT_CHARS = 20000;
 
 const parsePdfTextFromBuffer = async (buf) => {
-  const parser = new PDFParse({ data: buf });
-  try {
-    const parsed = await parser.getText({
-      first: 5,
-      lineEnforce: false,
-      pageJoiner: "\n",
-      itemJoiner: " ",
-    });
-    return String(parsed?.text || "");
-  } finally {
-    try {
-      await parser.destroy();
-    } catch {
-      // best-effort
-    }
-  }
+  const data = await pdfParse(buf, { max: 5 });
+  return String(data.text || "");
 };
 
 const extractModuleCodesFromText = (text) => {
