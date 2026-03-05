@@ -1,0 +1,25 @@
+{
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "env": {
+    "VITE_API_URL": "https://itpm-project-orpin.vercel.app/api"
+  },
+  "build": {
+    "env": {
+      "VITE_API_URL": "https://itpm-project-orpin.vercel.app/api"
+    }
+  }
+}
