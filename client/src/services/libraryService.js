@@ -44,3 +44,9 @@ export const reservationService = {
 export const libraryStatsService = {
   get: () => api.get('/library/stats'),
 };
+
+export const libraryAiService = {
+  chat: (message, role = 'student', language = 'English') =>
+    api.post('/library/ai/chat', { message, role, language }),
+};
+
