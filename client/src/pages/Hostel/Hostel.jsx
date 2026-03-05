@@ -13,6 +13,7 @@ import {
   Loader,
   CheckCircle,
   Shirt,
+  Store,
   Phone,
   Clock3,
   Truck,
@@ -35,6 +36,18 @@ export default function Hostel({ user, onLoggedOut }) {
   const [laundryError, setLaundryError] = useState('');
   const [laundryBookings, setLaundryBookings] = useState([]);
   const [laundryBookingLoading, setLaundryBookingLoading] = useState(false);
+  const [mealShopProfile, setMealShopProfile] = useState(null);
+  const [selectedMealItems, setSelectedMealItems] = useState([]);
+  const [mealOrderMessage, setMealOrderMessage] = useState('');
+  const [mealOrderModalOpen, setMealOrderModalOpen] = useState(false);
+  const [mealOrderSubmitting, setMealOrderSubmitting] = useState(false);
+  const [mealOrderForm, setMealOrderForm] = useState({
+    studentName: '',
+    contactNumber: '',
+    floor: '',
+    roomNumber: '',
+    notes: '',
+  });
   const [selectedShop, setSelectedShop] = useState(null);
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [expandedShopId, setExpandedShopId] = useState('');
@@ -92,6 +105,11 @@ export default function Hostel({ user, onLoggedOut }) {
     loadMyLaundryBookings();
   }, [activeTab, applicationStatus]);
 
+  useEffect(() => {
+    if (activeTab !== 'meal-shop') return;
+    loadMealShopProfile();
+  }, [activeTab]);
+
   const checkApplicationStatus = async () => {
     try {
       setLoading(true);
@@ -105,6 +123,7 @@ export default function Hostel({ user, onLoggedOut }) {
         } else if (application.status === 'approved') {
           loadLaundryShops();
           loadMyLaundryBookings();
+          loadMealShopProfile();
         } else {
           // Stop polling if status is no longer pending
           if (pollIntervalRef.current) {
@@ -176,6 +195,126 @@ export default function Hostel({ user, onLoggedOut }) {
       console.error('Failed to load laundry bookings', err);
     } finally {
       setLaundryBookingLoading(false);
+    }
+  };
+
+  const loadMealShopProfile = () => {
+    try {
+      const raw = localStorage.getItem('hostelMealShopProfile');
+      if (!raw) {
+        setMealShopProfile(null);
+        setSelectedMealItems([]);
+        setMealOrderMessage('');
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      setMealShopProfile(parsed && typeof parsed === 'object' ? parsed : null);
+      setSelectedMealItems([]);
+      setMealOrderMessage('');
+    } catch (err) {
+      console.error('Failed to load meal shop profile', err);
+      setMealShopProfile(null);
+      setSelectedMealItems([]);
+      setMealOrderMessage('');
+    }
+  };
+
+  const formatTimeValue = (value) => {
+    if (!value || typeof value !== 'string' || !value.includes(':')) return 'Not specified';
+    const [hh, mm] = value.split(':');
+    const h = Number(hh);
+    if (Number.isNaN(h)) return value;
+    const meridiem = h >= 12 ? 'PM' : 'AM';
+    const displayHour = h % 12 === 0 ? 12 : h % 12;
+    return `${displayHour}:${mm} ${meridiem}`;
+  };
+
+  const mealMenuItems = React.useMemo(() => {
+    const rawItems = Array.isArray(mealShopProfile?.menuItems) ? mealShopProfile.menuItems : [];
+    return rawItems
+      .map((item, idx) => {
+        const numericPrice = Number(item?.price);
+        return {
+          id: item?.id || `menu-${idx}`,
+          name: String(item?.name || '').trim(),
+          price: Number.isFinite(numericPrice) ? numericPrice : 0,
+        };
+      })
+      .filter((item) => item.name);
+  }, [mealShopProfile]);
+
+  const selectedMealTotal = React.useMemo(() => {
+    if (!mealMenuItems.length || !selectedMealItems.length) return 0;
+    return mealMenuItems
+      .filter((item) => selectedMealItems.includes(item.id))
+      .reduce((sum, item) => sum + item.price, 0);
+  }, [mealMenuItems, selectedMealItems]);
+
+  const toggleMealItem = (itemId) => {
+    setMealOrderMessage('');
+    setSelectedMealItems((prev) =>
+      prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
+    );
+  };
+
+  const handleMealOrder = () => {
+    if (selectedMealItems.length === 0) {
+      setMealOrderMessage('Select at least one menu item to place the order.');
+      return;
+    }
+    setMealOrderForm({
+      studentName: user?.name || '',
+      contactNumber: user?.contactNumber || '',
+      floor: '',
+      roomNumber: '',
+      notes: '',
+    });
+    setMealOrderModalOpen(true);
+  };
+
+  const submitMealOrder = (e) => {
+    e.preventDefault();
+    if (selectedMealItems.length === 0) {
+      setMealOrderMessage('Select at least one menu item to place the order.');
+      setMealOrderModalOpen(false);
+      return;
+    }
+    setMealOrderSubmitting(true);
+
+    const orderedItems = mealMenuItems
+      .filter((item) => selectedMealItems.includes(item.id))
+      .map((item) => ({ name: item.name, price: item.price }));
+
+    const orderPayload = {
+      id: `meal-order-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      shopName: mealShopProfile?.shopName || 'Meal Shop',
+      studentName: mealOrderForm.studentName || user?.name || 'Student',
+      studentId: user?.studentId || '-',
+      studentEmail: user?.email || '-',
+      contactNumber: mealOrderForm.contactNumber || '-',
+      floor: mealOrderForm.floor || '',
+      roomNumber: mealOrderForm.roomNumber || '',
+      notes: mealOrderForm.notes || '',
+      items: orderedItems,
+      totalPrice: selectedMealTotal,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const raw = localStorage.getItem('hostelMealShopOrders');
+      const existingOrders = raw ? JSON.parse(raw) : [];
+      const safeOrders = Array.isArray(existingOrders) ? existingOrders : [];
+      safeOrders.unshift(orderPayload);
+      localStorage.setItem('hostelMealShopOrders', JSON.stringify(safeOrders));
+      setMealOrderMessage(`Order created successfully. Total: Rs. ${selectedMealTotal.toFixed(2)}`);
+      setSelectedMealItems([]);
+      setMealOrderModalOpen(false);
+    } catch (err) {
+      console.error('Failed to save meal order', err);
+      setMealOrderMessage('Failed to place order. Please try again.');
+    } finally {
+      setMealOrderSubmitting(false);
     }
   };
 
@@ -398,6 +537,12 @@ export default function Hostel({ user, onLoggedOut }) {
       label: 'Laundry Services',
       description: 'View and book laundry services',
       onClick: () => setActiveTab('laundry'),
+    },
+    {
+      icon: Store,
+      label: 'Meal Shop',
+      description: 'View meal shop services',
+      onClick: () => setActiveTab('meal-shop'),
     },
     {
       icon: History,
@@ -955,6 +1100,159 @@ export default function Hostel({ user, onLoggedOut }) {
                 </div>
               </div>
             )}
+            {activeTab === 'meal-shop' && (
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
+                <div className="p-6 border-b border-gray-200 flex items-center gap-3">
+                  <div className="p-2 bg-amber-50 rounded-lg">
+                    <Store className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Meal Shop</h1>
+                    <p className="text-sm text-gray-500">Browse hostel meal shop services and updates</p>
+                  </div>
+                </div>
+                <div className="p-6">
+                  {!mealShopProfile ? (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                      No meal shop details available yet.
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:shadow-md">
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-500">Meal shop status</span>
+                        <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                          Open for orders
+                        </span>
+                      </div>
+
+                      <div className="flex items-start gap-4">
+                        {mealShopProfile.logoDataUrl ? (
+                          <img
+                            src={mealShopProfile.logoDataUrl}
+                            alt={mealShopProfile.shopName || 'Meal shop logo'}
+                            className="h-16 w-16 rounded-xl border border-amber-100 object-cover"
+                          />
+                        ) : (
+                          <div className="h-16 w-16 rounded-xl bg-amber-50 border border-amber-100 grid place-items-center">
+                            <Store className="h-7 w-7 text-amber-600" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-lg font-bold text-gray-900">{mealShopProfile.shopName || 'Meal Shop'}</h3>
+                          <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                            {mealShopProfile.serviceDetails || 'Service details not specified.'}
+                          </p>
+
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {(mealShopProfile.serviceDetails || '')
+                              .split(',')
+                              .map((item) => item.trim())
+                              .filter(Boolean)
+                              .slice(0, 4)
+                              .map((service) => (
+                                <span
+                                  key={service}
+                                  className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700"
+                                >
+                                  {service}
+                                </span>
+                              ))}
+                          </div>
+
+                          <div className="mt-3 space-y-1.5 text-sm text-gray-700">
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4" />
+                              {mealShopProfile.contactNumber || '-'}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock3 className="h-4 w-4" />
+                              {formatTimeValue(mealShopProfile.openingTime)} - {formatTimeValue(mealShopProfile.closingTime)}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Truck className="h-4 w-4" />
+                              Delivery: {mealShopProfile.deliveryAvailable === 'yes' ? 'Yes' : 'No'}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4" />
+                              Pre-Order: {mealShopProfile.preOrderAvailable === 'yes' ? 'Yes' : 'No'}
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200"
+                            >
+                              View Details
+                            </button>
+                            <a
+                              href={`tel:${mealShopProfile.contactNumber || ''}`}
+                              className="rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-200"
+                            >
+                              Contact
+                            </a>
+                          </div>
+
+                          <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                            <div className="mb-2 text-sm font-semibold text-gray-900">Menu & Prices</div>
+                            {mealMenuItems.length === 0 ? (
+                              <div className="text-xs text-gray-500">
+                                Menu items are not added yet by the Meal Shop admin.
+                              </div>
+                            ) : (
+                              <>
+                                <div className="space-y-2">
+                                  {mealMenuItems.map((item) => (
+                                    <label
+                                      key={item.id}
+                                      className="flex items-center justify-between gap-3 rounded-lg bg-white border border-gray-200 px-3 py-2 cursor-pointer"
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <input
+                                          type="checkbox"
+                                          checked={selectedMealItems.includes(item.id)}
+                                          onChange={() => toggleMealItem(item.id)}
+                                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span className="text-sm text-gray-800 truncate">{item.name}</span>
+                                      </div>
+                                      <span className="text-sm font-semibold text-blue-700">
+                                        Rs. {item.price.toFixed(2)}
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
+
+                                <div className="mt-3 flex items-center justify-between rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">
+                                  <span className="text-sm font-semibold text-gray-800">Total Price</span>
+                                  <span className="text-base font-bold text-blue-700">
+                                    Rs. {selectedMealTotal.toFixed(2)}
+                                  </span>
+                                </div>
+
+                                {mealOrderMessage && (
+                                  <div className="mt-2 text-xs font-medium text-emerald-700">
+                                    {mealOrderMessage}
+                                  </div>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={handleMealOrder}
+                                  className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                                >
+                                  Order Now
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             {activeTab === 'complaints' && (
               <Complaints user={user} />
             )}
@@ -1047,6 +1345,104 @@ export default function Hostel({ user, onLoggedOut }) {
                         className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-gray-400"
                       >
                         {bookingSubmitting ? 'Booking...' : 'Confirm Booking'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {mealOrderModalOpen && (
+              <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
+                <div className="w-full max-w-2xl rounded-3xl bg-white p-7 shadow-xl">
+                  <h3 className="text-xl font-semibold text-gray-900">Order Meal</h3>
+                  <p className="text-sm text-gray-500 mt-1">Submit your meal order details</p>
+
+                  <form onSubmit={submitMealOrder} className="mt-5 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Student Name *</label>
+                      <input
+                        type="text"
+                        value={mealOrderForm.studentName}
+                        onChange={(e) => setMealOrderForm((prev) => ({ ...prev, studentName: e.target.value }))}
+                        className="w-full rounded-xl border border-gray-200 px-4 py-2.5"
+                        placeholder="Enter your name"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number *</label>
+                      <input
+                        type="tel"
+                        value={mealOrderForm.contactNumber}
+                        onChange={(e) => setMealOrderForm((prev) => ({ ...prev, contactNumber: e.target.value }))}
+                        className="w-full rounded-xl border border-gray-200 px-4 py-2.5"
+                        placeholder="07X XXX XXXX"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Floor</label>
+                        <input
+                          type="text"
+                          value={mealOrderForm.floor}
+                          onChange={(e) => setMealOrderForm((prev) => ({ ...prev, floor: e.target.value }))}
+                          className="w-full rounded-xl border border-gray-200 px-4 py-2.5"
+                          placeholder="1st Floor"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Room Number</label>
+                        <input
+                          type="text"
+                          value={mealOrderForm.roomNumber}
+                          onChange={(e) => setMealOrderForm((prev) => ({ ...prev, roomNumber: e.target.value }))}
+                          className="w-full rounded-xl border border-gray-200 px-4 py-2.5"
+                          placeholder="A-101"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+                      <textarea
+                        value={mealOrderForm.notes}
+                        onChange={(e) => setMealOrderForm((prev) => ({ ...prev, notes: e.target.value }))}
+                        rows={3}
+                        className="w-full rounded-xl border border-gray-200 px-4 py-2.5 resize-none"
+                      />
+                    </div>
+
+                    <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+                      <div className="text-sm text-gray-700">
+                        <span className="font-medium">Selected items:</span>{' '}
+                        {mealMenuItems
+                          .filter((item) => selectedMealItems.includes(item.id))
+                          .map((item) => item.name)
+                          .join(', ') || '-'}
+                      </div>
+                      <div className="mt-1 text-sm font-semibold text-blue-700">
+                        Total: Rs. {selectedMealTotal.toFixed(2)}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setMealOrderModalOpen(false)}
+                        className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={mealOrderSubmitting}
+                        className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:bg-gray-400"
+                      >
+                        {mealOrderSubmitting ? 'Ordering...' : 'Confirm Order'}
                       </button>
                     </div>
                   </form>
