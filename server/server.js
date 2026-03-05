@@ -46,6 +46,13 @@ if (!allowedOrigins.includes("http://localhost:5173"))
 if (!allowedOrigins.includes("http://127.0.0.1:5173"))
   allowedOrigins.push("http://127.0.0.1:5173");
 
+// Vercel domains
+if (!allowedOrigins.includes("https://itpm-project-orpin.vercel.app"))
+  allowedOrigins.push("https://itpm-project-orpin.vercel.app");
+
+if (!allowedOrigins.includes("https://itpm-project-jd11.vercel.app"))
+  allowedOrigins.push("https://itpm-project-jd11.vercel.app");
+
 app.use(
   cors({
     origin: (origin, callback) => {
