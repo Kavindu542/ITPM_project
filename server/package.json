@@ -5,6 +5,7 @@
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
+    "build": "echo 'No build needed'",
     "start": "node server.js",
     "dev": "node scripts/freePort.js 5000 && nodemon --config nodemon.json server.js",
     "seed:module-admins": "node scripts/seedModuleAdmins.js"
