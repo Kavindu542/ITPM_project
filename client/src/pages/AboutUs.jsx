@@ -21,7 +21,7 @@ export default function AboutUs() {
                     <div className="absolute inset-0 bg-gradient-to-b from-slate-900/70 via-slate-900/40 to-slate-900"></div>
                 </div>
                 <div className="container mx-auto px-6 relative z-10 text-center">
-                    <h1 className="text-5xl md:text-8xl font-black mb-8 animate-fadeIn tracking-tight">
+                    <h1 className="text-5xl md:text-6xl font-black mb-8 animate-fadeIn tracking-tight">
                         Redefining <br />
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
                             Campus Experience

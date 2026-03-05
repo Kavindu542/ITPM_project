@@ -60,10 +60,9 @@ export default function FAQ() {
                         <HelpCircle size={18} />
                         <span className="text-sm font-semibold text-slate-200">Help Center</span>
                     </div>
-                    <h1 className="text-5xl md:text-8xl font-black mb-6 tracking-tight">
-                        Need <br />
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-                            Answers?
+                    <h1 className="text-5xl md:text-6xl font-black mb-6 tracking-tight">
+                        Need   <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                         Answers?
                         </span>
                     </h1>
                     <p className="text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto leading-relaxed font-medium mb-8">

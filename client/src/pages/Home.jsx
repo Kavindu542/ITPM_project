@@ -213,14 +213,14 @@ export default function Home({ user, onLoggedOut }) {
                   <span className="h-2 w-2 rounded-full bg-blue-400"></span>
                   Smart Campus Hub v2.0
                 </div>
-                <h1 className="text-5xl lg:text-8xl font-black leading-[1.05] tracking-tight">
+                <h1 className="text-3xl lg:text-5xl font-black leading-[1.05] tracking-tight">
                   <span className="block">Welcome</span>
                   <span className="block">back,</span>
                   <span className="block bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-emerald-400 to-indigo-400">
                     {user?.name || 'Student'}
                   </span>
                 </h1>
-                <p className="text-xl md:text-2xl text-slate-300 max-w-xl leading-relaxed font-medium">
+                <p className="text-xl md:text-1xl text-slate-300 max-w-xl leading-relaxed font-medium">
                   Your all-in-one portal for a smarter, more connected university experience.
                   Manage studies, accommodation, and campus life in one place.
                 </p>
@@ -270,6 +270,19 @@ export default function Home({ user, onLoggedOut }) {
                         <span className="text-[10px] text-emerald-300 font-bold uppercase">All Safe</span>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Center Logo (Hero Graphic) */}
+                <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                  <div>
+                    <img
+                      src="/campuscore-logo.png"
+                      alt="CampusCore"
+                      className="w- h-auto opacity-95"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
                 </div>
 
@@ -457,7 +470,7 @@ export default function Home({ user, onLoggedOut }) {
           </div>
 
           {/* 6. FINAL CTA (Conversion) */}
-          <div className="relative overflow-hidden bg-blue-600 rounded-[4rem] p-12 lg:p-24 text-center text-white shadow-2xl shadow-blue-500/40">
+          <div className="relative overflow-hidden bg-blue-400 rounded-[4rem] p-12 lg:p-24 text-center text-white shadow-2xl shadow-blue-500/40">
             <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-[100px] -ml-48 -mt-48"></div>
             <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-400/10 rounded-full blur-[100px] -mr-48 -mb-48"></div>
 
