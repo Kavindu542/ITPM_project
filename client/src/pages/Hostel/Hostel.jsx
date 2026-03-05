@@ -6,7 +6,6 @@ import {
   FileText,
   MapPin,
   History,
-  Settings,
   AlertCircle,
   Menu,
   X,
@@ -38,6 +37,7 @@ export default function Hostel({ user, onLoggedOut }) {
   const [laundryBookingLoading, setLaundryBookingLoading] = useState(false);
   const [mealShopProfile, setMealShopProfile] = useState(null);
   const [selectedMealItems, setSelectedMealItems] = useState([]);
+  const [mealItemQuantities, setMealItemQuantities] = useState({});
   const [mealOrderMessage, setMealOrderMessage] = useState('');
   const [mealOrderModalOpen, setMealOrderModalOpen] = useState(false);
   const [mealOrderSubmitting, setMealOrderSubmitting] = useState(false);
@@ -204,17 +204,20 @@ export default function Hostel({ user, onLoggedOut }) {
       if (!raw) {
         setMealShopProfile(null);
         setSelectedMealItems([]);
+        setMealItemQuantities({});
         setMealOrderMessage('');
         return;
       }
       const parsed = JSON.parse(raw);
       setMealShopProfile(parsed && typeof parsed === 'object' ? parsed : null);
       setSelectedMealItems([]);
+      setMealItemQuantities({});
       setMealOrderMessage('');
     } catch (err) {
       console.error('Failed to load meal shop profile', err);
       setMealShopProfile(null);
       setSelectedMealItems([]);
+      setMealItemQuantities({});
       setMealOrderMessage('');
     }
   };
@@ -247,14 +250,27 @@ export default function Hostel({ user, onLoggedOut }) {
     if (!mealMenuItems.length || !selectedMealItems.length) return 0;
     return mealMenuItems
       .filter((item) => selectedMealItems.includes(item.id))
-      .reduce((sum, item) => sum + item.price, 0);
-  }, [mealMenuItems, selectedMealItems]);
+      .reduce((sum, item) => {
+        const qty = Math.max(1, Number(mealItemQuantities[item.id] || 1));
+        return sum + (item.price * qty);
+      }, 0);
+  }, [mealMenuItems, selectedMealItems, mealItemQuantities]);
 
   const toggleMealItem = (itemId) => {
     setMealOrderMessage('');
-    setSelectedMealItems((prev) =>
-      prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
-    );
+    setSelectedMealItems((prev) => {
+      const exists = prev.includes(itemId);
+      if (exists) {
+        return prev.filter((id) => id !== itemId);
+      }
+      setMealItemQuantities((prevQty) => ({ ...prevQty, [itemId]: Math.max(1, Number(prevQty[itemId] || 1)) }));
+      return [...prev, itemId];
+    });
+  };
+
+  const updateMealItemQty = (itemId, value) => {
+    const qty = Math.max(1, Number(value) || 1);
+    setMealItemQuantities((prev) => ({ ...prev, [itemId]: qty }));
   };
 
   const handleMealOrder = () => {
@@ -283,7 +299,15 @@ export default function Hostel({ user, onLoggedOut }) {
 
     const orderedItems = mealMenuItems
       .filter((item) => selectedMealItems.includes(item.id))
-      .map((item) => ({ name: item.name, price: item.price }));
+      .map((item) => {
+        const quantity = Math.max(1, Number(mealItemQuantities[item.id] || 1));
+        return {
+          name: item.name,
+          price: item.price,
+          quantity,
+          lineTotal: item.price * quantity,
+        };
+      });
 
     const orderPayload = {
       id: `meal-order-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -309,6 +333,7 @@ export default function Hostel({ user, onLoggedOut }) {
       localStorage.setItem('hostelMealShopOrders', JSON.stringify(safeOrders));
       setMealOrderMessage(`Order created successfully. Total: Rs. ${selectedMealTotal.toFixed(2)}`);
       setSelectedMealItems([]);
+      setMealItemQuantities({});
       setMealOrderModalOpen(false);
     } catch (err) {
       console.error('Failed to save meal order', err);
@@ -518,12 +543,6 @@ export default function Hostel({ user, onLoggedOut }) {
       icon: Home,
       label: 'Dashboard',
       description: 'View your hostel details',
-      onClick: () => { navigate('/hostel'); setActiveTab('dashboard'); },
-    },
-    {
-      icon: FileText,
-      label: 'Apply for Hostel',
-      description: 'Submit hostel application',
       onClick: () => { navigate('/hostel'); setActiveTab('dashboard'); },
     },
     {
@@ -807,57 +826,63 @@ export default function Hostel({ user, onLoggedOut }) {
         {/* Sidebar */}
         <div
           className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transition-transform duration-300 md:translate-x-0 md:static`}
+            } fixed inset-y-0 left-0 z-50 w-30 bg-[#2458e6] shadow-xl transition-transform duration-300 md:translate-x-0 md:left-4 md:top-24 md:bottom-4 md:inset-y-auto md:rounded-[30px]`}
         >
           <div className="flex flex-col h-full">
             {/* Header */}
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-50 rounded-lg">
-                  <Home className="h-5 w-5 text-emerald-600" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold text-gray-900">Hostel</h1>
-                  <p className="text-xs text-gray-500">Student Module</p>
+            <div className="px-4 pt-5 pb-3">
+              <div className="flex flex-col items-center">
+                <div className="h-12 w-12 rounded-2xl bg-white grid place-items-center shadow-sm">
+                  <Home className="h-5 w-5 text-[#2458e6]" />
                 </div>
               </div>
             </div>
 
             {/* Menu Items */}
-            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+            <nav
+              className="flex-1 p-4 space-y-2 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
               {menuItems.map((item, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    item.onClick();
-                    setSidebarOpen(false);
-                  }}
-                  className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 text-left transition-colors"
-                >
-                  <item.icon className="h-5 w-5 text-gray-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-medium text-gray-900 text-sm">{item.label}</div>
-                    <div className="text-xs text-gray-500">{item.description}</div>
-                  </div>
-                </button>
+                (() => {
+                  const isActive = (item.label === 'Dashboard' && activeTab === 'dashboard')
+                    || (item.label === 'Laundry Services' && activeTab === 'laundry')
+                    || (item.label === 'Meal Shop' && activeTab === 'meal-shop')
+                    || (item.label === 'Booking History' && activeTab === 'laundry-bookings')
+                    || (item.label === 'Complaints' && activeTab === 'complaints');
+
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        item.onClick();
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex flex-col items-center justify-center gap-1 px-2 py-3 rounded-2xl text-center transition-all ${
+                        isActive
+                          ? 'bg-white text-[#1f3f9a] shadow-md'
+                          : 'text-blue-100 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className={`h-8 w-8 rounded-xl grid place-items-center ${
+                        isActive ? 'bg-[#eef3ff]' : 'bg-white/15'
+                      }`}>
+                        <item.icon className={`h-4 w-4 ${isActive ? 'text-[#2458e6]' : 'text-white'}`} />
+                      </div>
+                      <div className={`font-semibold text-xs leading-4 ${isActive ? 'text-[#1f3f9a]' : 'text-white'}`}>
+                        {item.label}
+                      </div>
+                    </button>
+                  );
+                })()
               ))}
             </nav>
 
-            {/* Settings */}
-            <div className="p-4 border-t border-gray-200 space-y-2">
-              <button
-                onClick={() => navigate('/profile')}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
-              >
-                <Settings className="h-4 w-4" />
-                <span className="text-sm font-medium">Settings</span>
-              </button>
-            </div>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto md:ml-44">
           <div className="max-w-6xl mx-auto p-6">
             {/* Top Bar */}
             <div className="flex items-center justify-between mb-6">
@@ -1220,7 +1245,33 @@ export default function Hostel({ user, onLoggedOut }) {
                                         Rs. {item.price.toFixed(2)}
                                       </span>
                                     </label>
+                                    
                                   ))}
+                                </div>
+
+                                <div className="mt-2 space-y-2">
+                                  {selectedMealItems.map((itemId) => {
+                                    const matched = mealMenuItems.find((it) => it.id === itemId);
+                                    if (!matched) return null;
+                                    const qty = Math.max(1, Number(mealItemQuantities[itemId] || 1));
+                                    return (
+                                      <div
+                                        key={`qty-${itemId}`}
+                                        className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2"
+                                      >
+                                        <span className="text-xs font-medium text-gray-700">
+                                          Qty - {matched.name}
+                                        </span>
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          value={qty}
+                                          onChange={(e) => updateMealItemQty(itemId, e.target.value)}
+                                          className="w-20 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                                        />
+                                      </div>
+                                    );
+                                  })}
                                 </div>
 
                                 <div className="mt-3 flex items-center justify-between rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">
@@ -1421,7 +1472,7 @@ export default function Hostel({ user, onLoggedOut }) {
                         <span className="font-medium">Selected items:</span>{' '}
                         {mealMenuItems
                           .filter((item) => selectedMealItems.includes(item.id))
-                          .map((item) => item.name)
+                          .map((item) => `${item.name} x ${Math.max(1, Number(mealItemQuantities[item.id] || 1))}`)
                           .join(', ') || '-'}
                       </div>
                       <div className="mt-1 text-sm font-semibold text-blue-700">

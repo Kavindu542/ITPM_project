@@ -407,6 +407,7 @@ export default function HostelMealsShopDashboard({ user, onLoggedOut }) {
                           <th className="px-4 py-3 font-semibold">Room</th>
                           <th className="px-4 py-3 font-semibold">Email</th>
                           <th className="px-4 py-3 font-semibold">Items</th>
+                          <th className="px-4 py-3 font-semibold">Qty</th>
                           <th className="px-4 py-3 font-semibold">Total</th>
                           <th className="px-4 py-3 font-semibold">Ordered At</th>
                         </tr>
@@ -423,6 +424,18 @@ export default function HostelMealsShopDashboard({ user, onLoggedOut }) {
                             <td className="px-4 py-3 text-gray-700">
                               {Array.isArray(order.items) && order.items.length > 0
                                 ? order.items.map((item) => item?.name).filter(Boolean).join(', ')
+                                : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-gray-700">
+                              {Array.isArray(order.items) && order.items.length > 0
+                                ? order.items
+                                  .map((item) => {
+                                    const itemName = String(item?.name || '').trim();
+                                    const qty = Math.max(1, Number(item?.quantity || 1));
+                                    return itemName ? `${itemName} x ${qty}` : null;
+                                  })
+                                  .filter(Boolean)
+                                  .join(', ')
                                 : '-'}
                             </td>
                             <td className="px-4 py-3 font-semibold text-blue-700">
