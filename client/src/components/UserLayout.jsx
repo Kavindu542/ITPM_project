@@ -6,7 +6,10 @@ export default function UserLayout({ user, onLoggedOut }) {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const hideFooter = location.pathname.startsWith('/materials') || location.pathname.startsWith('/library');
+    const hideFooter =
+        location.pathname.startsWith('/materials')
+        || location.pathname.startsWith('/library')
+        || location.pathname.startsWith('/hostel');
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans flex flex-col">
