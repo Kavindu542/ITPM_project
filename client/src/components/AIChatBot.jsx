@@ -14,6 +14,7 @@ export default function AIChatBot() {
     const [input, setInput] = React.useState('');
     const [loading, setLoading] = React.useState(false);
     const sendingRef = React.useRef(false);
+    const requestingRef = React.useRef(false);
     const chatEndRef = React.useRef(null);
     const inputRef = React.useRef(null);
 
@@ -47,6 +48,12 @@ export default function AIChatBot() {
                     text: data.reply,
                     materials: data.matchedMaterials || [],
                     totalSearched: data.totalMaterialsSearched,
+                    totalMatches: data.totalMatches,
+                    noMatches: Boolean(data.noMatches),
+                    requestSuggestion: data.requestSuggestion || null,
+                    requestSent: false,
+                    requestLoading: false,
+                    requestError: '',
                 },
             ]);
         } catch (err) {
@@ -67,6 +74,55 @@ export default function AIChatBot() {
         } finally {
             setLoading(false);
             sendingRef.current = false;
+        }
+    };
+
+    const submitMissingResourceRequest = async (messageIndex) => {
+        if (requestingRef.current) return;
+
+        const msg = messages[messageIndex];
+        const suggestion = msg?.requestSuggestion;
+        if (!msg || !suggestion || msg.requestSent) return;
+
+        requestingRef.current = true;
+        setMessages((prev) =>
+            prev.map((m, idx) =>
+                idx === messageIndex
+                    ? { ...m, requestLoading: true, requestError: '' }
+                    : m,
+            ),
+        );
+
+        try {
+            await studyMaterialService.submitRequest({
+                title: suggestion.title,
+                description: suggestion.description,
+                moduleCode: suggestion.moduleCode || '',
+            });
+
+            setMessages((prev) =>
+                prev.map((m, idx) =>
+                    idx === messageIndex
+                        ? { ...m, requestSent: true, requestLoading: false }
+                        : m,
+                ),
+            );
+        } catch (err) {
+            const apiMsg = err?.response?.data?.message || err?.response?.data?.error;
+            setMessages((prev) =>
+                prev.map((m, idx) =>
+                    idx === messageIndex
+                        ? {
+                            ...m,
+                            requestLoading: false,
+                            requestError:
+                                apiMsg || err?.message || 'Failed to submit request. Please try again.',
+                        }
+                        : m,
+                ),
+            );
+        } finally {
+            requestingRef.current = false;
         }
     };
 
@@ -264,6 +320,29 @@ export default function AIChatBot() {
                                                     </div>
                                                 );
                                             })}
+                                        </div>
+                                    )}
+
+                                    {/* Missing resource request (only when no matches) */}
+                                    {msg.role === 'ai' && msg.noMatches && (
+                                        <div className="mt-3">
+                                            <button
+                                                onClick={() => submitMissingResourceRequest(i)}
+                                                disabled={msg.requestLoading || msg.requestSent || !msg.requestSuggestion}
+                                                className={`w-full text-xs font-semibold px-3 py-2 rounded-lg border transition-colors ${msg.requestSent
+                                                    ? 'bg-green-50 text-green-700 border-green-200 cursor-default'
+                                                    : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'
+                                                    } ${msg.requestLoading ? 'opacity-60' : ''}`}
+                                            >
+                                                {msg.requestSent
+                                                    ? '✅ Missing resource request sent'
+                                                    : msg.requestLoading
+                                                        ? 'Submitting request...'
+                                                        : 'Request missing resource'}
+                                            </button>
+                                            {msg.requestError && (
+                                                <div className="text-xs text-red-600 mt-1">{msg.requestError}</div>
+                                            )}
                                         </div>
                                     )}
 

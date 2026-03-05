@@ -74,6 +74,11 @@ const studyMaterialSchema = new mongoose.Schema(
     versions: { type: [versionSchema], default: [] },
     currentVersionId: { type: mongoose.Schema.Types.ObjectId, default: null },
 
+    // Best-effort extracted fields to improve AI + search matching.
+    // Populated from uploaded file content (e.g., PDF text extraction).
+    extractedModuleCodes: { type: [String], default: [] },
+    extractedText: { type: String, default: "", trim: true, maxlength: 20000 },
+
     downloadCount: { type: Number, default: 0, index: true },
     lastDownloadedAt: { type: Date, default: null },
   },
@@ -85,6 +90,8 @@ studyMaterialSchema.index({
   description: "text",
   moduleCode: "text",
   subject: "text",
+  extractedText: "text",
+  extractedModuleCodes: "text",
 });
 
 module.exports = mongoose.model("StudyMaterial", studyMaterialSchema);
