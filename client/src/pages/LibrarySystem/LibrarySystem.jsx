@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Home, BookOpen, Search, Users, Globe, BookMarked
+  BookOpen, Globe, Home, Search, Users, BookMarked
 } from 'lucide-react';
 import SearchBooks from './SearchBooks';
 import LibraryBooks from './LibraryBooks';
@@ -9,14 +9,40 @@ import StudyRooms from './StudyRooms';
 import DigitalResources from './DigitalResources';
 import MyLibrary from './MyLibrary';
 import LibraryAIChatBot from '../../components/LibraryAIChatBot';
+import LibrarySidebar from '../../components/LibrarySidebar';
 
 export default function LibrarySystem({ user, onLoggedOut }) {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const navItems = useMemo(
+    () => [
+      { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/library' },
+      { id: 'books', label: 'Books', icon: BookOpen, path: '/library/books' },
+      { id: 'search', label: 'Search', icon: Search, path: '/library/search' },
+      { id: 'rooms', label: 'Study Rooms', icon: Users, path: '/library/study-rooms' },
+      { id: 'digital', label: 'Digital Resources', icon: Globe, path: '/library/digital-resources' },
+      { id: 'mylibrary', label: 'My Library', icon: BookMarked, path: '/library/my-library' },
+    ],
+    []
+  );
+
+  const navIdFromPath = React.useCallback((pathname) => {
+    const p = String(pathname || '').replace(/\/+$/, '') || '/';
+    if (p === '/library') return 'dashboard';
+    if (p.startsWith('/library/books')) return 'books';
+    if (p.startsWith('/library/search')) return 'search';
+    if (p.startsWith('/library/study-rooms')) return 'rooms';
+    if (p.startsWith('/library/digital-resources')) return 'digital';
+    if (p.startsWith('/library/my-library')) return 'mylibrary';
+    return 'dashboard';
+  }, []);
+
   const [activeNav, setActiveNav] = useState(() => {
     try {
-      return localStorage.getItem('cc_library_active_nav') || 'dashboard';
+      return localStorage.getItem('cc_library_active_nav') || navIdFromPath(window.location.pathname);
     } catch {
-      return 'dashboard';
+      return navIdFromPath(window.location.pathname);
     }
   });
 
@@ -25,16 +51,16 @@ export default function LibrarySystem({ user, onLoggedOut }) {
     try {
       localStorage.setItem('cc_library_active_nav', navId);
     } catch { }
+
+    const target = navItems.find((n) => n.id === navId)?.path;
+    if (target) navigate(target);
   };
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'books', label: 'Books', icon: BookOpen },
-    { id: 'search', label: 'Search', icon: Search },
-    { id: 'rooms', label: 'Study Rooms', icon: Users },
-    { id: 'digital', label: 'Digital Resources', icon: Globe },
-    { id: 'mylibrary', label: 'My Library', icon: BookMarked }
-  ];
+  useEffect(() => {
+    const next = navIdFromPath(location.pathname);
+    if (next !== activeNav) setActiveNav(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, navIdFromPath]);
 
   const activeItem = navItems.find((item) => item.id === activeNav) || navItems[0];
 
@@ -71,7 +97,7 @@ export default function LibrarySystem({ user, onLoggedOut }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans">
+    <div className="h-[calc(100vh-6rem)] bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans overflow-auto no-scrollbar lg:overflow-hidden">
       {/* Background Pattern (match Study Materials) */}
       <div className="fixed inset-0 opacity-5 pointer-events-none">
         <div
@@ -83,97 +109,22 @@ export default function LibrarySystem({ user, onLoggedOut }) {
         />
       </div>
 
-      <div className="relative w-full p-6">
-        {/* Top bar */}
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 backdrop-blur border border-gray-200 hover:bg-white transition-colors"
-            onClick={() => navigate('/')}
-          >
-            <ArrowLeft className="h-4 w-4 text-gray-700" />
-            <span className="font-medium text-gray-800">Back</span>
-          </button>
-        </div>
-
-        {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white/80 backdrop-blur shadow-sm">
-          <div className="p-6 sm:p-8 flex items-start gap-4">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-600 to-[#25f194] shadow-lg">
-              <BookOpen className="h-6 w-6 text-white" />
-            </div>
-
-            <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Library System</h1>
-              <p className="mt-1 text-sm text-gray-600">
-                Search books, reserve study rooms, access digital resources, and manage your activity.
-              </p>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                  <Search className="h-3.5 w-3.5" />
-                  Smart search & filters
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                  <Users className="h-3.5 w-3.5" />
-                  Reserve study rooms
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                  <Globe className="h-3.5 w-3.5" />
-                  Digital resources
-                </span>
-              </div>
-            </div>
-
-            <div className="hidden sm:flex flex-col items-end gap-1">
-              <div className="text-xs text-gray-500">
-                Welcome back{user?.firstName ? `, ${user.firstName}` : ''}.
-              </div>
-              <div className="text-xs text-gray-400">Use the menu to switch sections.</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar + Content */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Sidebar */}
-          <div className="lg:col-span-3">
-            <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-              <div className="p-5 border-b border-gray-200">
-                <div className="text-sm font-bold text-gray-900">Menu</div>
-                <div className="text-xs text-gray-500 mt-1">Navigate library features</div>
-              </div>
-              <div className="p-3 space-y-1">
-                {navItems.map((item) => {
-                  const isActive = activeNav === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => handleNavChange(item.id)}
-                      className={`w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive
-                        ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm'
-                        : 'bg-white border-gray-200 hover:bg-gray-50'
-                        }`}
-                    >
-                      <item.icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                      <span className={isActive ? 'text-white' : 'text-gray-800'}>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+      <div className="relative w-full h-full p-6 lg:pt-0 lg:pb-0 flex flex-col">
+        <div className="mt-0 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 lg:h-full lg:overflow-hidden lg:min-h-0 lg:grid-rows-[minmax(0,1fr)]">
+          <div className="lg:col-span-1 lg:h-full lg:min-h-0">
+            <LibrarySidebar />
           </div>
 
-          {/* Content */}
-          <div className="lg:col-span-9">
-            <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-              <div className="p-5 border-b border-gray-200">
-                <h2 className="text-lg font-bold text-gray-900">{activeItem?.label}</h2>
-                <p className="text-xs text-gray-500 mt-1">Welcome back!</p>
-              </div>
+          <div className="lg:col-span-11 lg:h-full lg:min-h-0 bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm lg:overflow-y-auto no-scrollbar">
+            <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3">
               <div>
-                {renderContent()}
+                <div className="text-sm font-bold text-gray-900">{activeItem?.label}</div>
+                <div className="text-xs text-gray-500 mt-1">Use the sidebar to switch sections.</div>
               </div>
+            </div>
+
+            <div>
+              {renderContent()}
             </div>
           </div>
         </div>

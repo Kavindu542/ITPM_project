@@ -280,7 +280,7 @@ export default function App() {
           path="/library/books"
           element={
             <RequireAuth user={user}>
-              <LibraryBooks user={user} onLoggedOut={requestLogout} />
+              <LibrarySystem user={user} onLoggedOut={requestLogout} />
             </RequireAuth>
           }
         />
@@ -288,7 +288,7 @@ export default function App() {
           path="/library/search"
           element={
             <RequireAuth user={user}>
-              <SearchBooks user={user} onLoggedOut={requestLogout} />
+              <LibrarySystem user={user} onLoggedOut={requestLogout} />
             </RequireAuth>
           }
         />
@@ -296,7 +296,24 @@ export default function App() {
           path="/library/study-rooms"
           element={
             <RequireAuth user={user}>
-              <StudyRooms user={user} onLoggedOut={requestLogout} />
+              <LibrarySystem user={user} onLoggedOut={requestLogout} />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/library/digital-resources"
+          element={
+            <RequireAuth user={user}>
+              <LibrarySystem user={user} onLoggedOut={requestLogout} />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/library/my-library"
+          element={
+            <RequireAuth user={user}>
+              <LibrarySystem user={user} onLoggedOut={requestLogout} />
             </RequireAuth>
           }
         />

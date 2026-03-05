@@ -22,6 +22,11 @@ export default function Navbar({ user, onLoggedOut, onProfile }) {
     const location = useLocation();
 
     useEffect(() => {
+        setIsOpen(false);
+        setModulesOpen(false);
+    }, [location.pathname]);
+
+    useEffect(() => {
         const handleScroll = () => {
             setScrolled(window.scrollY > 20);
         };
@@ -43,21 +48,23 @@ export default function Navbar({ user, onLoggedOut, onProfile }) {
         { name: 'Clubs', path: '/clubs', icon: Users2 },
     ];
 
-    const isActive = (path) => location.pathname === path;
+    const isExactActive = (path) => location.pathname === path;
+    const isPathActive = (basePath) =>
+        location.pathname === basePath || location.pathname.startsWith(`${basePath}/`);
 
     return (
-        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${scrolled
-            ? 'bg-white/80 dark:bg-slate-900/80 shadow-lg border-gray-200 dark:border-slate-800 h-24'
-            : 'bg-white/40 dark:bg-slate-900/40 border-transparent h-28'
-            } backdrop-blur-2xl`}>
-            <div className="container mx-auto px-6 h-full">
+        <nav className={`fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-2xl transition-all duration-300 ${scrolled
+            ? 'bg-white/80 dark:bg-slate-900/80 border-gray-200/70 dark:border-slate-800/70 h-20'
+            : 'bg-white/50 dark:bg-slate-900/50 border-transparent h-18'
+            }`}>
+            <div className="container mx-auto px-4 sm:px-6 h-full">
                 <div className="flex items-center justify-between h-full">
                     {/* Logo */}
                     <Link to="/" className="flex items-center gap-3 group">
                         <img
                             src="/campuscore-logo.png"
                             alt="CampusCore"
-                            className="h-16 w-auto relative z-10 group-hover:scale-105 transition-transform duration-300"
+                            className={`w-auto relative z-10 transition-transform duration-300 group-hover:scale-105 ${scrolled ? 'h-9 sm:h-10' : 'h-10 sm:h-11'}`}
                         />
                     </Link>
 
@@ -65,9 +72,9 @@ export default function Navbar({ user, onLoggedOut, onProfile }) {
                     <div className="hidden lg:flex items-center gap-1">
                         <Link
                             to="/"
-                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive('/')
+                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${isExactActive('/')
                                 ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800'
+                                : 'text-gray-700 dark:text-gray-200 hover:bg-white/60 dark:hover:bg-slate-800/60'
                                 }`}
                         >
                             Home
@@ -76,9 +83,12 @@ export default function Navbar({ user, onLoggedOut, onProfile }) {
                         {/* Modules Dropdown */}
                         <div className="relative group/modules">
                             <button
-                                className={`flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-medium transition-all ${modules.some(m => location.pathname.startsWith(m.path))
+                                type="button"
+                                aria-haspopup="menu"
+                                aria-expanded={modulesOpen}
+                                className={`flex items-center gap-1 px-4 py-2 rounded-xl text-sm font-medium transition-all ${modules.some(m => isPathActive(m.path))
                                     ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800'
+                                    : 'text-gray-700 dark:text-gray-200 hover:bg-white/60 dark:hover:bg-slate-800/60'
                                     }`}
                             >
                                 Modules
@@ -89,9 +99,9 @@ export default function Navbar({ user, onLoggedOut, onProfile }) {
                                     <Link
                                         key={m.name}
                                         to={m.path}
-                                        className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${isActive(m.path)
+                                        className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${isPathActive(m.path)
                                             ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800'
+                                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-800'
                                             }`}
                                     >
                                         <m.icon size={18} />
@@ -105,9 +115,9 @@ export default function Navbar({ user, onLoggedOut, onProfile }) {
                             <Link
                                 key={link.name}
                                 to={link.path}
-                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${isActive(link.path)
+                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${isExactActive(link.path)
                                     ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800'
+                                    : 'text-gray-700 dark:text-gray-200 hover:bg-white/60 dark:hover:bg-slate-800/60'
                                     }`}
                             >
                                 {link.name}
@@ -125,7 +135,9 @@ export default function Navbar({ user, onLoggedOut, onProfile }) {
 
                         {/* Mobile Toggle */}
                         <button
-                            className="lg:hidden p-2 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300"
+                            type="button"
+                            aria-label={isOpen ? 'Close menu' : 'Open menu'}
+                            className="lg:hidden p-2 rounded-xl border border-gray-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/70 text-gray-700 dark:text-gray-200"
                             onClick={() => setIsOpen(!isOpen)}
                         >
                             {isOpen ? <X size={20} /> : <Menu size={20} />}
@@ -137,7 +149,7 @@ export default function Navbar({ user, onLoggedOut, onProfile }) {
             {/* Mobile Menu */}
             <div className={`lg:hidden fixed inset-0 z-40 bg-white dark:bg-slate-950 transition-transform duration-300 transform ${isOpen ? 'translate-x-0' : 'translate-x-full'
                 }`}>
-                <div className="flex flex-col h-full pt-24 px-6 gap-6">
+                <div className="flex flex-col h-full pt-28 px-6 gap-6">
                     <Link
                         to="/"
                         className="text-2xl font-bold text-gray-900 dark:text-white"
@@ -150,6 +162,8 @@ export default function Navbar({ user, onLoggedOut, onProfile }) {
                         <button
                             className="flex items-center justify-between text-2xl font-bold text-gray-900 dark:text-white"
                             onClick={() => setModulesOpen(!modulesOpen)}
+                            type="button"
+                            aria-expanded={modulesOpen}
                         >
                             Modules
                             <ChevronDown className={`transition-transform ${modulesOpen ? 'rotate-180' : ''}`} />
