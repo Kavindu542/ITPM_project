@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const pdfParse = require("pdf-parse");
+const { PDFParse } = require("pdf-parse");
 const mongoose = require("mongoose");
 
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
@@ -11,8 +11,22 @@ const MAX_PDF_EXTRACT_BYTES = 15 * 1024 * 1024; // 15MB
 const MAX_EXTRACTED_TEXT_CHARS = 20000;
 
 const parsePdfTextFromBuffer = async (buf) => {
-  const data = await pdfParse(buf, { max: 5 });
-  return String(data.text || "");
+  const parser = new PDFParse({ data: buf });
+  try {
+    const parsed = await parser.getText({
+      first: 5,
+      lineEnforce: false,
+      pageJoiner: "\n",
+      itemJoiner: " ",
+    });
+    return String(parsed?.text || "");
+  } finally {
+    try {
+      await parser.destroy();
+    } catch {
+      // best-effort
+    }
+  }
 };
 
 const extractModuleCodesFromText = (text) => {
