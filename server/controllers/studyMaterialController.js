@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { PDFParse } = require("pdf-parse");
 const StudyMaterial = require("../models/StudyMaterial");
 const StudyMaterialDownload = require("../models/StudyMaterialDownload");
 const StudyMaterialBookmark = require("../models/StudyMaterialBookmark");
@@ -8,6 +9,113 @@ const User = require("../models/User");
 const { sendBulkEmail } = require("../utils/email");
 
 const UPLOAD_ROOT = path.join(__dirname, "..", "uploads", "study-materials");
+
+const MAX_PDF_EXTRACT_BYTES = 15 * 1024 * 1024; // 15MB
+const MAX_EXTRACTED_TEXT_CHARS = 20000;
+
+const parsePdfTextFromBuffer = async (buf) => {
+  const parser = new PDFParse({ data: buf });
+  try {
+    const parsed = await parser.getText({
+      first: 5,
+      lineEnforce: false,
+      pageJoiner: "\n",
+      itemJoiner: " ",
+    });
+    return String(parsed?.text || "");
+  } finally {
+    try {
+      await parser.destroy();
+    } catch {
+      // best-effort
+    }
+  }
+};
+
+const extractModuleCodesFromText = (text) => {
+  const upper = String(text || "").toUpperCase();
+  const out = new Set();
+
+  const contiguous = upper.match(/\b[A-Z]{2,4}\d{3,4}\b/g) || [];
+  for (const m of contiguous) out.add(String(m).trim());
+
+  // Handle common PDF text extraction artifacts where module codes are split by spaces:
+  // - IT30 30 -> IT3030
+  // - IT 3 0 3 0 -> IT3030
+  const spaced4 = upper.match(/\b[A-Z]{2,4}(?:\s*\d){4}\b/g) || [];
+  for (const raw of spaced4) {
+    const normalized = raw.replace(/\s+/g, "").trim();
+    if (/^[A-Z]{2,4}\d{4}$/.test(normalized)) out.add(normalized);
+  }
+  const spaced3 = upper.match(/\b[A-Z]{2,4}(?:\s*\d){3}\b/g) || [];
+  for (const raw of spaced3) {
+    const normalized = raw.replace(/\s+/g, "").trim();
+    if (/^[A-Z]{2,4}\d{3}$/.test(normalized)) out.add(normalized);
+  }
+
+  return Array.from(out).filter(Boolean);
+};
+
+const tryExtractPdfText = async (absolutePath, sizeBytes) => {
+  try {
+    if (!absolutePath) return { text: "", moduleCodes: [] };
+    const ext = String(path.extname(absolutePath) || "").toLowerCase();
+    if (ext !== ".pdf") return { text: "", moduleCodes: [] };
+
+    const knownSize = Number.isFinite(sizeBytes) ? sizeBytes : null;
+    if (knownSize !== null && knownSize > MAX_PDF_EXTRACT_BYTES) {
+      return { text: "", moduleCodes: [] };
+    }
+
+    const buf = await fs.promises.readFile(absolutePath);
+    if (buf.length > MAX_PDF_EXTRACT_BYTES)
+      return { text: "", moduleCodes: [] };
+
+    const rawText = await parsePdfTextFromBuffer(buf);
+    const text = String(rawText || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, MAX_EXTRACTED_TEXT_CHARS);
+    const moduleCodes = extractModuleCodesFromText(text);
+    return { text, moduleCodes };
+  } catch {
+    return { text: "", moduleCodes: [] };
+  }
+};
+
+const updateExtractedSearchForMaterial = async ({ material, version }) => {
+  try {
+    if (!material || !version?.filePath) return;
+    const absolutePath = path.join(__dirname, "..", String(version.filePath));
+
+    const { text, moduleCodes } = await tryExtractPdfText(
+      absolutePath,
+      version.sizeBytes,
+    );
+
+    if (!text && (!moduleCodes || moduleCodes.length === 0)) return;
+
+    const existingCodes = Array.isArray(material.extractedModuleCodes)
+      ? material.extractedModuleCodes
+          .map((c) => String(c).trim().toUpperCase())
+          .filter(Boolean)
+      : [];
+
+    const mergedCodes = Array.from(
+      new Set([...existingCodes, ...(moduleCodes || [])]),
+    );
+    material.extractedModuleCodes = mergedCodes;
+
+    if (text) {
+      const current = String(material.extractedText || "").trim();
+      material.extractedText = (current ? `${current}\n` : "")
+        .concat(text)
+        .slice(0, MAX_EXTRACTED_TEXT_CHARS);
+    }
+  } catch {
+    // best-effort
+  }
+};
 
 const ensureUploadDir = () => {
   fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
@@ -633,6 +741,12 @@ const createSuggestion = async (req, res) => {
   });
 
   material.currentVersionId = material.versions[0]._id;
+
+  await updateExtractedSearchForMaterial({
+    material,
+    version: material.versions[0],
+  });
+
   await material.save();
 
   return res.status(201).json({
@@ -895,6 +1009,12 @@ const adminCreateMaterials = async (req, res) => {
     });
 
     m.currentVersionId = m.versions[0]._id;
+
+    await updateExtractedSearchForMaterial({
+      material: m,
+      version: m.versions[0],
+    });
+
     await m.save();
     created.push({ id: m._id, title: m.title, status: m.status });
     if (String(m.status).trim().toLowerCase() === "published") {
@@ -927,6 +1047,9 @@ const adminAddVersion = async (req, res) => {
 
   const newVersion = material.versions[material.versions.length - 1];
   material.currentVersionId = newVersion._id;
+
+  await updateExtractedSearchForMaterial({ material, version: newVersion });
+
   await material.save();
 
   return res.status(201).json({

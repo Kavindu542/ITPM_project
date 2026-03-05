@@ -43,23 +43,178 @@ const extractModuleCodes = (q) => {
   return Array.from(new Set(matches));
 };
 
+const inferModuleCodeFromMaterial = (material) => {
+  const direct = String(material?.moduleCode || "")
+    .trim()
+    .toUpperCase();
+  if (direct) return direct;
+
+  const extracted = Array.isArray(material?.extractedModuleCodes)
+    ? material.extractedModuleCodes
+        .map((c) => String(c).trim().toUpperCase())
+        .filter(Boolean)
+    : [];
+  if (extracted.length) return extracted[0];
+
+  const titleCodes = extractModuleCodes(material?.title);
+  if (titleCodes.length) return titleCodes[0];
+
+  const subjectCodes = extractModuleCodes(material?.subject);
+  if (subjectCodes.length) return subjectCodes[0];
+
+  const versionNames = Array.isArray(material?.versions)
+    ? material.versions.map((v) => v?.originalName).filter(Boolean)
+    : [];
+  for (const name of versionNames) {
+    const codes = extractModuleCodes(name);
+    if (codes.length) return codes[0];
+  }
+
+  return "";
+};
+
+const extractSemesters = (q) => {
+  const text = normalize(q);
+  const semesters = new Set();
+  const re = /\b(?:sem|semester)\s*(\d{1,2})\b/g;
+  let m;
+  while ((m = re.exec(text))) {
+    const n = Number(m[1]);
+    if (Number.isFinite(n) && n >= 1 && n <= 12) semesters.add(n);
+  }
+  return Array.from(semesters);
+};
+
+const extractCategoryHints = (q) => {
+  const text = normalize(q);
+  const hints = new Set();
+  const add = (c) => hints.add(c);
+
+  if (/\bnote(s)?\b/.test(text)) add("notes");
+  if (/\b(tute|tutes|tutorial|tutorials)\b/.test(text)) add("tutes");
+  if (/\b(past\s*paper|past\s*papers|paper|papers|exam)\b/.test(text))
+    add("papers");
+  if (/\b(link|links|url|website|resource)\b/.test(text)) add("links");
+
+  return Array.from(hints);
+};
+
 const tokenize = (q) => {
   const cleaned = normalize(q)
     .replace(/[^a-z0-9\s\.\-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  return cleaned ? cleaned.split(" ").filter(Boolean) : [];
+
+  const base = cleaned ? cleaned.split(" ").filter(Boolean) : [];
+
+  // Remove very common filler words that otherwise hurt matching.
+  const stop = new Set([
+    "give",
+    "show",
+    "find",
+    "need",
+    "want",
+    "please",
+    "can",
+    "you",
+    "me",
+    "i",
+    "my",
+    "for",
+    "about",
+    "any",
+    "some",
+    "the",
+    "a",
+    "an",
+    "to",
+    "of",
+    "in",
+    "on",
+    "with",
+    "materials",
+    "material",
+    "document",
+    "documents",
+    "notes",
+    "tutes",
+    "tutorial",
+    "tutorials",
+    "papers",
+    "paper",
+    "past",
+    "exam",
+    "link",
+    "links",
+  ]);
+
+  const tokens = base.filter((t) => t && !stop.has(t));
+
+  // Add acronym token based on leading letters of meaningful words.
+  // Example: "Network Design & Management" -> "ndm"
+  const wordsForAcronym = base.filter(
+    (t) => /^[a-z]+$/.test(t) && t.length >= 3 && !stop.has(t),
+  );
+  const acronym = wordsForAcronym.map((w) => w[0]).join("");
+  if (acronym && acronym.length >= 2 && acronym.length <= 10) {
+    if (!tokens.includes(acronym)) tokens.push(acronym);
+  }
+
+  return tokens;
 };
 
-const scoreMaterial = (material, queryTokens, moduleCodes) => {
+const scoreMaterial = (
+  material,
+  queryTokens,
+  moduleCodes,
+  semesters,
+  categoryHints,
+) => {
   const title = normalize(material.title);
   const description = normalize(material.description);
   const subject = normalize(material.subject);
   const moduleCode = String(material.moduleCode || "").toUpperCase();
+  const semester =
+    material.semester === null || material.semester === undefined
+      ? null
+      : Number(material.semester);
+  const category = normalize(material.category);
+
+  const versionNames = Array.isArray(material.versions)
+    ? material.versions.map((v) => normalize(v?.originalName || ""))
+    : [];
+
+  const extractedModuleCodes = Array.isArray(material.extractedModuleCodes)
+    ? material.extractedModuleCodes
+        .map((c) => String(c).trim().toUpperCase())
+        .filter(Boolean)
+    : [];
+
+  const extractedText = normalize(material.extractedText);
 
   let score = 0;
 
   if (moduleCodes.length > 0) {
+    const moduleCodeEvidence = [
+      String(material?.moduleCode || ""),
+      String(material?.title || ""),
+      String(material?.subject || ""),
+      extractedModuleCodes.join(" "),
+      String(material?.extractedText || ""),
+      ...(Array.isArray(material?.versions)
+        ? material.versions.map((v) => String(v?.originalName || ""))
+        : []),
+    ]
+      .join(" ")
+      .toUpperCase();
+
+    const isModuleMatch = moduleCodes.some((code) => {
+      if (!code) return false;
+      if (moduleCode === code || moduleCode.includes(code)) return true;
+      return moduleCodeEvidence.includes(code);
+    });
+    if (!isModuleMatch) return 0;
+
     for (const code of moduleCodes) {
       if (moduleCode === code) score += 50;
       else if (moduleCode.includes(code)) score += 25;
@@ -71,6 +226,16 @@ const scoreMaterial = (material, queryTokens, moduleCodes) => {
     if (title.includes(t)) score += 6;
     if (subject.includes(t)) score += 4;
     if (description.includes(t)) score += 2;
+    if (versionNames.some((n) => n && n.includes(t))) score += 1;
+    if (extractedText && extractedText.includes(t)) score += 1;
+  }
+
+  if (Array.isArray(semesters) && semesters.length > 0 && semester !== null) {
+    if (semesters.includes(semester)) score += 15;
+  }
+
+  if (Array.isArray(categoryHints) && categoryHints.length > 0 && category) {
+    if (categoryHints.includes(category)) score += 10;
   }
 
   return score;
@@ -79,18 +244,34 @@ const scoreMaterial = (material, queryTokens, moduleCodes) => {
 const pickTopMaterials = (materials, userMessage, limit) => {
   const moduleCodes = extractModuleCodes(userMessage);
   const tokens = tokenize(userMessage);
+  const semesters = extractSemesters(userMessage);
+  const categoryHints = extractCategoryHints(userMessage);
 
   const scored = materials
-    .map((m) => ({ m, s: scoreMaterial(m, tokens, moduleCodes) }))
+    .map((m) => ({
+      m,
+      s: scoreMaterial(m, tokens, moduleCodes, semesters, categoryHints),
+    }))
     .filter((x) => x.s > 0)
     .sort((a, b) => b.s - a.s)
     .slice(0, limit)
     .map((x) => x.m);
 
-  // If nothing scores, still include a small slice for Gemini context/fallback.
-  if (scored.length === 0)
-    return materials.slice(0, Math.min(limit, materials.length));
+  // Important: if nothing scores, return an empty list (UI will show request button).
   return scored;
+};
+
+const buildRequestSuggestion = (userMessage) => {
+  const moduleCodes = extractModuleCodes(userMessage);
+  const moduleCode = moduleCodes[0] || "";
+
+  const title = moduleCode
+    ? `Study materials for ${moduleCode}`
+    : "Missing study material";
+
+  const description = `I searched for: "${String(userMessage || "").trim()}"\n\nPlease add relevant notes, tutorials, past papers, or links for this topic/module.`;
+
+  return { title, description, moduleCode };
 };
 
 const buildLocalReply = (userMessage, picked) => {
@@ -173,20 +354,42 @@ const aiChat = async (req, res) => {
       return res.json(cached.payload);
     }
 
-    // Fetch all published study materials
+    // Fetch all published study materials (we will score *all* of them)
     const materials = await StudyMaterial.find({ status: "published" })
       .select(
-        "title description category moduleCode subject semester fileType downloadCount versions currentVersionId",
+        "title description category moduleCode subject semester fileType downloadCount versions currentVersionId extractedModuleCodes extractedText",
       )
       .lean();
 
-    const pickedMaterials = pickTopMaterials(
+    // Compute ONLY matching materials. This is what the UI will show.
+    const matchedAll = pickTopMaterials(
       materials,
       userMessage,
-      MAX_CONTEXT_MATERIALS,
+      materials.length,
+    );
+    const matchedForUi = matchedAll.slice(0, 50);
+
+    if (matchedForUi.length === 0) {
+      const payload = {
+        reply: `I couldn't find any study materials matching your prompt: "${userMessage}".\n\nTry including the module code (e.g., IT3060) or the module name/keywords from the material title.`,
+        matchedMaterials: [],
+        totalMaterialsSearched: materials.length,
+        totalMatches: 0,
+        noMatches: true,
+        requestSuggestion: buildRequestSuggestion(userMessage),
+        rateLimited: false,
+      };
+
+      _cache.set(cacheKey, { ts: Date.now(), payload });
+      return res.json(payload);
+    }
+
+    const pickedMaterials = matchedForUi.slice(0, MAX_CONTEXT_MATERIALS);
+    const promptModuleCodes = extractModuleCodes(userMessage).map((c) =>
+      String(c).trim().toUpperCase(),
     );
 
-    // Build context with only the most relevant materials info (keeps prompt small)
+    // Build context with only the relevant materials info (keeps prompt small)
     const materialContext = pickedMaterials
       .map((m, i) => {
         const currentVersion = (m.versions || []).find(
@@ -199,12 +402,12 @@ const aiChat = async (req, res) => {
     const fullPrompt = `${SYSTEM_PROMPT}
 
   Total published study materials in DB: ${materials.length}
-  Here are the most relevant materials to search within (showing ${pickedMaterials.length}):
+  Only matching materials are included below (showing ${pickedMaterials.length} of ${matchedAll.length} matches):
   ${materialContext || "No materials currently available in the database."}
 
 Student's question: "${userMessage}"
 
-Please analyze the materials and provide helpful recommendations. If the student asks about a specific subject or module, find all matching materials. Be thorough in your search - check titles, module codes, subjects, descriptions, and filenames for matches.`;
+Please analyze ONLY the materials provided and provide helpful recommendations. Do NOT mention any material IDs that are not included in the context. If the student's question implies a module name/code, prioritize those matches. Be thorough in your search - check titles, module codes, subjects, descriptions, and filenames for matches.`;
 
     let aiReply = "";
     let usedFallback = false;
@@ -229,33 +432,61 @@ Please analyze the materials and provide helpful recommendations. If the student
       aiReply = buildLocalReply(userMessage, pickedMaterials);
     }
 
-    // Extract material IDs mentioned in the response (prefer picked subset)
-    const mentionedIds = [];
-    for (const mat of pickedMaterials) {
-      const id = String(mat._id);
-      if (aiReply.includes(id)) mentionedIds.push(id);
-    }
-
-    // If fallback didn't mention IDs, just show picked materials
-    if (usedFallback && mentionedIds.length === 0) {
-      mentionedIds.push(
-        ...pickedMaterials.slice(0, 10).map((m) => String(m._id)),
-      );
-    }
-
-    // Build matched materials list for frontend cards
-    const matchedMaterials = mentionedIds
-      .map((id) => {
-        const m = materials.find((mat) => String(mat._id) === id);
-        if (!m) return null;
+    // Build matched materials list for frontend cards (ONLY matching materials)
+    const matchedMaterials = matchedForUi
+      .map((m) => {
         const currentVersion = (m.versions || []).find(
           (v) => String(v._id) === String(m.currentVersionId),
         );
+
+        const extractedCodes = Array.isArray(m.extractedModuleCodes)
+          ? m.extractedModuleCodes
+              .map((c) => String(c).trim().toUpperCase())
+              .filter(Boolean)
+          : [];
+
+        const inferredModuleCode = inferModuleCodeFromMaterial({
+          moduleCode: m.moduleCode,
+          title: m.title,
+          subject: m.subject,
+          versions: m.versions,
+          extractedModuleCodes: m.extractedModuleCodes,
+          extractedText: m.extractedText,
+        });
+
+        const moduleCodeForUi = (() => {
+          const stored = String(m.moduleCode || "")
+            .trim()
+            .toUpperCase();
+          for (const c of promptModuleCodes) {
+            if (!c) continue;
+            if (stored === c || stored.includes(c)) return c;
+            if (extractedCodes.includes(c)) return c;
+          }
+
+          if (
+            extractedCodes.length === 1 &&
+            extractedCodes[0] &&
+            extractedCodes[0] !== stored
+          ) {
+            return extractedCodes[0];
+          }
+
+          // Prefer a 4-digit module code from extracted codes when multiple were found
+          // (helps avoid picking student IDs like IT23421226 -> IT234).
+          const extracted4 = extractedCodes.find((c) =>
+            /\b[A-Z]{2,4}\d{4}\b/.test(c),
+          );
+          if (extracted4 && extracted4 !== stored) return extracted4;
+
+          return stored || inferredModuleCode;
+        })();
+
         return {
           id: m._id,
           title: m.title,
           description: m.description,
-          moduleCode: m.moduleCode,
+          moduleCode: moduleCodeForUi,
           subject: m.subject,
           semester: m.semester,
           category: m.category,
@@ -277,6 +508,8 @@ Please analyze the materials and provide helpful recommendations. If the student
       reply: aiReply,
       matchedMaterials,
       totalMaterialsSearched: materials.length,
+      totalMatches: matchedAll.length,
+      noMatches: matchedAll.length === 0,
       rateLimited: usedFallback,
     };
 
