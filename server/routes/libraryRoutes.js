@@ -6,6 +6,7 @@ const studyRoomController = require('../controllers/studyRoomController');
 const digitalResourceController = require('../controllers/digitalResourceController');
 const reservationController = require('../controllers/reservationController');
 const userLibraryController = require('../controllers/userLibraryController');
+const aiController = require('../controllers/aiController');
 
 const upload = require('../middleware/libraryUpload');
 const { requireAuth } = require('../middleware/authMiddleware');
@@ -78,5 +79,8 @@ router.get('/stats', requireAuth, requireModuleAdmin('library'), libraryControll
 router.get('/my-library', requireAuth, userLibraryController.getUserLibrary);
 router.post('/my-library', requireAuth, userLibraryController.addToLibrary);
 router.delete('/my-library/:id', requireAuth, userLibraryController.removeFromLibrary);
+
+// AI Assistant
+router.post('/ai/chat', requireAuth, aiController.chatWithLumina);
 
 module.exports = router;

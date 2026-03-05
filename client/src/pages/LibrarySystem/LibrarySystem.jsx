@@ -4,9 +4,11 @@ import {
   ArrowLeft, Home, BookOpen, Search, Users, Globe, BookMarked
 } from 'lucide-react';
 import SearchBooks from './SearchBooks';
+import LibraryBooks from './LibraryBooks';
 import StudyRooms from './StudyRooms';
 import DigitalResources from './DigitalResources';
 import MyLibrary from './MyLibrary';
+import LibraryAIChatBot from '../../components/LibraryAIChatBot';
 
 export default function LibrarySystem({ user, onLoggedOut }) {
   const navigate = useNavigate();
@@ -27,6 +29,7 @@ export default function LibrarySystem({ user, onLoggedOut }) {
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'books', label: 'Books', icon: BookOpen },
     { id: 'search', label: 'Search', icon: Search },
     { id: 'rooms', label: 'Study Rooms', icon: Users },
     { id: 'digital', label: 'Digital Resources', icon: Globe },
@@ -48,12 +51,12 @@ export default function LibrarySystem({ user, onLoggedOut }) {
         );
       case 'search':
         return <SearchBooks user={user} onLoggedOut={onLoggedOut} />;
+      case 'books':
+        return <LibraryBooks user={user} onLoggedOut={onLoggedOut} />;
       case 'rooms':
         return <StudyRooms user={user} onLoggedOut={onLoggedOut} />;
       case 'digital':
         return <DigitalResources user={user} onLoggedOut={onLoggedOut} />;
-      case 'books':
-        return <DigitalResources user={user} onLoggedOut={onLoggedOut} />; // Redirect Books to Digital too
       case 'mylibrary':
         return <MyLibrary user={user} onLoggedOut={onLoggedOut} />;
       default:
@@ -175,6 +178,7 @@ export default function LibrarySystem({ user, onLoggedOut }) {
           </div>
         </div>
       </div>
+      <LibraryAIChatBot />
     </div>
   );
 }
