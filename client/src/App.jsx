@@ -42,6 +42,8 @@ import LibraryDashboard from './pages/admindashboard/LibraryM/LibraryDashboard.j
 import LibraryAdminLayout from './pages/admindashboard/LibraryM/LibraryAdminLayout.jsx';
 import ClubAndSocietyDashboard from './pages/admindashboard/Club/ClubAndSocietyDashboard.jsx';
 import HostelWardenDashboard from './pages/admindashboard/Hostel/warden/HostelWardenDashboard.jsx';
+import HostelLaundryDashboard from './pages/admindashboard/Hostel/laundry/HostelLaundryDashboard.jsx';
+import HostelMealsShopDashboard from './pages/admindashboard/Hostel/mealsShop/HostelMealsShopDashboard.jsx';
 import BookManagement from './pages/admindashboard/LibraryM/BookManagement.jsx';
 import StudyRoomManagement from './pages/admindashboard/LibraryM/StudyRoomManagement.jsx';
 import DigitalResourcesManagement from './pages/admindashboard/LibraryM/DigitalResourcesManagement.jsx';
@@ -384,6 +386,24 @@ export default function App() {
         }
       />
 
+      <Route
+        path="/admin/hostel/meals-shop/dashboard"
+        element={
+          <RequireModuleAuth user={user} moduleKey="hostel-meals-shop" redirectTo="/admin/hostel">
+            <HostelMealsShopDashboard user={user} onLoggedOut={requestLogout} />
+          </RequireModuleAuth>
+        }
+      />
+
+      <Route
+        path="/admin/hostel/laundry/dashboard"
+        element={
+          <RequireModuleAuth user={user} moduleKey="hostel-laundry" redirectTo="/admin/hostel">
+            <HostelLaundryDashboard user={user} onLoggedOut={requestLogout} />
+          </RequireModuleAuth>
+        }
+      />
+
       {/* Admin SignIn Routes */}
       <Route path="/admin" element={<Navigate to="/admin/signin" replace />} />
       <Route path="/admin/login" element={<Navigate to="/admin/signin" replace />} />
@@ -415,10 +435,15 @@ export default function App() {
       <Route
         path="/admin/hostel/laundry/signin"
         element={
-          user ? (
-            <Navigate to="/admin/hostel" replace />
+          user?.module === 'hostel-laundry' ? (
+            <Navigate to="/admin/hostel/laundry/dashboard" replace />
           ) : (
-            <AdminModuleSignIn title="Laundry" moduleKey="hostel-laundry" onSignedIn={(u) => setUser(u)} />
+            <AdminModuleSignIn
+              title="Laundry"
+              moduleKey="hostel-laundry"
+              onSignedIn={(u) => setUser(u)}
+              initialEmail={user?.email}
+            />
           )
         }
       />
@@ -426,10 +451,15 @@ export default function App() {
       <Route
         path="/admin/hostel/meals-shop/signin"
         element={
-          user ? (
-            <Navigate to="/admin/hostel" replace />
+          user?.module === 'hostel-meals-shop' ? (
+            <Navigate to="/admin/hostel/meals-shop/dashboard" replace />
           ) : (
-            <AdminModuleSignIn title="Meals Shop" moduleKey="hostel-meals-shop" onSignedIn={(u) => setUser(u)} />
+            <AdminModuleSignIn
+              title="Meals Shop"
+              moduleKey="hostel-meals-shop"
+              onSignedIn={(u) => setUser(u)}
+              initialEmail={user?.email}
+            />
           )
         }
       />

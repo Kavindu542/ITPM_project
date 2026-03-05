@@ -1,9 +1,9 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { authService } from '../../../../services/authService';
 import UserMenu from '../../../../components/UserMenu';
 import { hostelService } from '../../../../services/hostelService';
-import { LayoutDashboard, AlertCircle, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, AlertCircle, RefreshCw, Store, Upload, CheckCircle, Building2 } from 'lucide-react';
 
 export default function HostelWardenDashboard({ user, onLoggedOut }) {
   const navigate = useNavigate();
@@ -12,6 +12,29 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
   const [applications, setApplications] = React.useState([]);
   const [complaints, setComplaints] = React.useState([]);
   const [activeTab, setActiveTab] = React.useState('applications');
+
+  const [mealShopForm, setMealShopForm] = React.useState({
+    email: '',
+    password: '',
+    name: '',
+    contactNumber: '',
+    description: '',
+  });
+  const [shopLogo, setShopLogo] = React.useState(null);
+  const [mealShopSubmitting, setMealShopSubmitting] = React.useState(false);
+  const [mealShopSuccess, setMealShopSuccess] = React.useState('');
+  const [createdMealShopEmail, setCreatedMealShopEmail] = React.useState('');
+  const [laundryForm, setLaundryForm] = React.useState({
+    email: '',
+    password: '',
+    name: '',
+    contactNumber: '',
+    description: '',
+  });
+  const [laundryLogo, setLaundryLogo] = React.useState(null);
+  const [laundrySubmitting, setLaundrySubmitting] = React.useState(false);
+  const [laundrySuccess, setLaundrySuccess] = React.useState('');
+  const [createdLaundryEmail, setCreatedLaundryEmail] = React.useState('');
 
   const loadApplications = React.useCallback(async () => {
     try {
@@ -69,6 +92,73 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
     }
   };
 
+  const handleMealShopSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMealShopSuccess('');
+    setCreatedMealShopEmail('');
+    setMealShopSubmitting(true);
+
+    try {
+      await hostelService.createMealShopAccount({
+        email: mealShopForm.email,
+        password: mealShopForm.password,
+        name: mealShopForm.name,
+        contactNumber: mealShopForm.contactNumber,
+        description: mealShopForm.description,
+      });
+
+      setMealShopSuccess('Meal shop account created successfully. You can now sign in to Meals Shop.');
+      setCreatedMealShopEmail(mealShopForm.email);
+      setMealShopForm({ email: '', password: '', name: '', contactNumber: '', description: '' });
+      setShopLogo(null);
+
+      setTimeout(() => setMealShopSuccess(''), 4000);
+    } catch (e) {
+      setError(e?.message || 'Failed to create meal shop');
+    } finally {
+      setMealShopSubmitting(false);
+    }
+  };
+
+  const handleMealShopChange = (e) => {
+    const { name, value } = e.target;
+    setMealShopForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLaundrySubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLaundrySuccess('');
+    setCreatedLaundryEmail('');
+    setLaundrySubmitting(true);
+
+    try {
+      await hostelService.createLaundryShopAccount({
+        email: laundryForm.email,
+        password: laundryForm.password,
+        name: laundryForm.name,
+        contactNumber: laundryForm.contactNumber,
+        description: laundryForm.description,
+      });
+
+      setLaundrySuccess('Laundry shop account created successfully. You can now sign in to Laundry.');
+      setCreatedLaundryEmail(laundryForm.email);
+      setLaundryForm({ email: '', password: '', name: '', contactNumber: '', description: '' });
+      setLaundryLogo(null);
+      setTimeout(() => setLaundrySuccess(''), 4000);
+    } catch (e) {
+      setError(e?.message || 'Failed to create laundry shop');
+    } finally {
+      setLaundrySubmitting(false);
+    }
+  };
+
+  const handleLaundryChange = (e) => {
+    const { name, value } = e.target;
+    setLaundryForm((prev) => ({ ...prev, [name]: value }));
+  };
+
   const logout = async () => {
     await authService.logout();
     onLoggedOut?.();
@@ -110,8 +200,8 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
             <button
               onClick={() => setActiveTab('applications')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm ${activeTab === 'applications'
-                  ? 'bg-blue-600 text-white border border-blue-500'
-                  : 'text-blue-100 hover:bg-blue-800 border border-transparent'
+                ? 'bg-blue-600 text-white border border-blue-500'
+                : 'text-blue-100 hover:bg-blue-800 border border-transparent'
                 }`}
             >
               <LayoutDashboard size={18} />
@@ -120,13 +210,40 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
             <button
               onClick={() => setActiveTab('complaints')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm ${activeTab === 'complaints'
-                  ? 'bg-blue-600 text-white border border-blue-500'
-                  : 'text-blue-100 hover:bg-blue-800 border border-transparent'
+                ? 'bg-blue-600 text-white border border-blue-500'
+                : 'text-blue-100 hover:bg-blue-800 border border-transparent'
                 }`}
             >
               <AlertCircle size={18} />
               <span className="font-medium text-sm">Complaints</span>
             </button>
+            <button
+              onClick={() => setActiveTab('add-meal-shop')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm ${activeTab === 'add-meal-shop'
+                ? 'bg-blue-600 text-white border border-blue-500'
+                : 'text-blue-100 hover:bg-blue-800 border border-transparent'
+                }`}
+            >
+              <Store size={18} />
+              <span className="font-medium text-sm">Add Meal Shop</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('add-laundry-shop')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm ${activeTab === 'add-laundry-shop'
+                ? 'bg-blue-600 text-white border border-blue-500'
+                : 'text-blue-100 hover:bg-blue-800 border border-transparent'
+                }`}
+            >
+              <Store size={18} />
+              <span className="font-medium text-sm">Add Laundry Shop</span>
+            </button>
+            <Link
+              to="/admin/hostel"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm text-blue-100 hover:bg-blue-800 border border-transparent"
+            >
+              <Building2 size={18} />
+              <span className="font-medium text-sm">Hostel services</span>
+            </Link>
           </nav>
         </div>
 
@@ -136,7 +253,13 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
             <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                  {activeTab === 'applications' ? 'Hostel Applications' : 'Hostel Complaints'}
+                  {activeTab === 'applications'
+                    ? 'Hostel Applications'
+                    : activeTab === 'complaints'
+                      ? 'Hostel Complaints'
+                      : activeTab === 'add-meal-shop'
+                        ? 'Add Meal Shop'
+                        : 'Add Laundry Shop'}
                 </h2>
                 <p className="mt-2 text-sm text-gray-500">
                   Signed in as <span className="font-medium text-blue-600">{user?.email}</span>
@@ -302,6 +425,297 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
                     </table>
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === 'add-meal-shop' && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <div className="mb-6 border-b border-gray-100 pb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Create New Meal Shop</h3>
+                  <p className="text-sm text-gray-500 mt-1">Add a new meal provider to the hostel ecosystem.</p>
+                </div>
+
+                {error && (
+                  <div className="mb-6 flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-red-800 text-sm">{error}</p>
+                  </div>
+                )}
+
+                {mealShopSuccess && (
+                  <div className="mb-6 flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-green-800 text-sm">
+                      <p>{mealShopSuccess}</p>
+                      {createdMealShopEmail ? (
+                        <Link
+                          to={`/admin/hostel/meals-shop/signin?email=${encodeURIComponent(createdMealShopEmail)}`}
+                          className="inline-flex mt-2 font-semibold text-green-700 hover:text-green-800 underline"
+                        >
+                          Open Meals Shop sign-in
+                        </Link>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
+                <form onSubmit={handleMealShopSubmit} className="space-y-6 max-w-2xl">
+                  {/* Account Information */}
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-4">
+                    <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Account Information</h4>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={mealShopForm.email}
+                          onChange={handleMealShopChange}
+                          required
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          placeholder="shop@example.com"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                        <input
+                          type="password"
+                          name="password"
+                          value={mealShopForm.password}
+                          onChange={handleMealShopChange}
+                          required
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          placeholder="••••••••"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Shop Details */}
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-4">
+                    <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Shop Details</h4>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Meal Shop Name *</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={mealShopForm.name}
+                          onChange={handleMealShopChange}
+                          required
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          placeholder="Fresh Bites"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number *</label>
+                        <input
+                          type="tel"
+                          name="contactNumber"
+                          value={mealShopForm.contactNumber}
+                          onChange={handleMealShopChange}
+                          required
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          placeholder="077 123 4567"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Shop Description</label>
+                        <textarea
+                          name="description"
+                          value={mealShopForm.description}
+                          onChange={handleMealShopChange}
+                          rows="3"
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                          placeholder="Describe the type of food and services offered..."
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Shop Logo</label>
+                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg bg-white hover:bg-gray-50 transition-colors">
+                          <div className="space-y-1 text-center">
+                            <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                            <div className="flex text-sm text-gray-600 justify-center">
+                              <label htmlFor="file-upload" className="relative cursor-pointer bg-transparent rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                                <span>Upload a file</span>
+                                <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={(e) => setShopLogo(e.target.files[0])} accept="image/*" />
+                              </label>
+                              <p className="pl-1">or drag and drop</p>
+                            </div>
+                            <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                            {shopLogo && (
+                              <p className="text-sm text-green-600 break-all mt-2 max-w-[200px] mx-auto truncate font-medium">Selected: {shopLogo.name}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="submit"
+                      disabled={mealShopSubmitting}
+                      className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-100 disabled:bg-gray-400 transition-all shadow-sm"
+                    >
+                      {mealShopSubmitting ? 'Creating Shop...' : 'Create Meal Shop'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {activeTab === 'add-laundry-shop' && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <div className="mb-6 border-b border-gray-100 pb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Create New Laundry Shop</h3>
+                  <p className="text-sm text-gray-500 mt-1">Add a new laundry provider to the hostel ecosystem.</p>
+                </div>
+
+                {error && (
+                  <div className="mb-6 flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-red-800 text-sm">{error}</p>
+                  </div>
+                )}
+
+                {laundrySuccess && (
+                  <div className="mb-6 flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-green-800 text-sm">
+                      <p>{laundrySuccess}</p>
+                      {createdLaundryEmail ? (
+                        <Link
+                          to={`/admin/hostel/laundry/signin?email=${encodeURIComponent(createdLaundryEmail)}`}
+                          className="inline-flex mt-2 font-semibold text-green-700 hover:text-green-800 underline"
+                        >
+                          Open Laundry sign-in
+                        </Link>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
+                <form onSubmit={handleLaundrySubmit} className="space-y-6 max-w-2xl">
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-4">
+                    <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Account Information</h4>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={laundryForm.email}
+                          onChange={handleLaundryChange}
+                          required
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          placeholder="laundry@example.com"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                        <input
+                          type="password"
+                          name="password"
+                          value={laundryForm.password}
+                          onChange={handleLaundryChange}
+                          required
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          placeholder="••••••••"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-4">
+                    <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Shop Details</h4>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Laundry Name *</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={laundryForm.name}
+                          onChange={handleLaundryChange}
+                          required
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          placeholder="Quick Wash"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number *</label>
+                        <input
+                          type="tel"
+                          name="contactNumber"
+                          value={laundryForm.contactNumber}
+                          onChange={handleLaundryChange}
+                          required
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          placeholder="077 123 4567"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Shop Description</label>
+                        <textarea
+                          name="description"
+                          value={laundryForm.description}
+                          onChange={handleLaundryChange}
+                          rows="3"
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                          placeholder="Describe the laundry services offered..."
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Shop Logo</label>
+                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg bg-white hover:bg-gray-50 transition-colors">
+                          <div className="space-y-1 text-center">
+                            <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                            <div className="flex text-sm text-gray-600 justify-center">
+                              <label htmlFor="laundry-file-upload" className="relative cursor-pointer bg-transparent rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                                <span>Upload a file</span>
+                                <input
+                                  id="laundry-file-upload"
+                                  name="laundry-file-upload"
+                                  type="file"
+                                  className="sr-only"
+                                  onChange={(e) => setLaundryLogo(e.target.files[0])}
+                                  accept="image/*"
+                                />
+                              </label>
+                              <p className="pl-1">or drag and drop</p>
+                            </div>
+                            <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                            {laundryLogo && (
+                              <p className="text-sm text-green-600 break-all mt-2 max-w-[200px] mx-auto truncate font-medium">
+                                Selected: {laundryLogo.name}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="submit"
+                      disabled={laundrySubmitting}
+                      className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-100 disabled:bg-gray-400 transition-all shadow-sm"
+                    >
+                      {laundrySubmitting ? 'Creating Laundry Shop...' : 'Create Laundry Shop'}
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
           </div>

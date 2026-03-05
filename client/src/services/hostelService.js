@@ -97,4 +97,114 @@ export const hostelService = {
       throw error.response?.data || error;
     }
   },
+
+  // Admin (warden): Create meal shop login account
+  createMealShopAccount: async (payload) => {
+    try {
+      const response = await api.post('/hostel/admin/meal-shop-accounts', payload);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Admin (warden): Create laundry shop login account
+  createLaundryShopAccount: async (payload) => {
+    try {
+      const response = await api.post('/hostel/admin/laundry-shop-accounts', payload);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Laundry admin: Get own laundry shop profile
+  getLaundryShopProfile: async () => {
+    try {
+      const response = await api.get('/hostel/admin/laundry/shop-profile');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Laundry admin: Save laundry shop profile
+  saveLaundryShopProfile: async (payload) => {
+    try {
+      const response = await api.put('/hostel/admin/laundry/shop-profile', payload);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Student: List active laundry shops
+  getLaundryShops: async () => {
+    try {
+      const response = await api.get('/hostel/laundry/shops');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Student: Create a laundry booking
+  createLaundryBooking: async (payload) => {
+    try {
+      const response = await api.post('/hostel/laundry/bookings', payload);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Student: Get own laundry bookings
+  getMyLaundryBookings: async () => {
+    try {
+      const response = await api.get('/hostel/laundry/my-bookings');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Laundry admin: View student laundry bookings
+  getLaundryAdminBookings: async () => {
+    try {
+      const response = await api.get('/hostel/admin/laundry/bookings');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Laundry admin: Update booking status
+  updateLaundryBookingStatus: async (bookingId, status) => {
+    try {
+      const response = await api.put(`/hostel/admin/laundry/bookings/${bookingId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Laundry admin: Delete booking row
+  deleteLaundryBooking: async (bookingId) => {
+    try {
+      const response = await api.delete(`/hostel/admin/laundry/bookings/${bookingId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Laundry admin: Update ready info (yes/no)
+  updateLaundryBookingReady: async (bookingId, ready) => {
+    try {
+      const response = await api.put(`/hostel/admin/laundry/bookings/${bookingId}/ready`, { ready });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
 };

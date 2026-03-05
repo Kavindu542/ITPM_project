@@ -1,12 +1,17 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import AuthShell from '../../components/AuthShell';
 
-export default function AdminModuleSignIn({ title, moduleKey, onSignedIn }) {
+export default function AdminModuleSignIn({ title, moduleKey, onSignedIn, initialEmail }) {
   const navigate = useNavigate();
-  const [email, setEmail] = React.useState('');
+  const location = useLocation();
+  const queryEmail = React.useMemo(() => {
+    const value = new URLSearchParams(location.search).get('email');
+    return value ? value.trim() : '';
+  }, [location.search]);
+  const [email, setEmail] = React.useState(queryEmail || initialEmail || '');
   const [password, setPassword] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -39,6 +44,12 @@ export default function AdminModuleSignIn({ title, moduleKey, onSignedIn }) {
     if (!touched.email && !touched.password) return;
     setFieldErrors(validate({ email, password }));
   }, [email, password, touched.email, touched.password, validate]);
+
+  React.useEffect(() => {
+    if (initialEmail || queryEmail) {
+      setEmail(queryEmail || initialEmail);
+    }
+  }, [initialEmail, queryEmail]);
 
   const onBlur = (key) => {
     setTouched((t) => ({ ...t, [key]: true }));
@@ -85,9 +96,15 @@ export default function AdminModuleSignIn({ title, moduleKey, onSignedIn }) {
       <div>
             <div className="flex items-center justify-center gap-2 text-xs font-semibold text-gray-500">
               <span className="rounded-full bg-gray-100 px-3 py-1">Module access</span>
-              <Link to="/admin/signin" className="font-semibold text-slate-700 hover:text-slate-600 hover:underline">
-                Back to modules
-              </Link>
+              {initialEmail || queryEmail ? (
+                <Link to="/admin/hostel" className="font-semibold text-slate-700 hover:text-slate-600 hover:underline">
+                  Back to hostel services
+                </Link>
+              ) : (
+                <Link to="/admin/signin" className="font-semibold text-slate-700 hover:text-slate-600 hover:underline">
+                  Back to modules
+                </Link>
+              )}
             </div>
 
             <h1 className="mt-4 text-3xl font-bold text-gray-900 text-center">{title} admin</h1>
