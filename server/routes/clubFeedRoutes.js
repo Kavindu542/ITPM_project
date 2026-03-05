@@ -19,7 +19,8 @@ router.get("/my/meetings", requireAuth, async (req, res) => {
     ].filter(Boolean));
     const hasMembership = clubIds.size > 0;
     if (!hasMembership) return res.json({ hasMembership: false, meetings: [] });
-    const meetings = await Meeting.find({ club: { $in: Array.from(clubIds) } })
+    const now = new Date();
+    const meetings = await Meeting.find({ club: { $in: Array.from(clubIds) }, date: { $gte: now } })
       .sort({ date: 1 })
       .populate("club", "_id name")
       .lean();
@@ -50,7 +51,11 @@ router.get("/my/events", requireAuth, async (req, res) => {
       fullUser?.club ? String(fullUser.club) : null,
     ].filter(Boolean));
     if (clubIds.size === 0) return res.json({ events: [] });
-    const events = await Event.find({ club: { $in: Array.from(clubIds) } }).sort({ date: 1 }).populate("club", "_id name").lean();
+    const now = new Date();
+    const events = await Event.find({ club: { $in: Array.from(clubIds) }, date: { $gte: now } })
+      .sort({ date: 1 })
+      .populate("club", "_id name")
+      .lean();
     return res.json({
       events: events.map((e) => ({
         id: e._id,
@@ -69,7 +74,11 @@ router.get("/my/events", requireAuth, async (req, res) => {
 // Public events for all users (no auth required in principle, but we keep it behind auth for simplicity)
 router.get("/public/events", async (req, res) => {
   try {
-    const events = await Event.find({ type: "Public" }).sort({ date: 1 }).populate("club", "_id name").lean();
+    const now = new Date();
+    const events = await Event.find({ type: "Public", date: { $gte: now } })
+      .sort({ date: 1 })
+      .populate("club", "_id name")
+      .lean();
     return res.json({
       events: events.map((e) => ({
         id: e._id,

@@ -33,6 +33,14 @@ export const clubService = {
     const res = await api.post("/leader/meetings", payload);
     return res.data;
   },
+  async leaderUpdateMeeting(meetingId, payload) {
+    const res = await api.patch(`/leader/meetings/${meetingId}`, payload);
+    return res.data;
+  },
+  async leaderDeleteMeeting(meetingId) {
+    const res = await api.delete(`/leader/meetings/${meetingId}`);
+    return res.data;
+  },
   async leaderListEvents() {
     const res = await api.get("/leader/events");
     return res.data;
@@ -41,8 +49,20 @@ export const clubService = {
     const res = await api.get("/leader/membership-applications");
     return res.data;
   },
+  async leaderDeleteMembershipApplication(applicationId) {
+    const res = await api.delete(`/leader/membership-applications/${applicationId}`);
+    return res.data;
+  },
   async leaderCreateEvent(payload) {
     const res = await api.post("/leader/events", payload);
+    return res.data;
+  },
+  async leaderUpdateEvent(eventId, payload) {
+    const res = await api.patch(`/leader/events/${eventId}`, payload);
+    return res.data;
+  },
+  async leaderDeleteEvent(eventId) {
+    const res = await api.delete(`/leader/events/${eventId}`);
     return res.data;
   },
 
