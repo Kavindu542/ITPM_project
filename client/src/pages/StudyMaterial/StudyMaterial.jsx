@@ -1,7 +1,6 @@
 import React from 'react';
-import { NavLink, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowLeft,
   BookOpen,
   Clock,
   Download,
@@ -15,6 +14,7 @@ import {
 } from 'lucide-react';
 import { studyMaterialService } from '../../services/studyMaterialService';
 import AIChatBot from '../../components/AIChatBot';
+import StudyMaterialSidebar from '../../components/StudyMaterialSidebar';
 // Removed AI PDF export utilities
 
 export default function StudyMaterial({ user, onLoggedOut }) {
@@ -313,7 +313,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans">
+      <div className="h-[calc(100vh-6rem)] bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans overflow-auto no-scrollbar lg:overflow-hidden">
         {/* Background Pattern */}
         <div className="fixed inset-0 opacity-5 pointer-events-none">
           <div
@@ -325,174 +325,17 @@ export default function StudyMaterial({ user, onLoggedOut }) {
           />
         </div>
 
-        <div className="relative w-full p-6">
-          {/* Top bar */}
-          <div className="flex items-center justify-between gap-4 mb-6">
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 backdrop-blur border border-gray-200 hover:bg-white transition-colors"
-              onClick={() => navigate('/')}
-            >
-              <ArrowLeft className="h-4 w-4 text-gray-700" />
-              <span className="font-medium text-gray-800">Back</span>
-            </button>
-          </div>
-
-          {/* Header */}
-          <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white/80 backdrop-blur shadow-sm">
-            <div className="p-6 sm:p-8 flex items-start gap-4">
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-600 to-[#25f194] shadow-lg">
-                <BookOpen className="h-6 w-6 text-white" />
-              </div>
-
-              <div className="flex-1">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Study Materials</h1>
-                <p className="mt-1 text-sm text-gray-600">
-                  Browse resources by module/semester, preview, download, and contribute your own.
-                </p>
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                    <FolderOpen className="h-3.5 w-3.5" />
-                    Filter by module & semester
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                    <Clock className="h-3.5 w-3.5" />
-                    Preview before downloading
-                  </span>
-                  {/* Removed 'Missing resource requests' and 'Academic support forum' buttons as requested */}
-                </div>
-              </div>
-
-              <div className="hidden sm:flex flex-col items-end gap-2">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md"
-                  onClick={() => navigate('/materials/contribute')}
-                >
-                  <UploadCloud className="h-4 w-4" />
-                  Contribute
-                </button>
-                <p className="text-xs text-gray-500">Uploads go for admin approval</p>
-              </div>
-            </div>
-          </div>
+        <div className="relative w-full h-full p-6 lg:pt-0 lg:pb-0 flex flex-col">
 
           {/* Sidebar + Content */}
-          <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="mt-0 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 lg:h-full lg:overflow-hidden lg:min-h-0 lg:grid-rows-[minmax(0,1fr)]">
             {/* Sidebar */}
-            <div className="lg:col-span-3">
-              <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-                <div className="p-5 border-b border-gray-200">
-                  <div className="text-sm font-bold text-gray-900">Menu</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {user?.semester ? `Your semester: ${user.semester}` : 'Set your semester in Profile for access rules.'}
-                  </div>
-                </div>
-                <div className="p-3 space-y-1">
-                  <NavLink
-                    to="/materials/all"
-                    className={({ isActive }) =>
-                      `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <FolderOpen className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                        <span className={isActive ? 'text-white' : 'text-gray-800'}>All materials</span>
-                      </>
-                    )}
-                  </NavLink>
-                  <NavLink
-                    to="/materials/favs"
-                    className={({ isActive }) =>
-                      `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <Heart className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                        <span className={isActive ? 'text-white' : 'text-gray-800'}>Favourites</span>
-                      </>
-                    )}
-                  </NavLink>
-                  <NavLink
-                    to="/materials/history"
-                    className={({ isActive }) =>
-                      `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <Clock className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                        <span className={isActive ? 'text-white' : 'text-gray-800'}>History</span>
-                      </>
-                    )}
-                  </NavLink>
-                  <NavLink
-                    to="/materials/contribute"
-                    className={({ isActive }) =>
-                      `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <UploadCloud className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                        <span className={isActive ? 'text-white' : 'text-gray-800'}>Contribute</span>
-                      </>
-                    )}
-                  </NavLink>
-                  <NavLink
-                    to="/materials/requests"
-                    className={({ isActive }) =>
-                      `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <MessageSquare className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                        <span className={isActive ? 'text-white' : 'text-gray-800'}>Missing resource requests</span>
-                      </>
-                    )}
-                  </NavLink>
-                  <NavLink
-                    to="/materials/reviews"
-                    className={({ isActive }) =>
-                      `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <Star className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                        <span className={isActive ? 'text-white' : 'text-gray-800'}>Ratings & reviews</span>
-                      </>
-                    )}
-                  </NavLink>
-                  <NavLink
-                    to="/materials/forum"
-                    className={({ isActive }) =>
-                      `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${isActive ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm' : 'bg-white border-gray-200 hover:bg-gray-50'
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <MessagesSquare className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
-                        <span className={isActive ? 'text-white' : 'text-gray-800'}>Academic support forum</span>
-                      </>
-                    )}
-                  </NavLink>
-                </div>
-              </div>
+            <div className="lg:col-span-1 lg:h-full lg:min-h-0">
+              <StudyMaterialSidebar user={user} />
             </div>
 
             {/* Content */}
-            <div className="lg:col-span-9 bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="lg:col-span-11 lg:h-full lg:min-h-0 bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm lg:overflow-y-auto no-scrollbar">
               <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3">
                 <div className="text-sm font-bold text-gray-900">
                   {tab === 'all'
@@ -930,7 +773,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
               </button>
             </div>
 
-            <div className="p-5 flex-1 overflow-y-auto">
+            <div className="p-5 flex-1 overflow-y-auto no-scrollbar">
               <form onSubmit={submitContribution} className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input

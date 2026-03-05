@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft,
   BookOpen,
   Clock,
   Download,
@@ -14,6 +13,7 @@ import {
   UploadCloud,
 } from 'lucide-react';
 import { studyMaterialService } from '../../services/studyMaterialService';
+import StudyMaterialSidebar from '../../components/StudyMaterialSidebar';
 
 
 export default function ForumSupport({ user, onLoggedOut }) {
@@ -154,7 +154,7 @@ export default function ForumSupport({ user, onLoggedOut }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans">
+    <div className="h-[calc(100vh-6rem)] bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans overflow-auto no-scrollbar lg:overflow-hidden">
       <div className="fixed inset-0 opacity-5 pointer-events-none">
         <div
           className="absolute inset-0"
@@ -164,121 +164,16 @@ export default function ForumSupport({ user, onLoggedOut }) {
           }}
         />
       </div>
-      <div className="relative w-full p-6">
-        {/* Top bar */}
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 backdrop-blur border border-gray-200 hover:bg-white transition-colors"
-            onClick={() => navigate('/materials/all')}
-          >
-            <ArrowLeft className="h-4 w-4 text-gray-700" />
-            <span className="font-medium text-gray-800">Back to Materials</span>
-          </button>
-        </div>
-
-        {/* Header */}
-        <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white/80 backdrop-blur shadow-sm">
-          <div className="p-6 sm:p-8 flex items-start gap-4">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-600 to-[#25f194] shadow-lg">
-              <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M8 8h8M8 12h8M8 16h4" /></svg>
-            </div>
-            <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Study Materials</h1>
-              <p className="mt-1 text-sm text-gray-600">
-                Browse resources by module/semester, preview, download, and contribute your own.
-              </p>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7V6a2 2 0 012-2h2a2 2 0 012 2v1m10 0V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v1m-6 4h16m-2 4h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2v1m-6 4H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2v1" /></svg>
-                  Filter by module & semester
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
-                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3" /></svg>
-                  Preview before downloading
-                </span>
-              </div>
-            </div>
-            <div className="hidden sm:flex flex-col items-end gap-2">
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md"
-                onClick={() => navigate('/materials/contribute')}
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-                Contribute
-              </button>
-              <p className="text-xs text-gray-500">Uploads go for admin approval</p>
-            </div>
-          </div>
-        </div>
+      <div className="relative w-full h-full p-6 lg:pt-0 lg:pb-0 flex flex-col">
 
         {/* Sidebar + Content */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="mt-0 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 lg:h-full lg:overflow-hidden lg:min-h-0 lg:grid-rows-[minmax(0,1fr)]">
           {/* Sidebar */}
-          <div className="lg:col-span-3">
-            <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-              <div className="p-5 border-b border-gray-200">
-                <div className="text-sm font-bold text-gray-900">Menu</div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {user?.semester ? `Your semester: ${user.semester}` : 'Set your semester in Profile for access rules.'}
-                </div>
-              </div>
-              <div className="p-3 space-y-1">
-                <button
-                  onClick={() => navigate('/materials/all')}
-                  className="w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border bg-white border-gray-200 hover:bg-gray-50"
-                >
-                  < FolderOpen className="h-4 w-4 text-gray-700" />
-                  <span className="text-gray-800">All materials</span>
-                </button>
-                <button
-                  onClick={() => navigate('/materials/favs')}
-                  className="w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border bg-white border-gray-200 hover:bg-gray-50"
-                >
-                  <Heart className="h-4 w-4 text-gray-700" />
-                  <span className="text-gray-800">Favourites</span>
-                </button>
-                <button
-                  onClick={() => navigate('/materials/history')}
-                  className="w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border bg-white border-gray-200 hover:bg-gray-50"
-                >
-                  <Clock className="h-4 w-4 text-gray-700" />
-                  <span className="text-gray-800">History</span>
-                </button>
-                <button
-                  onClick={() => navigate('/materials/contribute')}
-                  className="w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border bg-white border-gray-200 hover:bg-gray-50"
-                >
-                  <UploadCloud className="h-4 w-4 text-gray-700" />
-                  <span className="text-gray-800">Contribute</span>
-                </button>
-                <button
-                  onClick={() => navigate('/materials/requests')}
-                  className="w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border bg-white border-gray-200 hover:bg-gray-50"
-                >
-                  <FolderOpen className="h-4 w-4 text-gray-700" />
-                  <span className="text-gray-800">Missing resource requests</span>
-                </button>
-                <button
-                  onClick={() => navigate('/materials/reviews')}
-                  className="w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border bg-white border-gray-200 hover:bg-gray-50"
-                >
-                  <Star className="h-4 w-4 text-gray-700" />
-                  <span className="text-gray-800">Ratings & reviews</span>
-                </button>
-                <button
-                  onClick={() => navigate('/materials/forum')}
-                  className="w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border bg-gray-900 border-gray-900"
-                >
-                  <MessagesSquare className="h-4 w-4 text-white" />
-                  <span className="text-white">Academic support forum</span>
-                </button>
-              </div>
-            </div>
+          <div className="lg:col-span-1 lg:h-full lg:min-h-0">
+            <StudyMaterialSidebar user={user} />
           </div>
           {/* Content */}
-          <div className="lg:col-span-9">
+          <div className="lg:col-span-11 lg:h-full lg:min-h-0 lg:overflow-y-auto no-scrollbar">
             {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Academic Support Forum</h1>
