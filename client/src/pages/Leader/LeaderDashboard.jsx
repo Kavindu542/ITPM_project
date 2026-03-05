@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, CalendarDays, PlusCircle } from 'lucide-react';
 import { clubService } from '../../services/clubService';
+import QRCodeGenerator from '../../components/Clubs/QRCodeGenerator.jsx';
 
 export default function LeaderDashboard({ user, onLoggedOut }) {
   const navigate = useNavigate();
@@ -25,6 +26,8 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
   const [eventModalMode, setEventModalMode] = React.useState('create');
   const [editingEventId, setEditingEventId] = React.useState(null);
   const [eventForm, setEventForm] = React.useState({ name: '', date: '', venue: '', type: 'Public' });
+
+  const [qrMeetingId, setQrMeetingId] = React.useState(null);
 
   const deleteApplication = async (applicationId) => {
     if (!applicationId) return;
@@ -391,6 +394,13 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                           <div className="shrink-0 flex items-center gap-2">
                             <button
                               type="button"
+                              onClick={() => setQrMeetingId((prev) => (String(prev) === String(m.id) ? null : m.id))}
+                              className="px-3 py-1.5 rounded-lg border border-indigo-200 text-xs font-semibold text-indigo-700 hover:bg-indigo-50"
+                            >
+                              {String(qrMeetingId) === String(m.id) ? 'Hide QR' : 'Show QR'}
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => openEditMeeting(m)}
                               className="px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                             >
@@ -405,6 +415,13 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                             </button>
                           </div>
                         </div>
+
+                        {String(qrMeetingId) === String(m.id) ? (
+                          <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            <div className="text-xs font-semibold text-gray-700 mb-3">Attendance QR</div>
+                            <QRCodeGenerator meetingId={m.id} size={220} />
+                          </div>
+                        ) : null}
                       </li>
                     ))}
                   </ul>
