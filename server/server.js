@@ -4,14 +4,14 @@ const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 const mongoose = require("mongoose");
-const path = require('path');
+const path = require("path");
 
 const { connectDB } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const studyMaterialRoutes = require("./routes/studyMaterialRoutes");
 
 // Import library routes
-const libraryRoutes = require('./routes/libraryRoutes');
+const libraryRoutes = require("./routes/libraryRoutes");
 
 // All routes (merged correctly)
 const adminClubRoutes = require("./routes/adminClubRoutes");
@@ -62,7 +62,7 @@ app.use(
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
-  })
+  }),
 );
 
 app.get("/api/health", (req, res) => {
@@ -72,7 +72,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/study-material", studyMaterialRoutes);
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/library", libraryRoutes);
 
 app.use("/api/admin", adminClubRoutes);
@@ -121,16 +121,12 @@ const shutdown = async ({ signal, exitCode, relaySignal } = {}) => {
   process.exit(exitCode ?? 0);
 };
 
-process.once("SIGINT", () =>
-  shutdown({ signal: "SIGINT", exitCode: 0 })
-);
+process.once("SIGINT", () => shutdown({ signal: "SIGINT", exitCode: 0 }));
 
-process.once("SIGTERM", () =>
-  shutdown({ signal: "SIGTERM", exitCode: 0 })
-);
+process.once("SIGTERM", () => shutdown({ signal: "SIGTERM", exitCode: 0 }));
 
 process.once("SIGUSR2", () =>
-  shutdown({ signal: "SIGUSR2", relaySignal: "SIGUSR2" })
+  shutdown({ signal: "SIGUSR2", relaySignal: "SIGUSR2" }),
 );
 
 const startListening = () => {
@@ -146,7 +142,7 @@ const startListening = () => {
       const retryDelay = listenRetryBaseDelayMs * listenAttempts;
 
       console.warn(
-        `Port ${port} busy. Retry ${listenAttempts}/${listenRetryLimit} in ${retryDelay}ms...`
+        `Port ${port} busy. Retry ${listenAttempts}/${listenRetryLimit} in ${retryDelay}ms...`,
       );
 
       setTimeout(startListening, retryDelay);
@@ -158,15 +154,28 @@ const startListening = () => {
   });
 };
 
-connectDB(process.env.MONGODB_URI)
-  .then(() => startListening())
-  .catch((err) => {
-    console.error("Failed to start server:", err.message);
-    console.warn("Starting server without database connection (degraded mode)");
-    try {
-      startListening();
-    } catch (e) {
-      console.error("Unable to start HTTP server:", e.message);
-      process.exit(1);
-    }
-  });
+// Export app for Vercel serverless runtime
+module.exports = app;
+
+if (require.main === module) {
+  // Running directly (local dev): connect DB then start HTTP server
+  connectDB(process.env.MONGODB_URI)
+    .then(() => startListening())
+    .catch((err) => {
+      console.error("Failed to start server:", err.message);
+      console.warn(
+        "Starting server without database connection (degraded mode)",
+      );
+      try {
+        startListening();
+      } catch (e) {
+        console.error("Unable to start HTTP server:", e.message);
+        process.exit(1);
+      }
+    });
+} else {
+  // Serverless cold start: connect DB eagerly without starting a listener
+  connectDB(process.env.MONGODB_URI).catch((err) =>
+    console.error("DB connection error on cold start:", err.message),
+  );
+}

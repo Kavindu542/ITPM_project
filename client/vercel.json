@@ -15,11 +15,11 @@
   "installCommand": "npm install",
   "framework": "vite",
   "env": {
-    "VITE_API_URL": "https://itpm-project-orpin.vercel.app/api"
+    "VITE_API_URL": "https://itpm-project-orpin.vercel.app"
   },
   "build": {
     "env": {
-      "VITE_API_URL": "https://itpm-project-orpin.vercel.app/api"
+      "VITE_API_URL": "https://itpm-project-orpin.vercel.app"
     }
   }
 }
