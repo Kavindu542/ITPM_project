@@ -16,7 +16,9 @@ export default function HostelLaundryDashboard({ user, onLoggedOut }) {
   const [bookingsLoading, setBookingsLoading] = React.useState(false);
   const [approvingBookingId, setApprovingBookingId] = React.useState('');
   const [deletingBookingId, setDeletingBookingId] = React.useState('');
+  const [updatingReadyBookingId, setUpdatingReadyBookingId] = React.useState('');
   const [bookings, setBookings] = React.useState([]);
+  const [readyStatusByBooking, setReadyStatusByBooking] = React.useState({});
   const [form, setForm] = React.useState({
     logoUrl: '',
     name: '',
@@ -70,9 +72,25 @@ export default function HostelLaundryDashboard({ user, onLoggedOut }) {
   };
 
   React.useEffect(() => {
-    if (activeSection !== 'view-laundry') return;
+    if (!['view-laundry', 'send-info'].includes(activeSection)) return;
     loadLaundryBookings();
   }, [activeSection]);
+
+  React.useEffect(() => {
+    if (!Array.isArray(bookings) || bookings.length === 0) return;
+    setReadyStatusByBooking((prev) => {
+      const next = { ...prev };
+      bookings.forEach((booking) => {
+        next[booking._id] = booking.ready ? 'yes' : 'no';
+      });
+      return next;
+    });
+  }, [bookings]);
+
+  const approvedBookings = React.useMemo(
+    () => bookings.filter((booking) => ['accepted', 'completed'].includes(String(booking.status))),
+    [bookings]
+  );
 
   const handlePendingApproval = async (bookingId) => {
     try {
@@ -100,6 +118,21 @@ export default function HostelLaundryDashboard({ user, onLoggedOut }) {
       setError(e?.message || 'Failed to delete booking');
     } finally {
       setDeletingBookingId('');
+    }
+  };
+
+  const handleReadyChange = async (bookingId, value) => {
+    const ready = value === 'yes';
+    setReadyStatusByBooking((prev) => ({ ...prev, [bookingId]: value }));
+    try {
+      setUpdatingReadyBookingId(bookingId);
+      setError('');
+      await hostelService.updateLaundryBookingReady(bookingId, ready);
+      await loadLaundryBookings();
+    } catch (e) {
+      setError(e?.message || 'Failed to update ready info');
+    } finally {
+      setUpdatingReadyBookingId('');
     }
   };
 
@@ -222,6 +255,17 @@ export default function HostelLaundryDashboard({ user, onLoggedOut }) {
               <Shirt size={18} />
               <span className="font-medium text-sm">View Laundry</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection('send-info')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm ${activeSection === 'send-info'
+                ? 'bg-blue-600 text-white border border-blue-500'
+                : 'text-blue-100 hover:bg-blue-800 border border-transparent'
+                }`}
+            >
+              <Shirt size={18} />
+              <span className="font-medium text-sm">Send Info</span>
+            </button>
             <Link
               to="/admin/hostel"
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm text-blue-100 hover:bg-blue-800 border border-transparent"
@@ -236,7 +280,11 @@ export default function HostelLaundryDashboard({ user, onLoggedOut }) {
           <div className="mx-auto max-w-7xl">
             <div className="mb-8">
               <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                {activeSection === 'view-laundry' ? 'View Laundry Bookings' : 'Laundry Dashboard'}
+                {activeSection === 'view-laundry'
+                  ? 'View Laundry Bookings'
+                  : activeSection === 'send-info'
+                    ? 'Send Info'
+                    : 'Laundry Dashboard'}
               </h2>
               <p className="mt-2 text-sm text-gray-500">
                 Signed in as <span className="font-medium text-blue-600">{user?.email}</span>
@@ -487,6 +535,79 @@ export default function HostelLaundryDashboard({ user, onLoggedOut }) {
                                     {deletingBookingId === booking._id ? 'Deleting...' : 'Delete'}
                                   </button>
                                 </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {activeSection === 'send-info' && (
+                <>
+                  <div className="mb-6 border-b border-gray-100 pb-4 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Approved Laundry Bookings</h3>
+                      <p className="text-sm text-gray-500 mt-1">Send readiness info for approved student bookings.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={loadLaundryBookings}
+                      className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      Refresh
+                    </button>
+                  </div>
+
+                  {bookingsLoading ? (
+                    <div className="text-sm text-gray-600">Loading bookings...</div>
+                  ) : approvedBookings.length === 0 ? (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                      No approved laundry bookings yet.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-gray-600 border-b border-gray-200">
+                            <th className="px-3 py-3 font-semibold">Student Name</th>
+                            <th className="px-3 py-3 font-semibold">Contact Number</th>
+                            <th className="px-3 py-3 font-semibold">Floor</th>
+                            <th className="px-3 py-3 font-semibold">Room Number</th>
+                            <th className="px-3 py-3 font-semibold">Service</th>
+                            <th className="px-3 py-3 font-semibold">Approval Status</th>
+                            <th className="px-3 py-3 font-semibold">Ready</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {approvedBookings.map((booking) => (
+                            <tr key={booking._id} className="text-gray-800 hover:bg-gray-50">
+                              <td className="px-3 py-3">{booking.studentName || '-'}</td>
+                              <td className="px-3 py-3">{booking.contactNumber || '-'}</td>
+                              <td className="px-3 py-3">{booking.floor || '-'}</td>
+                              <td className="px-3 py-3">{booking.roomNumber || '-'}</td>
+                              <td className="px-3 py-3 capitalize">{booking.serviceType === 'dry-cleaning' ? 'Dry Cleaning' : booking.serviceType}</td>
+                              <td className="px-3 py-3">
+                                <span className={`inline-flex rounded-md px-2 py-1 text-xs font-medium border ${
+                                  booking.status === 'completed'
+                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                    : 'bg-green-50 border-green-200 text-green-700'
+                                }`}>
+                                  {booking.status === 'completed' ? 'Completed' : 'Approved'}
+                                </span>
+                              </td>
+                              <td className="px-3 py-3">
+                                <select
+                                  value={readyStatusByBooking[booking._id] || 'no'}
+                                  onChange={(e) => handleReadyChange(booking._id, e.target.value)}
+                                  disabled={updatingReadyBookingId === booking._id}
+                                  className="rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-700"
+                                >
+                                  <option value="yes">Yes</option>
+                                  <option value="no">No</option>
+                                </select>
                               </td>
                             </tr>
                           ))}

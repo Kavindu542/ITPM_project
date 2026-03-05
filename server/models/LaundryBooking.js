@@ -14,6 +14,11 @@ const LaundryBookingSchema = new mongoose.Schema(
       enum: ['washing', 'dry-cleaning', 'ironing'],
       required: true,
     },
+    ready: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     notes: { type: String, default: '', trim: true },
     status: {
       type: String,

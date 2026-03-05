@@ -197,4 +197,14 @@ export const hostelService = {
       throw error.response?.data || error;
     }
   },
+
+  // Laundry admin: Update ready info (yes/no)
+  updateLaundryBookingReady: async (bookingId, ready) => {
+    try {
+      const response = await api.put(`/hostel/admin/laundry/bookings/${bookingId}/ready`, { ready });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
 };

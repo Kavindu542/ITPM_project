@@ -234,6 +234,11 @@ export default function Hostel({ user, onLoggedOut }) {
 
   const statusLabel = (status) => (status === 'accepted' ? 'Approved' : String(status || 'Pending'));
 
+  const readyBookings = React.useMemo(
+    () => laundryBookings.filter((booking) => Boolean(booking?.ready)),
+    [laundryBookings]
+  );
+
   const renderLaundryCard = (shop, compact = false) => {
     const latestBooking = getLatestBookingForShop(shop._id);
     const services = Array.isArray(shop.availableServices) ? shop.availableServices : [];
@@ -802,6 +807,15 @@ export default function Hostel({ user, onLoggedOut }) {
                       </button>
                     </div>
 
+                    {readyBookings.length > 0 && (
+                      <div className="mb-4 rounded-xl border border-green-200 bg-green-50 p-4">
+                        <div className="text-sm font-semibold text-green-800">Your clothes are ready!</div>
+                        <div className="mt-1 text-xs text-green-700">
+                          {readyBookings.length} laundry booking{readyBookings.length > 1 ? 's are' : ' is'} marked ready for pickup.
+                        </div>
+                      </div>
+                    )}
+
                     {laundryLoading ? (
                       <div className="text-sm text-gray-500">Loading laundry services...</div>
                     ) : laundryShops.length === 0 ? (
@@ -853,6 +867,14 @@ export default function Hostel({ user, onLoggedOut }) {
                 </div>
 
                 <div className="p-6">
+                  {readyBookings.length > 0 && (
+                    <div className="mb-4 rounded-xl border border-green-200 bg-green-50 p-4">
+                      <div className="text-sm font-semibold text-green-800">Your clothes are ready!</div>
+                      <div className="mt-1 text-xs text-green-700">
+                        {readyBookings.length} laundry booking{readyBookings.length > 1 ? 's are' : ' is'} marked ready for pickup.
+                      </div>
+                    </div>
+                  )}
                   {laundryError && (
                     <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                       {laundryError}
