@@ -117,6 +117,15 @@ export default function Navbar({ user, onLoggedOut, onProfile }) {
 
                     {/* User & Actions */}
                     <div className="flex items-center gap-3">
+                        {user?.role === 'club_leader' ? (
+                            <Link
+                                to="/leader/dashboard"
+                                className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-indigo-200 bg-white text-sm font-semibold text-indigo-700 hover:bg-indigo-50 whitespace-nowrap"
+                            >
+                                Leader Dashboard
+                                <span aria-hidden="true">→</span>
+                            </Link>
+                        ) : null}
                         <UserMenu
                             user={user}
                             onLogout={() => onLoggedOut?.('/admin/signin')}

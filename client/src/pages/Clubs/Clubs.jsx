@@ -1,10 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Users2 } from 'lucide-react';
+import { ArrowLeft, CalendarDays, FileText, Home, Menu, Settings, Users, Users2, X } from 'lucide-react';
 import { clubService } from '../../services/clubService';
 
 export default function Clubs({ user, onLoggedOut }) {
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState('dashboard');
   const currentUserId = user?.id || user?._id;
   const roleNorm = String(user?.role || '')
     .trim()
@@ -75,6 +77,12 @@ export default function Clubs({ user, onLoggedOut }) {
     };
   }, []);
 
+  React.useEffect(() => {
+    if (!hasMembership && activeTab === 'meetings') {
+      setActiveTab('dashboard');
+    }
+  }, [activeTab, hasMembership]);
+
   const openApply = (club) => {
     setApplyError('');
     setApplySuccess('');
@@ -140,169 +148,368 @@ export default function Clubs({ user, onLoggedOut }) {
     }
   };
 
+  const menuItems = React.useMemo(() => {
+    const items = [
+      {
+        icon: Home,
+        label: 'Dashboard',
+        description: 'Club overview',
+        onClick: () => setActiveTab('dashboard'),
+      },
+      {
+        icon: FileText,
+        label: 'Apply for a Club',
+        description: 'Submit membership application',
+        onClick: () => setActiveTab('apply'),
+      },
+      {
+        icon: CalendarDays,
+        label: 'Events',
+        description: 'Browse club events',
+        onClick: () => setActiveTab('events'),
+      },
+    ];
+
+    if (hasMembership) {
+      items.splice(2, 0, {
+        icon: Users2,
+        label: 'My Club Meetings',
+        description: 'Visible to club members',
+        onClick: () => setActiveTab('meetings'),
+      });
+    }
+
+    return items;
+  }, [hasMembership]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans">
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
-              onClick={() => navigate('/')}
-            >
-              <ArrowLeft className="h-4 w-4 text-gray-700" />
-              <span className="font-medium text-gray-800">Back</span>
-            </button>
+      <div className="flex h-screen overflow-hidden">
+        {/* Sidebar */}
+        <div
+          className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transition-transform duration-300 md:translate-x-0 md:static`}
+        >
+          <div className="flex flex-col h-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-pink-50 rounded-lg">
+                  <Users className="h-5 w-5 text-pink-600" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-gray-900">Clubs</h1>
+                  <p className="text-xs text-gray-500">Student Module</p>
+                </div>
+              </div>
+            </div>
+
+            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+              {menuItems.map((item, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    item.onClick();
+                    setSidebarOpen(false);
+                  }}
+                  className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 text-left transition-colors"
+                >
+                  <item.icon className="h-5 w-5 text-gray-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="font-medium text-gray-900 text-sm">{item.label}</div>
+                    <div className="text-xs text-gray-500">{item.description}</div>
+                  </div>
+                </button>
+              ))}
+            </nav>
+
+            <div className="p-4 border-t border-gray-200 space-y-2">
+              <button
+                type="button"
+                onClick={() => navigate('/profile')}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
+              >
+                <Settings className="h-4 w-4" />
+                <span className="text-sm font-medium">Settings</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <div className="p-6 border-b border-gray-200 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2 bg-pink-50 rounded-lg">
-                <Users className="h-5 w-5 text-pink-600" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-2xl font-bold text-gray-900 truncate">Clubs Dashboard</h1>
-                <p className="text-sm text-gray-500">Events and member updates</p>
-              </div>
-            </div>
-
-            {user?.role === 'club_leader' ? (
+        {/* Main */}
+        <div className="flex-1 overflow-auto">
+          <div className="max-w-6xl mx-auto p-6">
+            <div className="flex items-center justify-between mb-6">
               <button
                 type="button"
-                onClick={() => navigate('/leader/dashboard')}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-indigo-200 bg-white text-sm font-semibold text-indigo-700 hover:bg-indigo-50 whitespace-nowrap"
+                className="md:hidden inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
               >
-                Leader Dashboard
-                <span aria-hidden="true">→</span>
+                {sidebarOpen ? (
+                  <X className="h-4 w-4 text-gray-700" />
+                ) : (
+                  <Menu className="h-4 w-4 text-gray-700" />
+                )}
               </button>
-            ) : null}
-          </div>
-          <div className="p-6">
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">Apply for a Club</h2>
-                  <p className="text-sm text-gray-500">Choose a club and submit your membership application</p>
-                </div>
-                {!canApply ? (
-                  <div className="text-xs text-gray-500">Only students and club leaders can apply.</div>
-                ) : null}
-              </div>
 
-              {feedLoading ? (
-                <div className="text-gray-500">Loading…</div>
-              ) : clubs.length === 0 ? (
-                <div className="text-gray-500 text-sm">No active clubs found.</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {clubs.map((c) => {
-                    const isLeaderOfClub = !!(currentUserId && c.leader?.id && String(c.leader.id) === String(currentUserId));
-                    const disabled = c.alreadyMember || c.alreadyApplied || !canApply || isLeaderOfClub;
-                    const label = isLeaderOfClub
-                      ? 'Leader'
-                      : c.alreadyMember
-                        ? 'Member'
-                        : c.alreadyApplied
-                          ? 'Applied'
-                          : 'Apply';
-                    return (
-                      <div key={c.id} className="rounded-2xl border border-gray-200 bg-white p-5">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0">
-                            <div className="text-base font-bold text-gray-900 truncate">{c.name}</div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              Leader: {c.leader?.name || 'Not assigned'}
+              <button
+                type="button"
+                className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50"
+                onClick={() => navigate('/')}
+              >
+                <ArrowLeft className="h-4 w-4 text-gray-700" />
+                <span className="font-medium text-gray-800">Back</span>
+              </button>
+            </div>
+
+            {activeTab === 'dashboard' ? (
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
+                <div className="p-6 border-b border-gray-200 flex items-center gap-3">
+                  <div className="p-2 bg-pink-50 rounded-lg">
+                    <Users className="h-5 w-5 text-pink-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Clubs Dashboard</h1>
+                    <p className="text-sm text-gray-500">Events and member updates</p>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <div className="text-3xl font-bold text-blue-600 mb-1">{hasMembership ? 'Active' : 'None'}</div>
+                      <div className="text-sm text-gray-600">Membership Status</div>
+                    </div>
+                    <div className="p-4 bg-emerald-50 rounded-lg">
+                      <div className="text-3xl font-bold text-emerald-600 mb-1">{Array.isArray(myMeetings) ? myMeetings.length : 0}</div>
+                      <div className="text-sm text-gray-600">My Meetings</div>
+                    </div>
+                    <div className="p-4 bg-amber-50 rounded-lg">
+                      <div className="text-3xl font-bold text-amber-600 mb-1">{Array.isArray(publicEvents) ? publicEvents.length : 0}</div>
+                      <div className="text-sm text-gray-600">Public Events</div>
+                    </div>
+                    <div className="p-4 bg-purple-50 rounded-lg">
+                      <div className="text-3xl font-bold text-purple-600 mb-1">{Array.isArray(clubs) ? clubs.length : 0}</div>
+                      <div className="text-sm text-gray-600">Available Clubs</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {hasMembership ? (
+                      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                        <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-purple-50 rounded-lg">
+                              <Users2 className="h-5 w-5 text-purple-600" />
                             </div>
-                            {c.description ? (
-                              <div className="text-sm text-gray-600 mt-2 line-clamp-2">{c.description}</div>
-                            ) : null}
+                            <div>
+                              <h2 className="text-base font-bold text-gray-900">My Club Meetings</h2>
+                              <p className="text-sm text-gray-500">Only visible to club members</p>
+                            </div>
                           </div>
                           <button
                             type="button"
-                            disabled={disabled}
-                            onClick={() => openApply(c)}
-                            className="shrink-0 inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50 disabled:opacity-50 disabled:hover:bg-white"
+                            onClick={() => setActiveTab('meetings')}
+                            className="text-sm font-semibold text-indigo-700 hover:underline"
                           >
-                            {label}
+                            View all
                           </button>
                         </div>
+                        <div className="p-5">
+                          {feedLoading ? (
+                            <div className="text-gray-500">Loading…</div>
+                          ) : myMeetings.length === 0 ? (
+                            <div className="text-gray-500 text-sm">No meetings scheduled.</div>
+                          ) : (
+                            <ul className="divide-y divide-gray-200">
+                              {myMeetings.slice(0, 4).map((m) => (
+                                <li key={m.id} className="py-3">
+                                  <div className="font-medium text-gray-900">{m.title}</div>
+                                  <div className="text-xs text-gray-600">
+                                    {new Date(m.date).toLocaleString()} • {m.venue || 'TBD'} • {m.club?.name || 'Club'}
+                                  </div>
+                                  {m.description ? <div className="text-xs text-gray-500 mt-1">{m.description}</div> : null}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                    ) : null}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {hasMembership ? (
-                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                  <div className="p-5 border-b border-gray-200 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-purple-50 rounded-lg">
-                        <Users2 className="h-5 w-5 text-purple-600" />
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                      <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-pink-50 rounded-lg">
+                            <CalendarDays className="h-5 w-5 text-pink-600" />
+                          </div>
+                          <div>
+                            <h2 className="text-base font-bold text-gray-900">Campus Club Events</h2>
+                            <p className="text-sm text-gray-500">Public events open to everyone</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('events')}
+                          className="text-sm font-semibold text-indigo-700 hover:underline"
+                        >
+                          View all
+                        </button>
                       </div>
-                      <div>
-                        <h2 className="text-base font-bold text-gray-900">My Club Meetings</h2>
-                        <p className="text-sm text-gray-500">Only visible to club members</p>
+                      <div className="p-5">
+                        {feedLoading ? (
+                          <div className="text-gray-500">Loading…</div>
+                        ) : publicEvents.length === 0 ? (
+                          <div className="text-gray-500 text-sm">No public events yet.</div>
+                        ) : (
+                          <ul className="divide-y divide-gray-200">
+                            {publicEvents.slice(0, 4).map((e) => (
+                              <li key={e.id} className="py-3">
+                                <div className="font-medium text-gray-900">{e.name}</div>
+                                <div className="text-xs text-gray-600">
+                                  {new Date(e.date).toLocaleString()} • {e.venue || 'TBD'} • {e.club?.name || 'Club'}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
                     </div>
                   </div>
-                  <div className="p-5">
-                    {feedLoading ? (
-                      <div className="text-gray-500">Loading…</div>
-                    ) : myMeetings.length === 0 ? (
-                      <div className="text-gray-500 text-sm">No meetings scheduled.</div>
-                    ) : (
-                      <ul className="divide-y divide-gray-200">
-                        {myMeetings.slice(0, 6).map((m) => (
-                          <li key={m.id} className="py-3">
-                            <div className="font-medium text-gray-900">{m.title}</div>
-                            <div className="text-xs text-gray-600">
-                              {new Date(m.date).toLocaleString()} • {m.venue || 'TBD'} • {m.club?.name || 'Club'}
-                            </div>
-                            {m.description ? <div className="text-xs text-gray-500 mt-1">{m.description}</div> : null}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
                 </div>
-              ) : null}
+              </div>
+            ) : null}
 
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <div className="p-5 border-b border-gray-200 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-pink-50 rounded-lg">
-                      <Users2 className="h-5 w-5 text-pink-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-bold text-gray-900">Campus Club Events</h2>
-                      <p className="text-sm text-gray-500">Public events open to everyone</p>
-                    </div>
+            {activeTab === 'apply' ? (
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
+                <div className="p-6 border-b border-gray-200 flex items-center gap-3">
+                  <div className="p-2 bg-indigo-50 rounded-lg">
+                    <FileText className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Apply for a Club</h1>
+                    <p className="text-sm text-gray-500">Choose a club and submit your membership application</p>
                   </div>
                 </div>
-                <div className="p-5">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <div />
+                    {!canApply ? (
+                      <div className="text-xs text-gray-500">Only students and club leaders can apply.</div>
+                    ) : null}
+                  </div>
+
                   {feedLoading ? (
                     <div className="text-gray-500">Loading…</div>
-                  ) : publicEvents.length === 0 ? (
-                    <div className="text-gray-500 text-sm">No public events yet.</div>
+                  ) : clubs.length === 0 ? (
+                    <div className="text-gray-500 text-sm">No active clubs found.</div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {clubs.map((c) => {
+                        const isLeaderOfClub = !!(currentUserId && c.leader?.id && String(c.leader.id) === String(currentUserId));
+                        const disabled = c.alreadyMember || c.alreadyApplied || !canApply || isLeaderOfClub;
+                        const label = isLeaderOfClub
+                          ? 'Leader'
+                          : c.alreadyMember
+                            ? 'Member'
+                            : c.alreadyApplied
+                              ? 'Applied'
+                              : 'Apply';
+                        return (
+                          <div key={c.id} className="rounded-2xl border border-gray-200 bg-white p-5">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="min-w-0">
+                                <div className="text-base font-bold text-gray-900 truncate">{c.name}</div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Leader: {c.leader?.name || 'Not assigned'}
+                                </div>
+                                {c.description ? (
+                                  <div className="text-sm text-gray-600 mt-2 line-clamp-2">{c.description}</div>
+                                ) : null}
+                              </div>
+                              <button
+                                type="button"
+                                disabled={disabled}
+                                onClick={() => openApply(c)}
+                                className="shrink-0 inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50 disabled:opacity-50 disabled:hover:bg-white"
+                              >
+                                {label}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
+
+            {activeTab === 'meetings' && hasMembership ? (
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
+                <div className="p-6 border-b border-gray-200 flex items-center gap-3">
+                  <div className="p-2 bg-purple-50 rounded-lg">
+                    <Users2 className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">My Club Meetings</h1>
+                    <p className="text-sm text-gray-500">Only visible to club members</p>
+                  </div>
+                </div>
+                <div className="p-6">
+                  {feedLoading ? (
+                    <div className="text-gray-500">Loading…</div>
+                  ) : myMeetings.length === 0 ? (
+                    <div className="text-gray-500 text-sm">No meetings scheduled.</div>
                   ) : (
                     <ul className="divide-y divide-gray-200">
-                      {publicEvents.slice(0, 6).map((e) => (
-                        <li key={e.id} className="py-3">
-                          <div className="font-medium text-gray-900">{e.name}</div>
+                      {myMeetings.map((m) => (
+                        <li key={m.id} className="py-4">
+                          <div className="font-medium text-gray-900">{m.title}</div>
                           <div className="text-xs text-gray-600">
-                            {new Date(e.date).toLocaleString()} • {e.venue || 'TBD'} • {e.club?.name || 'Club'}
+                            {new Date(m.date).toLocaleString()} • {m.venue || 'TBD'} • {m.club?.name || 'Club'}
                           </div>
+                          {m.description ? <div className="text-sm text-gray-600 mt-2">{m.description}</div> : null}
                         </li>
                       ))}
                     </ul>
                   )}
                 </div>
               </div>
-            </div>
+            ) : null}
+
+            {activeTab === 'events' ? (
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
+                <div className="p-6 border-b border-gray-200 flex items-center gap-3">
+                  <div className="p-2 bg-pink-50 rounded-lg">
+                    <CalendarDays className="h-5 w-5 text-pink-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Events</h1>
+                    <p className="text-sm text-gray-500">Public events open to everyone</p>
+                  </div>
+                </div>
+                <div className="p-6">
+                  {feedLoading ? (
+                    <div className="text-gray-500">Loading…</div>
+                  ) : publicEvents.length === 0 ? (
+                    <div className="text-gray-500 text-sm">No public events yet.</div>
+                  ) : (
+                    <ul className="divide-y divide-gray-200">
+                      {publicEvents.map((e) => (
+                        <li key={e.id} className="py-4">
+                          <div className="font-medium text-gray-900">{e.name}</div>
+                          <div className="text-xs text-gray-600">
+                            {new Date(e.date).toLocaleString()} • {e.venue || 'TBD'} • {e.club?.name || 'Club'}
+                          </div>
+                          {e.description ? <div className="text-sm text-gray-600 mt-2">{e.description}</div> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
