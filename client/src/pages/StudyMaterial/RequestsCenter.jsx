@@ -26,6 +26,7 @@ export default function RequestsCenter({ user, onLoggedOut }) {
   const [error, setError] = React.useState('');
   const [items, setItems] = React.useState([]);
   const [history, setHistory] = React.useState([]);
+  const [requestsTab, setRequestsTab] = React.useState('open');
 
   const [form, setForm] = React.useState({
     title: '',
@@ -123,6 +124,11 @@ export default function RequestsCenter({ user, onLoggedOut }) {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
+  const openRequests = React.useMemo(
+    () => items.filter((i) => i.status !== 'completed' && i.status !== 'rejected'),
+    [items],
+  );
+
   return (
     <>
       <div className="h-[calc(100vh-6rem)] bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans overflow-auto no-scrollbar lg:overflow-hidden">
@@ -144,13 +150,13 @@ export default function RequestsCenter({ user, onLoggedOut }) {
               <StudyMaterialSidebar user={user} />
             </div>
             {/* Content */}
-            <div className="lg:col-span-11 lg:h-full lg:min-h-0 lg:overflow-y-auto no-scrollbar">
-              {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
-              <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <h1 className="text-2xl font-bold text-gray-900">Request Missing Resources</h1>
-                <p className="text-sm text-gray-600 mt-1">Submit what is missing, upvote similar requests, and track status updates.</p>
-                <div className="mt-5 flex items-center justify-between gap-3 flex-wrap">
-                  <div className="text-sm text-gray-600">Create a request; others can upvote it.</div>
+            <div className="lg:col-span-11 lg:h-full lg:min-h-0">
+              <div className="lg:h-full lg:min-h-0 bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm flex flex-col">
+                <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <div className="text-sm font-bold text-gray-900">Missing Resource Requests</div>
+                    <div className="text-xs text-gray-500 mt-1">Submit missing items, upvote similar requests, and track status.</div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setRequestModalOpen(true)}
@@ -159,106 +165,139 @@ export default function RequestsCenter({ user, onLoggedOut }) {
                     New request
                   </button>
                 </div>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                  <div className="px-5 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-bold text-gray-900">Open Requests (Upvote)</h2>
+
+                {error ? <div className="p-5 text-sm text-red-700 bg-red-50 border-b border-red-100">{error}</div> : null}
+
+                <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="text-sm text-gray-600">
+                    {requestsTab === 'open' ? 'Browse open requests and upvote what you need.' : 'Track your submitted requests and outcomes.'}
                   </div>
-                  <div className="divide-y divide-gray-200 max-h-[520px] overflow-auto no-scrollbar">
-                    {items.filter((i) => i.status !== 'completed' && i.status !== 'rejected').map((r) => (
-                      <div key={r.id} className="p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="font-semibold text-gray-900">{r.title}</div>
-                            <div className="text-xs text-gray-500 mt-0.5">{r.moduleCode || '—'} {r.courseCode ? `• ${r.courseCode}` : ''}</div>
-                          </div>
-                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${statusClass(r.status)}`}>
-                            {r.status}
-                          </span>
-                        </div>
-                        <p className="mt-2 text-sm text-gray-700">{r.description}</p>
-                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                          <span className="inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" />{new Date(r.createdAt).toLocaleString()}</span>
-                          {r.highDemand ? <span className="px-2 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-700 font-semibold">High demand</span> : null}
-                          <span>Demand: {r.demandCount}</span>
-                          <span>Upvotes: {r.upvoteCount}</span>
-                        </div>
-                        {r.status === 'completed' && getMaterialFromRequest(r) ? (
-                          <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => openFulfilledMaterial(r)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-200 bg-green-50 text-sm font-semibold text-green-700 hover:bg-green-100"
-                            >
-                              <ArrowUpRight className="h-4 w-4" />
-                              Open Document
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => downloadFulfilledMaterial(r)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-sm font-semibold text-blue-700 hover:bg-blue-100"
-                            >
-                              <Download className="h-4 w-4" />
-                              Download Document
-                            </button>
-                          </div>
-                        ) : null}
-                        {!r.isRequester ? (
-                          <button
-                            type="button"
-                            onClick={() => upvote(r.id)}
-                            className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                          >
-                            <ThumbsUp className="h-4 w-4" />
-                            {r.upvoted ? 'Upvoted' : 'Upvote'}
-                          </button>
-                        ) : null}
-                      </div>
-                    ))}
-                    {!loading && items.length === 0 ? <div className="p-6 text-sm text-gray-600">No requests yet.</div> : null}
+                  <div className="inline-flex rounded-2xl bg-gray-100 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setRequestsTab('open')}
+                      className={`px-4 py-2 rounded-2xl text-sm font-semibold transition-colors ${
+                        requestsTab === 'open'
+                          ? 'bg-gradient-to-r from-[#25f194] to-blue-600 text-gray-900'
+                          : 'bg-white text-gray-700'
+                      }`}
+                    >
+                      Open requests
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRequestsTab('history')}
+                      className={`px-4 py-2 rounded-2xl text-sm font-semibold transition-colors ${
+                        requestsTab === 'history'
+                          ? 'bg-gradient-to-r from-[#25f194] to-blue-600 text-gray-900'
+                          : 'bg-white text-gray-700'
+                      }`}
+                    >
+                      My history
+                    </button>
                   </div>
                 </div>
-                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                  <div className="px-5 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-bold text-gray-900">My Request History</h2>
-                  </div>
-                  <div className="divide-y divide-gray-200 max-h-[520px] overflow-auto no-scrollbar">
-                    {history.map((r) => (
-                      <div key={r.id} className="p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="font-semibold text-gray-900">{r.title}</div>
-                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${statusClass(r.status)}`}>
-                            {r.status}
-                          </span>
+
+                <div className="flex-1 min-h-0 overflow-auto no-scrollbar">
+                  <div className="p-5">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {requestsTab === 'open'
+                        ? openRequests.map((r) => (
+                            <div key={r.id} className="rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-gray-900 truncate">{r.title}</div>
+                                  <div className="text-xs text-gray-500 mt-0.5">
+                                    {r.moduleCode || '—'} {r.courseCode ? `• ${r.courseCode}` : ''}
+                                  </div>
+                                </div>
+                                <span className={`shrink-0 inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${statusClass(r.status)}`}>
+                                  {r.status}
+                                </span>
+                              </div>
+
+                              <p className="mt-2 text-sm text-gray-700 line-clamp-3">{r.description}</p>
+
+                              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                <span className="inline-flex items-center gap-1">
+                                  <Clock3 className="h-3.5 w-3.5" />
+                                  {new Date(r.createdAt).toLocaleString()}
+                                </span>
+                                {r.highDemand ? (
+                                  <span className="px-2 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-700 font-semibold">
+                                    High demand
+                                  </span>
+                                ) : null}
+                                <span>Demand: {r.demandCount}</span>
+                                <span>Upvotes: {r.upvoteCount}</span>
+                              </div>
+
+                              {!r.isRequester ? (
+                                <button
+                                  type="button"
+                                  onClick={() => upvote(r.id)}
+                                  className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                                >
+                                  <ThumbsUp className="h-4 w-4" />
+                                  {r.upvoted ? 'Upvoted' : 'Upvote'}
+                                </button>
+                              ) : null}
+                            </div>
+                          ))
+                        : history.map((r) => (
+                            <div key={r.id} className="rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="font-semibold text-gray-900 min-w-0 truncate">{r.title}</div>
+                                <span className={`shrink-0 inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${statusClass(r.status)}`}>
+                                  {r.status}
+                                </span>
+                              </div>
+
+                              <p className="mt-2 text-sm text-gray-700 line-clamp-3">{r.description}</p>
+                              <div className="mt-2 text-xs text-gray-500">Submitted: {new Date(r.createdAt).toLocaleString()}</div>
+                              {r.fulfilledAt ? (
+                                <div className="mt-1 text-xs text-green-700">Completed: {new Date(r.fulfilledAt).toLocaleString()}</div>
+                              ) : null}
+                              {r.feedback ? (
+                                <div className="mt-2 text-xs text-gray-700">
+                                  <span className="font-semibold">Feedback:</span> {r.feedback}
+                                </div>
+                              ) : null}
+
+                              {r.status === 'completed' && getMaterialFromRequest(r) ? (
+                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => openFulfilledMaterial(r)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-200 bg-green-50 text-sm font-semibold text-green-700 hover:bg-green-100"
+                                  >
+                                    <ArrowUpRight className="h-4 w-4" />
+                                    Open Document
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => downloadFulfilledMaterial(r)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                    Download Document
+                                  </button>
+                                </div>
+                              ) : null}
+                            </div>
+                          ))}
+
+                      {!loading && requestsTab === 'open' && openRequests.length === 0 ? (
+                        <div className="col-span-full rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">
+                          No requests yet.
                         </div>
-                        <p className="mt-2 text-sm text-gray-700">{r.description}</p>
-                        <div className="mt-2 text-xs text-gray-500">Submitted: {new Date(r.createdAt).toLocaleString()}</div>
-                        {r.fulfilledAt ? <div className="mt-1 text-xs text-green-700">Completed: {new Date(r.fulfilledAt).toLocaleString()}</div> : null}
-                        {r.feedback ? <div className="mt-2 text-xs text-gray-700"><span className="font-semibold">Feedback:</span> {r.feedback}</div> : null}
-                        {r.status === 'completed' && getMaterialFromRequest(r) ? (
-                          <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => openFulfilledMaterial(r)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-200 bg-green-50 text-sm font-semibold text-green-700 hover:bg-green-100"
-                            >
-                              <ArrowUpRight className="h-4 w-4" />
-                              Open Document
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => downloadFulfilledMaterial(r)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-sm font-semibold text-blue-700 hover:bg-blue-100"
-                            >
-                              <Download className="h-4 w-4" />
-                              Download Document
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                    ))}
-                    {!loading && history.length === 0 ? <div className="p-6 text-sm text-gray-600">No history found.</div> : null}
+                      ) : null}
+                      {!loading && requestsTab === 'history' && history.length === 0 ? (
+                        <div className="col-span-full rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">
+                          No history found.
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </div>

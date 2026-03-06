@@ -21,6 +21,7 @@ export default function CentralUploadAndMaterialsPage() {
     subject: '',
     semester: '',
     category: 'notes',
+    suggested: false,
     status: 'published',
     allowedSemesters: '',
     allowedModules: '',
@@ -77,6 +78,10 @@ export default function CentralUploadAndMaterialsPage() {
 
     Object.entries(uploadMeta).forEach(([k, v]) => {
       if (v === '' || v === null || v === undefined) return;
+      if (k === 'suggested') {
+        fd.append('suggested', String(v));
+        return;
+      }
       fd.append(k, v);
     });
 
@@ -84,7 +89,7 @@ export default function CentralUploadAndMaterialsPage() {
     try {
       await studyMaterialService.adminUpload(fd);
       setUploadFiles([]);
-      setUploadMeta((p) => ({ ...p, title: '', description: '' }));
+      setUploadMeta((p) => ({ ...p, title: '', description: '', suggested: false }));
       setIsUploadOpen(false);
       await load();
     } catch (e2) {
@@ -307,6 +312,17 @@ export default function CentralUploadAndMaterialsPage() {
                       </option>
                     ))}
                   </select>
+                  <select
+                    value={uploadMeta.category}
+                    onChange={(e) => setUploadMeta((p) => ({ ...p, category: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
+                  >
+                    <option value="notes">Lecture Notes</option>
+                    <option value="tutes">Tutorials</option>
+                    <option value="papers">Past Papers</option>
+                    <option value="links">Useful Links</option>
+                    <option value="other">Other</option>
+                  </select>
                   <textarea
                     value={uploadMeta.description}
                     onChange={(e) => setUploadMeta((p) => ({ ...p, description: e.target.value }))}
@@ -319,6 +335,14 @@ export default function CentralUploadAndMaterialsPage() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="space-y-2">
                     <div className="text-xs font-semibold text-gray-600">Select files (bulk) or folder</div>
+                    <label className="text-sm text-gray-700 inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={!!uploadMeta.suggested}
+                        onChange={(e) => setUploadMeta((p) => ({ ...p, suggested: e.target.checked }))}
+                      />
+                      Suggested
+                    </label>
                     <input
                       type="file"
                       multiple

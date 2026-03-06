@@ -173,37 +173,13 @@ export default function ForumSupport({ user, onLoggedOut }) {
             <StudyMaterialSidebar user={user} />
           </div>
           {/* Content */}
-          <div className="lg:col-span-11 lg:h-full lg:min-h-0 lg:overflow-y-auto no-scrollbar">
-            {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Academic Support Forum</h1>
-              <p className="text-sm text-gray-600 mt-1">Post questions, answer peers, vote useful replies, and subscribe for updates.</p>
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search threads"
-                  className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-                />
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-                >
-                  <option value="">All categories</option>
-                  {categories.map((c) => (
-                    <option key={c._id || c.slug} value={c.slug}>{c.name}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={load}
-                  className="rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800"
-                >
-                  Search
-                </button>
-              </div>
-              <div className="mt-5">
+          <div className="lg:col-span-11 lg:h-full lg:min-h-0">
+            <div className="lg:h-full lg:min-h-0 bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm flex flex-col">
+              <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <div className="text-sm font-bold text-gray-900">Academic Support Forum</div>
+                  <div className="text-xs text-gray-500 mt-1">Ask questions, reply, vote, and subscribe for updates.</div>
+                </div>
                 <button
                   type="button"
                   className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white px-4 py-2 text-sm font-semibold"
@@ -212,18 +188,53 @@ export default function ForumSupport({ user, onLoggedOut }) {
                   Post Thread
                 </button>
               </div>
-              {showThreadModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-                  <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-gray-200 p-8 w-full max-w-xl shadow-xl relative">
-                    <button
-                      type="button"
-                      className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
-                      onClick={() => setShowThreadModal(false)}
-                    >
-                      ×
-                    </button>
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">Post a Question</h2>
-                    <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={(e) => { submitThread(e); setShowThreadModal(false); }}>
+
+              {error ? <div className="p-5 text-sm text-red-700 bg-red-50 border-b border-red-100">{error}</div> : null}
+
+              <div className="p-5 border-b border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search threads"
+                    className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
+                  />
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
+                  >
+                    <option value="">All categories</option>
+                    {categories.map((c) => (
+                      <option key={c._id || c.slug} value={c.slug}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={load}
+                    className="rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800"
+                  >
+                    Search
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 min-h-0 overflow-auto no-scrollbar">
+                <div className="p-5">
+                  {showThreadModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+                      <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-gray-200 p-8 w-full max-w-xl shadow-xl relative">
+                        <button
+                          type="button"
+                          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
+                          onClick={() => setShowThreadModal(false)}
+                        >
+                          ×
+                        </button>
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">Post a Question</h2>
+                        <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={(e) => { submitThread(e); setShowThreadModal(false); }}>
                       <input
                         value={threadForm.title}
                         onChange={(e) => setThreadForm((p) => ({ ...p, title: e.target.value }))}
@@ -275,11 +286,11 @@ export default function ForumSupport({ user, onLoggedOut }) {
                     </form>
                   </div>
                 </div>
-              )}
-            </div>
-            <div className="space-y-4 mt-6">
-              {threads.map((t) => (
-                <div key={t.id} className="bg-white rounded-2xl border border-gray-200 p-5">
+                  )}
+
+                  <div className="space-y-4">
+                    {threads.map((t) => (
+                      <div key={t.id} className="bg-white rounded-2xl border border-gray-200 p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
@@ -361,9 +372,12 @@ export default function ForumSupport({ user, onLoggedOut }) {
                   ) : (
                     <div className="mt-3 text-xs text-gray-500">Thread is locked.</div>
                   )}
+                      </div>
+                    ))}
+                    {!loading && threads.length === 0 ? <div className="text-sm text-gray-600">No threads found.</div> : null}
+                  </div>
                 </div>
-              ))}
-              {!loading && threads.length === 0 ? <div className="text-sm text-gray-600">No threads found.</div> : null}
+              </div>
             </div>
           </div>
         </div>

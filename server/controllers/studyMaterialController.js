@@ -950,6 +950,13 @@ const adminCreateMaterials = async (req, res) => {
 
   const created = [];
   const publishedTitles = [];
+
+  const parseSuggested = (raw) => {
+    if (raw === undefined || raw === null || raw === "") return false;
+    const v = String(raw).trim().toLowerCase();
+    return v === "true" || v === "1" || v === "yes" || v === "on";
+  };
+
   for (const file of files) {
     const title = String(
       req.body.title || path.parse(file.originalname).name,
@@ -961,6 +968,7 @@ const adminCreateMaterials = async (req, res) => {
     const normalizedCategory =
       String(req.body.category || "notes").trim() || "notes";
     const requestedStatus = String(req.body.status || "published").trim();
+    const suggested = parseSuggested(req.body.suggested);
 
     const duplicate = await findDuplicateMaterial({
       title,
@@ -980,7 +988,7 @@ const adminCreateMaterials = async (req, res) => {
       semester: Number.isFinite(semester) ? semester : null,
       fileType: String(req.body.fileType || "").trim(),
       status: isDuplicate ? "rejected" : requestedStatus,
-      suggested: false,
+      suggested,
       uploadedBy: req.user._id,
       moderation: isDuplicate
         ? {
