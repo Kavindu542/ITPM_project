@@ -151,31 +151,27 @@ export default function Clubs({ user, onLoggedOut }) {
   const menuItems = React.useMemo(() => {
     const items = [
       {
+        key: 'dashboard',
         icon: Home,
         label: 'Dashboard',
-        description: 'Club overview',
-        onClick: () => setActiveTab('dashboard'),
       },
       {
+        key: 'apply',
         icon: FileText,
         label: 'Apply for a Club',
-        description: 'Submit membership application',
-        onClick: () => setActiveTab('apply'),
       },
       {
+        key: 'events',
         icon: CalendarDays,
         label: 'Events',
-        description: 'Browse club events',
-        onClick: () => setActiveTab('events'),
       },
     ];
 
     if (hasMembership) {
       items.splice(2, 0, {
+        key: 'meetings',
         icon: Users2,
         label: 'My Club Meetings',
-        description: 'Visible to club members',
-        onClick: () => setActiveTab('meetings'),
       });
     }
 
@@ -188,56 +184,56 @@ export default function Clubs({ user, onLoggedOut }) {
         {/* Sidebar */}
         <div
           className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transition-transform duration-300 md:translate-x-0 md:static`}
+            } fixed inset-y-0 left-0 z-50 w-30 bg-[#2458e6] shadow-xl transition-transform duration-300 md:translate-x-0 md:left-4 md:top-24 md:bottom-4 md:inset-y-auto md:rounded-[30px]`}
         >
           <div className="flex flex-col h-full">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-pink-50 rounded-lg">
-                  <Users className="h-5 w-5 text-pink-600" />
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold text-gray-900">Clubs</h1>
-                  <p className="text-xs text-gray-500">Student Module</p>
+            {/* Header */}
+            <div className="px-4 pt-5 pb-3">
+              <div className="flex flex-col items-center">
+                <div className="h-12 w-12 rounded-2xl bg-white grid place-items-center shadow-sm">
+                  <Users className="h-5 w-5 text-[#2458e6]" />
                 </div>
               </div>
             </div>
 
-            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-              {menuItems.map((item, idx) => (
+            {/* Menu Items */}
+            <nav
+              className="flex-1 p-4 space-y-2 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {menuItems.map((item) => (
                 <button
-                  key={idx}
+                  key={item.key}
                   type="button"
                   onClick={() => {
-                    item.onClick();
+                    setActiveTab(item.key);
                     setSidebarOpen(false);
                   }}
-                  className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 text-left transition-colors"
+                  className={`w-full flex flex-col items-center justify-center gap-1 px-2 py-3 rounded-2xl text-center transition-all ${
+                    activeTab === item.key
+                      ? 'bg-white text-[#1f3f9a] shadow-md'
+                      : 'text-blue-100 hover:bg-white/10'
+                  }`}
                 >
-                  <item.icon className="h-5 w-5 text-gray-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-medium text-gray-900 text-sm">{item.label}</div>
-                    <div className="text-xs text-gray-500">{item.description}</div>
+                  <div
+                    className={`h-8 w-8 rounded-xl grid place-items-center ${
+                      activeTab === item.key ? 'bg-[#eef3ff]' : 'bg-white/15'
+                    }`}
+                  >
+                    <item.icon className={`h-4 w-4 ${activeTab === item.key ? 'text-[#2458e6]' : 'text-white'}`} />
+                  </div>
+                  <div className={`font-semibold text-xs leading-4 ${activeTab === item.key ? 'text-[#1f3f9a]' : 'text-white'}`}>
+                    {item.label}
                   </div>
                 </button>
               ))}
             </nav>
 
-            <div className="p-4 border-t border-gray-200 space-y-2">
-              <button
-                type="button"
-                onClick={() => navigate('/profile')}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
-              >
-                <Settings className="h-4 w-4" />
-                <span className="text-sm font-medium">Settings</span>
-              </button>
-            </div>
           </div>
         </div>
 
         {/* Main */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto md:ml-44">
           <div className="max-w-6xl mx-auto p-6">
             <div className="flex items-center justify-between mb-6">
               <button
