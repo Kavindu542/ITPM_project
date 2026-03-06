@@ -292,6 +292,16 @@ export default function StudyMaterial({ user, onLoggedOut }) {
     { id: 'other', label: 'Other' },
   ];
 
+  const getCategoryLabel = React.useCallback(
+    (categoryId) => {
+      const key = String(categoryId || '').trim();
+      if (!key) return '';
+      const found = categories.find((c) => String(c.id) === key);
+      return found?.label || key;
+    },
+    [categories],
+  );
+
   const semesterOptions = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2'];
 
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
@@ -310,6 +320,35 @@ export default function StudyMaterial({ user, onLoggedOut }) {
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
+
+  const renderRating = (avgRating, reviewCount) => {
+    const count = Number(reviewCount || 0);
+    const avg = Number(avgRating || 0);
+
+    if (!count) {
+      return <div className="text-xs text-gray-500">No ratings yet</div>;
+    }
+
+    const filledStars = Math.max(0, Math.min(5, Math.round(avg)));
+    const shownAvg = Number.isFinite(avg) ? avg.toFixed(1) : '0.0';
+
+    return (
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-0.5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star
+              key={i}
+              className={`h-4 w-4 ${i < filledStars ? 'text-yellow-600' : 'text-gray-300'}`}
+              fill={i < filledStars ? 'currentColor' : 'none'}
+            />
+          ))}
+        </div>
+        <div className="text-xs text-gray-600">
+          {shownAvg} ({count})
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -427,124 +466,122 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                     </div>
                   </div>
 
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Title</th>
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Module</th>
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Semester</th>
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Downloads</th>
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedItems.map((m) => (
-                          <React.Fragment key={m.id}>
-                            <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                              <td className="py-3 px-5">
-                                <div className="font-semibold text-gray-900 text-sm">{m.title}</div>
-                                <div className="text-xs text-gray-500 mt-0.5">{m.description || '—'}</div>
-                              </td>
-                              <td className="py-3 px-5 text-sm text-gray-700">{m.moduleCode || '—'}</td>
-                              <td className="py-3 px-5 text-sm text-gray-700">{m.semester ?? '—'}</td>
-                              <td className="py-3 px-5 text-sm text-gray-700">{m.downloadCount ?? 0}</td>
-                              <td className="py-3 px-5">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <button
-                                    type="button"
-                                    className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                                    onClick={() => openPreview(m)}
-                                  >
-                                    Preview
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-sm font-semibold"
-                                    onClick={() => downloadFile(m)}
-                                  >
-                                    <Download className="h-4 w-4" />
-                                    Download
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                                    onClick={() => toggleVersions(m.id)}
-                                  >
-                                    Versions
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className={`p-2 rounded-xl border ${m.bookmarked ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'
-                                      } hover:bg-gray-50`}
-                                    onClick={() => onToggleBookmark(m.id)}
-                                    title={m.bookmarked ? 'Remove from favourites' : 'Add to favourites'}
-                                  >
-                                    <Star className={`h-4 w-4 ${m.bookmarked ? 'text-yellow-600' : 'text-gray-700'}`} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
+                  <div className="p-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {paginatedItems.map((m) => (
+                        <div
+                          key={m.id}
+                          className="rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col gap-3"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="font-bold text-gray-900 text-sm truncate">{m.title || '—'}</div>
+                              <div className="text-xs text-gray-500 mt-0.5 line-clamp-2">{m.description || '—'}</div>
+                            </div>
+                            <button
+                              type="button"
+                              className={`shrink-0 p-2 rounded-xl border ${m.bookmarked ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'} hover:bg-gray-50`}
+                              onClick={() => onToggleBookmark(m.id)}
+                              title={m.bookmarked ? 'Remove from favourites' : 'Add to favourites'}
+                            >
+                              <Star className={`h-4 w-4 ${m.bookmarked ? 'text-yellow-600' : 'text-gray-700'}`} />
+                            </button>
+                          </div>
 
-                            {expandedId === m.id ? (
-                              <tr className="border-b border-gray-200 bg-gray-50/40">
-                                <td colSpan={5} className="py-4 px-5">
-                                  <div className="text-sm font-semibold text-gray-900 mb-2">Versions</div>
-                                  <div className="space-y-2">
-                                    {(detailsById[m.id]?.versions || []).map((v) => (
-                                      <div
-                                        key={v.id}
-                                        className="rounded-xl border border-gray-200 bg-white px-4 py-3 flex items-center justify-between gap-3"
-                                      >
-                                        <div>
-                                          <div className="text-sm font-semibold text-gray-900">{v.originalName}</div>
-                                          <div className="text-xs text-gray-500 mt-0.5">
-                                            {v.note ? `${v.note} • ` : ''}
-                                            {v.createdAt ? new Date(v.createdAt).toLocaleString() : ''}
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          <button
-                                            type="button"
-                                            className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
-                                            onClick={() =>
-                                              window.open(
-                                                studyMaterialService.fileUrl(m.id, {
-                                                  versionId: v.id,
-                                                  disposition: 'inline',
-                                                }),
-                                                '_blank',
-                                                'noopener,noreferrer',
-                                              )
-                                            }
-                                          >
-                                            Preview
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ))}
-                                    {detailsById[m.id] && (detailsById[m.id]?.versions || []).length === 0 ? (
-                                      <div className="text-sm text-gray-600">No versions found.</div>
-                                    ) : null}
-                                    {!detailsById[m.id] ? (
-                                      <div className="text-sm text-gray-600">Loading versions…</div>
-                                    ) : null}
-                                  </div>
-                                </td>
-                              </tr>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {m.moduleCode ? (
+                              <span className="rounded-lg bg-gray-100 text-gray-700 px-2 py-0.5 text-xs font-medium">{m.moduleCode}</span>
+                            ) : (
+                              <span className="rounded-lg bg-gray-100 text-gray-700 px-2 py-0.5 text-xs font-medium">—</span>
+                            )}
+                            {m.semester != null && String(m.semester) !== '' ? (
+                              <span className="rounded-lg bg-gray-100 text-gray-700 px-2 py-0.5 text-xs font-medium">Sem {m.semester}</span>
                             ) : null}
-                          </React.Fragment>
-                        ))}
+                            {m.category ? (
+                              <span className="rounded-lg bg-gray-100 text-gray-700 px-2 py-0.5 text-xs font-medium">{getCategoryLabel(m.category)}</span>
+                            ) : null}
+                            <span className="rounded-lg bg-gray-100 text-gray-700 px-2 py-0.5 text-xs font-medium">
+                              Downloads {m.downloadCount ?? 0}
+                            </span>
+                          </div>
 
-                        {!loading && items.length === 0 ? (
-                          <tr>
-                            <td colSpan={5} className="py-10 px-5 text-center text-sm text-gray-600">
-                              No materials found for your filters.
-                            </td>
-                          </tr>
-                        ) : null}
-                      </tbody>
-                    </table>
+                          {renderRating(m.avgRating, m.reviewCount)}
+
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              type="button"
+                              className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                              onClick={() => openPreview(m)}
+                            >
+                              Preview
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-sm font-semibold"
+                              onClick={() => downloadFile(m)}
+                            >
+                              <Download className="h-4 w-4" />
+                              Download
+                            </button>
+                            <button
+                              type="button"
+                              className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                              onClick={() => toggleVersions(m.id)}
+                            >
+                              Versions
+                            </button>
+                          </div>
+
+                          {expandedId === m.id ? (
+                            <div className="pt-2 border-t border-gray-200">
+                              <div className="text-sm font-semibold text-gray-900 mb-2">Versions</div>
+                              <div className="space-y-2">
+                                {(detailsById[m.id]?.versions || []).map((v) => (
+                                  <div
+                                    key={v.id}
+                                    className="rounded-xl border border-gray-200 bg-white px-4 py-3 flex items-center justify-between gap-3"
+                                  >
+                                    <div className="min-w-0">
+                                      <div className="text-sm font-semibold text-gray-900 truncate">{v.originalName}</div>
+                                      <div className="text-xs text-gray-500 mt-0.5">
+                                        {v.note ? `${v.note} • ` : ''}
+                                        {v.createdAt ? new Date(v.createdAt).toLocaleString() : ''}
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="shrink-0 px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                                      onClick={() =>
+                                        window.open(
+                                          studyMaterialService.fileUrl(m.id, {
+                                            versionId: v.id,
+                                            disposition: 'inline',
+                                          }),
+                                          '_blank',
+                                          'noopener,noreferrer',
+                                        )
+                                      }
+                                    >
+                                      Preview
+                                    </button>
+                                  </div>
+                                ))}
+                                {detailsById[m.id] && (detailsById[m.id]?.versions || []).length === 0 ? (
+                                  <div className="text-sm text-gray-600">No versions found.</div>
+                                ) : null}
+                                {!detailsById[m.id] ? <div className="text-sm text-gray-600">Loading versions…</div> : null}
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+
+                      {!loading && items.length === 0 ? (
+                        <div className="col-span-full rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">
+                          No materials found for your filters.
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
 
                   {!loading && items.length > 0 ? (
@@ -590,7 +627,9 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                         <div>
                           <div className="font-semibold text-gray-900 text-sm">{m.title}</div>
                           <div className="text-xs text-gray-500 mt-0.5">
-                            {m.moduleCode || '—'} {m.semester ? `• Semester ${m.semester}` : ''}
+                            {m.moduleCode || '—'}
+                            {m.semester ? ` • Semester ${m.semester}` : ''}
+                            {m.category ? ` • ${getCategoryLabel(m.category)}` : ''}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -638,7 +677,9 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                         <div>
                           <div className="font-semibold text-gray-900 text-sm">{h?.material?.title}</div>
                           <div className="text-xs text-gray-500 mt-0.5">
-                            {h?.material?.moduleCode || '—'} {h?.material?.semester ? `• Semester ${h.material.semester}` : ''}
+                            {h?.material?.moduleCode || '—'}
+                            {h?.material?.semester ? ` • Semester ${h.material.semester}` : ''}
+                            {h?.material?.category ? ` • ${getCategoryLabel(h.material.category)}` : ''}
                           </div>
                           <div className="text-xs text-gray-500 mt-1">
                             Version: {h?.version?.note || h?.version?.originalName || '—'}
@@ -696,51 +737,55 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                     </div>
                   </div>
 
-                  <div className="mt-5 overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Title</th>
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Module</th>
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Semester</th>
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Category</th>
-                          <th className="text-left py-3 px-5 text-xs font-semibold text-gray-600">Status</th>
-                          <th className="text-right py-3 px-5 text-xs font-semibold text-gray-600">Submitted</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {myUploads.map((m, idx) => (
-                          <tr key={`${m?.id || idx}`} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                            <td className="py-3 px-5">
-                              <div className="font-semibold text-gray-900 text-sm">{m.title || '—'}</div>
-                              <div className="text-xs text-gray-500 mt-0.5">{m.description || '—'}</div>
-                            </td>
-                            <td className="py-3 px-5 text-sm text-gray-700">{m.moduleCode || '—'}</td>
-                            <td className="py-3 px-5 text-sm text-gray-700">{m.semester ?? '—'}</td>
-                            <td className="py-3 px-5 text-sm text-gray-700">{m.category || '—'}</td>
-                            <td className="py-3 px-5">
-                              <div className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${statusBadgeClass(m.status)}`}>
-                                {String(m.status || 'pending')}
-                              </div>
-                              {String(m.status || '').toLowerCase() === 'rejected' && m?.moderation?.decisionReason ? (
-                                <div className="text-xs text-gray-500 mt-1">Reason: {m.moderation.decisionReason}</div>
-                              ) : null}
-                            </td>
-                            <td className="py-3 px-5 text-sm text-gray-700 text-right">
-                              {m.createdAt ? new Date(m.createdAt).toLocaleString() : '—'}
-                            </td>
-                          </tr>
-                        ))}
+                  <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {myUploads.map((m, idx) => (
+                      <div
+                        key={`${m?.id || idx}`}
+                        className="rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col gap-2"
+                      >
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                          <div
+                            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusBadgeClass(
+                              m.status,
+                            )}`}
+                          >
+                            {String(m.status || 'pending')}
+                          </div>
+                          <span className="text-xs text-gray-400">
+                            {m.createdAt ? new Date(m.createdAt).toLocaleString() : '—'}
+                          </span>
+                        </div>
 
-                        {!loading && myUploads.length === 0 ? (
-                          <tr>
-                            <td colSpan={6} className="py-10 px-5 text-center text-sm text-gray-600">
-                              You haven’t uploaded anything yet.
-                            </td>
-                          </tr>
+                        <div className="font-bold text-gray-900 text-sm">{m.title || '—'}</div>
+                        {m.description ? (
+                          <div className="text-xs text-gray-500 line-clamp-2">{m.description}</div>
+                        ) : (
+                          <div className="text-xs text-gray-500">—</div>
+                        )}
+
+                        <div className="flex items-center gap-2 flex-wrap mt-1">
+                          {m.moduleCode ? (
+                            <span className="rounded-lg bg-gray-100 text-gray-700 px-2 py-0.5 text-xs font-medium">{m.moduleCode}</span>
+                          ) : null}
+                          {m.semester != null && String(m.semester) !== '' ? (
+                            <span className="rounded-lg bg-gray-100 text-gray-700 px-2 py-0.5 text-xs font-medium">Sem {m.semester}</span>
+                          ) : null}
+                          {m.category ? (
+                            <span className="rounded-lg bg-gray-100 text-gray-700 px-2 py-0.5 text-xs font-medium">{getCategoryLabel(m.category)}</span>
+                          ) : null}
+                        </div>
+
+                        {String(m.status || '').toLowerCase() === 'rejected' && m?.moderation?.decisionReason ? (
+                          <div className="text-xs text-red-600 mt-1">Reason: {m.moderation.decisionReason}</div>
                         ) : null}
-                      </tbody>
-                    </table>
+                      </div>
+                    ))}
+
+                    {!loading && myUploads.length === 0 ? (
+                      <div className="col-span-full rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">
+                        You haven’t uploaded anything yet.
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ) : null}

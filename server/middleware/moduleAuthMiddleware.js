@@ -8,17 +8,22 @@ const requireModuleAdmin = (moduleKey) => {
     }
 
     // Check for module claim from various possible locations
-    const moduleVal = req.user?.mod || req.user?.module || req.auth?.module || "";
+    const moduleVal =
+      req.user?.mod || req.user?.module || req.auth?.module || "";
     if (moduleVal === moduleKey) {
+      req.auth = { ...(req.auth || {}), module: moduleKey };
       return next();
     }
 
     // Fallback: allow users with role 'admin' (seeded admin accounts)
     if (req.user.role === "admin") {
+      req.auth = { ...(req.auth || {}), module: moduleKey };
       return next();
     }
 
-    return res.status(403).json({ message: "Forbidden: module access required" });
+    return res
+      .status(403)
+      .json({ message: "Forbidden: module access required" });
   };
 };
 

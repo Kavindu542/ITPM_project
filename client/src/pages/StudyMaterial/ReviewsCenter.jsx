@@ -24,11 +24,23 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
   const [materials, setMaterials] = React.useState([]);
   const [selectedMaterialId, setSelectedMaterialId] = React.useState('');
 
-  const [reviews, setReviews] = React.useState([]);
+  const [reviewsByMaterialId, setReviewsByMaterialId] = React.useState({});
   const [reviewSort, setReviewSort] = React.useState('highest');
+  const [reviewsTab, setReviewsTab] = React.useState('mine');
 
   const [reviewForm, setReviewForm] = React.useState({ rating: 5, reviewText: '' });
   const [reviewModalOpen, setReviewModalOpen] = React.useState(false);
+
+  const getCategoryLabel = React.useCallback((categoryId) => {
+    const key = String(categoryId || '').trim();
+    if (!key) return '';
+    if (key === 'notes') return 'Lecture Notes';
+    if (key === 'tutes') return 'Tutorials';
+    if (key === 'papers') return 'Past Papers';
+    if (key === 'links') return 'Useful Links';
+    if (key === 'other') return 'Other';
+    return key;
+  }, []);
 
   const loadMaterials = React.useCallback(async () => {
     setLoading(true);
@@ -59,27 +71,51 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
     }
   }, [selectedMaterialId]);
 
-  const loadReviews = React.useCallback(async () => {
-    if (!selectedMaterialId) return;
-    setLoading(true);
-    setError('');
-    try {
-      const res = await studyMaterialService.listMaterialReviews(selectedMaterialId, { sortBy: reviewSort });
-      setReviews(res?.items ?? []);
-    } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load reviews');
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedMaterialId, reviewSort]);
+  const loadAllReviews = React.useCallback(
+    async (materialList) => {
+      const list = Array.isArray(materialList) ? materialList : materials;
+      const ids = list.map((m) => String(m?.id || '')).filter(Boolean);
+      if (!ids.length) {
+        setReviewsByMaterialId({});
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+
+      try {
+        const results = await Promise.allSettled(
+          ids.map(async (id) => {
+            const res = await studyMaterialService.listMaterialReviews(id, { sortBy: reviewSort });
+            return [id, res?.items ?? []];
+          }),
+        );
+
+        const next = {};
+        for (const r of results) {
+          if (r.status === 'fulfilled') {
+            const [id, items] = r.value;
+            next[id] = items;
+          }
+        }
+        setReviewsByMaterialId(next);
+      } catch (e) {
+        setError(e?.response?.data?.message || e?.message || 'Failed to load reviews');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [materials, reviewSort],
+  );
 
   React.useEffect(() => {
     loadMaterials();
   }, [loadMaterials]);
 
   React.useEffect(() => {
-    loadReviews();
-  }, [loadReviews]);
+    if (!materials.length) return;
+    loadAllReviews(materials);
+  }, [materials, loadAllReviews]);
 
   const submitReview = async (e) => {
     e.preventDefault();
@@ -89,7 +125,8 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
     try {
       await studyMaterialService.createOrUpdateReview(selectedMaterialId, reviewForm);
       setReviewForm((p) => ({ ...p, reviewText: '' }));
-      await Promise.all([loadReviews(), loadMaterials()]);
+      await loadMaterials();
+      await loadAllReviews();
     } catch (e2) {
       setError(e2?.response?.data?.message || e2?.message || 'Failed to submit review');
     } finally {
@@ -101,7 +138,7 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
     setError('');
     try {
       await studyMaterialService.voteReview(reviewId, vote);
-      await loadReviews();
+      await loadAllReviews();
     } catch (e) {
       setError(e?.response?.data?.message || e?.message || 'Vote failed');
     }
@@ -114,13 +151,51 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
     setError('');
     try {
       await studyMaterialService.deleteOwnReview(reviewId);
-      await Promise.all([loadReviews(), loadMaterials()]);
+      await loadMaterials();
+      await loadAllReviews();
     } catch (e) {
       setError(e?.response?.data?.message || e?.message || 'Delete failed');
     }
   };
 
-  const myReview = reviews.find((r) => r.isMine);
+  const renderStars = (rating) => (
+    <div className="inline-flex items-center gap-1 text-amber-600 text-sm">
+      {Array.from({ length: Number(rating || 0) }).map((_, i) => (
+        <Star key={i} className="h-4 w-4 fill-current" />
+      ))}
+    </div>
+  );
+
+  const renderRatingSummary = (reviews) => {
+    const list = Array.isArray(reviews) ? reviews : [];
+    if (!list.length) return <div className="text-xs text-gray-500">No ratings yet</div>;
+    const avg = list.reduce((sum, r) => sum + Number(r?.rating || 0), 0) / list.length;
+    const shown = Number.isFinite(avg) ? avg.toFixed(1) : '0.0';
+    const filled = Math.max(0, Math.min(5, Math.round(avg)));
+    return (
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-0.5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star
+              key={i}
+              className={`h-4 w-4 ${i < filled ? 'text-yellow-600' : 'text-gray-300'}`}
+              fill={i < filled ? 'currentColor' : 'none'}
+            />
+          ))}
+        </div>
+        <div className="text-xs text-gray-600">
+          {shown} ({list.length})
+        </div>
+      </div>
+    );
+  };
+
+  const selectedMyReview = React.useMemo(() => {
+    const id = String(selectedMaterialId || '');
+    if (!id) return null;
+    const list = reviewsByMaterialId[id] || [];
+    return list.find((r) => r.isMine) || null;
+  }, [reviewsByMaterialId, selectedMaterialId]);
 
   return (
     <>
@@ -134,22 +209,20 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
             }}
           />
         </div>
-        <div className="relative w-full h-full p-6 lg:pt-0 lg:pb-0 flex flex-col">
 
-          {/* Sidebar + Content */}
+        <div className="relative w-full h-full p-6 lg:pt-0 lg:pb-0 flex flex-col">
           <div className="mt-0 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 lg:h-full lg:overflow-hidden lg:min-h-0 lg:grid-rows-[minmax(0,1fr)]">
-            {/* Sidebar */}
             <div className="lg:col-span-1 lg:h-full lg:min-h-0">
               <StudyMaterialSidebar user={user} />
             </div>
-            {/* Content */}
-            <div className="lg:col-span-11 lg:h-full lg:min-h-0 lg:overflow-y-auto no-scrollbar">
-              {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
-              <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <h1 className="text-2xl font-bold text-gray-900">Ratings & Reviews</h1>
-                <p className="text-sm text-gray-600 mt-1">Rate materials, write reviews, and vote helpful/unhelpful feedback.</p>
-                <div className="mt-5 flex items-center justify-between gap-3 flex-wrap">
-                  <div className="text-sm text-gray-600">Write a review for a material you downloaded.</div>
+
+            <div className="lg:col-span-11 lg:h-full lg:min-h-0">
+              <div className="lg:h-full lg:min-h-0 bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm flex flex-col">
+                <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <div className="text-sm font-bold text-gray-900">Ratings & Reviews</div>
+                    <div className="text-xs text-gray-500 mt-1">Rate materials you downloaded and vote helpful feedback.</div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setReviewModalOpen(true)}
@@ -158,10 +231,35 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
                     Write a review
                   </button>
                 </div>
-              </div>
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mt-6">
-                <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-gray-900">Reviews</h2>
+
+                {error ? <div className="p-5 text-sm text-red-700 bg-red-50 border-b border-red-100">{error}</div> : null}
+
+                <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="inline-flex rounded-2xl bg-gray-100 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setReviewsTab('mine')}
+                      className={`px-4 py-2 rounded-2xl text-sm font-semibold transition-colors ${
+                        reviewsTab === 'mine'
+                          ? 'bg-gradient-to-r from-[#25f194] to-blue-600 text-gray-900'
+                          : 'bg-white text-gray-700'
+                      }`}
+                    >
+                      Your reviews
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReviewsTab('others')}
+                      className={`px-4 py-2 rounded-2xl text-sm font-semibold transition-colors ${
+                        reviewsTab === 'others'
+                          ? 'bg-gradient-to-r from-[#25f194] to-blue-600 text-gray-900'
+                          : 'bg-white text-gray-700'
+                      }`}
+                    >
+                      Other reviews
+                    </button>
+                  </div>
+
                   <select
                     value={reviewSort}
                     onChange={(e) => setReviewSort(e.target.value)}
@@ -172,43 +270,117 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
                     <option value="recent">Most recent</option>
                   </select>
                 </div>
-                <div className="divide-y divide-gray-200">
-                  {reviews.map((r) => (
-                    <div key={r.id} className="p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="font-semibold text-gray-900">{r.user?.name || 'Student'}</div>
-                          <div className="mt-1 inline-flex items-center gap-1 text-amber-600 text-sm">
-                            {Array.from({ length: r.rating || 0 }).map((_, i) => <Star key={i} className="h-4 w-4 fill-current" />)}
+
+                <div className="flex-1 min-h-0 overflow-auto no-scrollbar">
+                  <div className="p-5">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {materials.map((m) => {
+                        const id = String(m?.id || '');
+                        const allReviews = reviewsByMaterialId[id] || [];
+                        const myReview = allReviews.find((r) => r.isMine);
+                        const otherReviews = allReviews.filter((r) => !r.isMine);
+
+                        return (
+                          <div key={id} className="rounded-2xl border border-gray-200 bg-white shadow-sm p-4 flex flex-col gap-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="font-bold text-gray-900 text-sm truncate">{m.title || '—'}</div>
+                                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                  <span className="rounded-lg bg-gray-100 text-gray-700 px-2 py-0.5 text-xs font-medium">
+                                    {m.moduleCode || '—'}
+                                  </span>
+                                  {m.semester ? (
+                                    <span className="rounded-lg bg-gray-100 text-gray-700 px-2 py-0.5 text-xs font-medium">Sem {m.semester}</span>
+                                  ) : null}
+                                  {m.category ? (
+                                    <span className="rounded-lg bg-gray-100 text-gray-700 px-2 py-0.5 text-xs font-medium">{getCategoryLabel(m.category)}</span>
+                                  ) : null}
+                                </div>
+                              </div>
+                              <div className="shrink-0">{renderRatingSummary(allReviews)}</div>
+                            </div>
+
+                            {reviewsTab === 'mine' ? (
+                              myReview ? (
+                                <div className="rounded-2xl border border-gray-200 bg-gray-50/40 p-3">
+                                  <div className="text-xs font-semibold text-gray-600 mb-2">Your review</div>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                      <div className="font-semibold text-gray-900">You</div>
+                                      <div className="mt-1">{renderStars(myReview.rating)}</div>
+                                    </div>
+                                    <div className="text-xs text-gray-500">{new Date(myReview.createdAt).toLocaleString()}</div>
+                                  </div>
+                                  <p className="mt-2 text-sm text-gray-700">{myReview.reviewText || 'No written review.'}</p>
+                                  {myReview.adminResponse?.text ? (
+                                    <div className="mt-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+                                      <span className="font-semibold">Admin response:</span> {myReview.adminResponse.text}
+                                    </div>
+                                  ) : null}
+                                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => deleteReview(myReview.id)}
+                                      className="px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-xs font-semibold text-red-700"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-xs text-gray-500">No review from you yet.</div>
+                              )
+                            ) : otherReviews.length ? (
+                              <div className="space-y-3">
+                                <div className="text-xs font-semibold text-gray-600">Other students</div>
+                                {otherReviews.map((r) => (
+                                  <div key={r.id} className="rounded-2xl border border-gray-200 bg-white p-3">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div>
+                                        <div className="font-semibold text-gray-900">{r.user?.name || 'Student'}</div>
+                                        <div className="mt-1">{renderStars(r.rating)}</div>
+                                      </div>
+                                      <div className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleString()}</div>
+                                    </div>
+                                    <p className="mt-2 text-sm text-gray-700">{r.reviewText || 'No written review.'}</p>
+                                    {r.adminResponse?.text ? (
+                                      <div className="mt-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+                                        <span className="font-semibold">Admin response:</span> {r.adminResponse.text}
+                                      </div>
+                                    ) : null}
+                                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => voteReview(r.id, 'helpful')}
+                                        className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700"
+                                      >
+                                        Helpful ({r.helpfulCount || 0})
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => voteReview(r.id, 'unhelpful')}
+                                        className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700"
+                                      >
+                                        Unhelpful ({r.unhelpfulCount || 0})
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-xs text-gray-500">No reviews from other students yet.</div>
+                            )}
                           </div>
-                        </div>
-                        <div className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleString()}</div>
-                      </div>
-                      <p className="mt-2 text-sm text-gray-700">{r.reviewText || 'No written review.'}</p>
-                      {r.adminResponse?.text ? (
-                        <div className="mt-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-800">
-                          <span className="font-semibold">Admin response:</span> {r.adminResponse.text}
+                        );
+                      })}
+
+                      {!loading && materials.length === 0 ? (
+                        <div className="col-span-full rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">
+                          No downloaded materials found. Download a material first to add a review.
                         </div>
                       ) : null}
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => voteReview(r.id, 'helpful')}
-                          className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700"
-                        >
-                          Helpful ({r.helpfulCount || 0})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => voteReview(r.id, 'unhelpful')}
-                          className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700"
-                        >
-                          Unhelpful ({r.unhelpfulCount || 0})
-                        </button>
-                      </div>
                     </div>
-                  ))}
-                  {!loading && reviews.length === 0 ? <div className="p-6 text-sm text-gray-600">No reviews yet.</div> : null}
+                  </div>
                 </div>
               </div>
             </div>
@@ -281,10 +453,13 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
                   >
                     Submit Review
                   </button>
-                  {myReview ? (
+                  {selectedMyReview ? (
                     <button
                       type="button"
-                      onClick={() => { deleteReview(myReview.id); setReviewModalOpen(false); }}
+                      onClick={() => {
+                        deleteReview(selectedMyReview.id);
+                        setReviewModalOpen(false);
+                      }}
                       className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 text-red-700 px-4 py-2 text-sm font-semibold"
                     >
                       Delete My Review
