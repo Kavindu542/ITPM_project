@@ -7,8 +7,6 @@ import {
   MapPin,
   History,
   AlertCircle,
-  Menu,
-  X,
   Loader,
   CheckCircle,
   Shirt,
@@ -22,7 +20,6 @@ import Complaints from './Complaints';
 
 export default function Hostel({ user, onLoggedOut }) {
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [applicationStatus, setApplicationStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -821,86 +818,93 @@ export default function Hostel({ user, onLoggedOut }) {
 
   // Approved - show dashboard with sidebar
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans">
-      <div className="flex h-screen overflow-hidden">
-        {/* Sidebar */}
-        <div
-          className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            } fixed inset-y-0 left-0 z-50 w-30 bg-[#2458e6] shadow-xl transition-transform duration-300 md:translate-x-0 md:left-4 md:top-24 md:bottom-4 md:inset-y-auto md:rounded-[30px]`}
-        >
-          <div className="flex flex-col h-full">
-            {/* Header */}
-            <div className="px-4 pt-5 pb-3">
-              <div className="flex flex-col items-center">
-                <div className="h-12 w-12 rounded-2xl bg-white grid place-items-center shadow-sm">
-                  <Home className="h-5 w-5 text-[#2458e6]" />
+    <div className="h-[calc(100vh-6rem)] bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans overflow-auto no-scrollbar lg:overflow-hidden">
+      <div className="relative w-full h-full p-6 lg:pt-0 lg:pb-0 flex flex-col">
+        <div className="mt-0 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 lg:h-full lg:overflow-hidden lg:min-h-0 lg:grid-rows-[minmax(0,1fr)]">
+          <div className="lg:col-span-1 lg:h-full lg:min-h-0">
+            <aside className="h-full">
+              {/* Mobile/tablet: list menu */}
+              <div className="lg:hidden bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                <div className="p-5 border-b border-gray-200">
+                  <div className="text-sm font-bold text-gray-900">Menu</div>
+                  <div className="text-xs text-gray-500 mt-1">Navigate hostel features</div>
+                </div>
+                <div className="p-3 space-y-1">
+                  {menuItems.map((item) => {
+                    const isActive = (item.label === 'Dashboard' && activeTab === 'dashboard')
+                      || (item.label === 'Laundry Services' && activeTab === 'laundry')
+                      || (item.label === 'Meal Shop' && activeTab === 'meal-shop')
+                      || (item.label === 'Booking History' && activeTab === 'laundry-bookings')
+                      || (item.label === 'Complaints' && activeTab === 'complaints');
+
+                    return (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={item.onClick}
+                        className={`w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
+                          isActive
+                            ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm'
+                            : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-800'
+                        }`}
+                      >
+                        <item.icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
+                        <span className={isActive ? 'text-white' : 'text-gray-800'}>{item.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
 
-            {/* Menu Items */}
-            <nav
-              className="flex-1 p-4 space-y-2 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {menuItems.map((item, idx) => (
-                (() => {
-                  const isActive = (item.label === 'Dashboard' && activeTab === 'dashboard')
-                    || (item.label === 'Laundry Services' && activeTab === 'laundry')
-                    || (item.label === 'Meal Shop' && activeTab === 'meal-shop')
-                    || (item.label === 'Booking History' && activeTab === 'laundry-bookings')
-                    || (item.label === 'Complaints' && activeTab === 'complaints');
+              {/* Desktop: slim blue icon sidebar */}
+              <div className="hidden lg:flex w-30 self-stretch flex-col items-center justify-between rounded-[2rem] bg-blue-600 px-4 py-6 shadow-sm h-full min-h-0">
+                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shrink-0">
+                  <Home className="h-6 w-6 text-blue-600" />
+                </div>
 
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        item.onClick();
-                        setSidebarOpen(false);
-                      }}
-                      className={`w-full flex flex-col items-center justify-center gap-1 px-2 py-3 rounded-2xl text-center transition-all ${
-                        isActive
-                          ? 'bg-white text-[#1f3f9a] shadow-md'
-                          : 'text-blue-100 hover:bg-white/10'
-                      }`}
-                    >
-                      <div className={`h-8 w-8 rounded-xl grid place-items-center ${
-                        isActive ? 'bg-[#eef3ff]' : 'bg-white/15'
-                      }`}>
-                        <item.icon className={`h-4 w-4 ${isActive ? 'text-[#2458e6]' : 'text-white'}`} />
-                      </div>
-                      <div className={`font-semibold text-xs leading-4 ${isActive ? 'text-[#1f3f9a]' : 'text-white'}`}>
-                        {item.label}
-                      </div>
-                    </button>
-                  );
-                })()
-              ))}
-            </nav>
+                <div className="w-full flex-1 min-h-0 flex flex-col items-center justify-start gap-3 py-2 overflow-y-auto no-scrollbar">
+                  {menuItems.map((item) => {
+                    const isActive = (item.label === 'Dashboard' && activeTab === 'dashboard')
+                      || (item.label === 'Laundry Services' && activeTab === 'laundry')
+                      || (item.label === 'Meal Shop' && activeTab === 'meal-shop')
+                      || (item.label === 'Booking History' && activeTab === 'laundry-bookings')
+                      || (item.label === 'Complaints' && activeTab === 'complaints');
 
+                    return (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={item.onClick}
+                        className={`w-full flex flex-col items-center rounded-2xl px-3 py-2 transition-colors ${
+                          isActive ? 'bg-white text-blue-700' : 'text-white/90 hover:bg-white/10'
+                        }`}
+                        title={item.label}
+                      >
+                        <item.icon className={`h-5 w-5 ${isActive ? 'text-blue-700' : 'text-white'}`} />
+                        <span
+                          className={`mt-1 text-[11px] font-semibold text-center leading-tight ${
+                            isActive ? 'text-gray-900' : 'text-white'
+                          }`}
+                        >
+                          {item.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </aside>
           </div>
-        </div>
 
-        {/* Main Content */}
-        <div className="flex-1 overflow-auto md:ml-44">
-          <div className="max-w-6xl mx-auto p-6">
-            {/* Top Bar */}
-            <div className="flex items-center justify-between mb-6">
+          <div className="lg:col-span-11 lg:h-full lg:min-h-0 bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm lg:overflow-y-auto no-scrollbar">
+            <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-bold text-gray-900">Hostel</div>
+                <div className="text-xs text-gray-500 mt-1">Use the sidebar to switch sections.</div>
+              </div>
               <button
                 type="button"
-                className="md:hidden inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-              >
-                {sidebarOpen ? (
-                  <X className="h-4 w-4 text-gray-700" />
-                ) : (
-                  <Menu className="h-4 w-4 text-gray-700" />
-                )}
-              </button>
-
-              <button
-                type="button"
-                className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50"
                 onClick={() => navigate('/')}
               >
                 <ArrowLeft className="h-4 w-4 text-gray-700" />
@@ -908,9 +912,9 @@ export default function Hostel({ user, onLoggedOut }) {
               </button>
             </div>
 
-            {/* Page Content */}
-            {activeTab === 'dashboard' && (
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
+            <div className="p-6">
+              {activeTab === 'dashboard' && (
+                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
                 <div className="p-6 border-b border-gray-200 flex items-center gap-3">
                   <div className="p-2 bg-emerald-50 rounded-lg">
                     <Home className="h-5 w-5 text-emerald-600" />
@@ -1503,6 +1507,7 @@ export default function Hostel({ user, onLoggedOut }) {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
