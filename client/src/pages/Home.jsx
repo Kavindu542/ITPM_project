@@ -1,8 +1,8 @@
 import React from 'react';
-import { Moon, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { clubService } from '../services/clubService';
+import { api } from '../services/api';
 import {
   LogOut,
   BookOpen,
@@ -11,7 +11,8 @@ import {
   BookText,
   Building2,
   GraduationCap,
-  Users2
+  Users2,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function Home({ user, onLoggedOut }) {
@@ -19,6 +20,29 @@ export default function Home({ user, onLoggedOut }) {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState('');
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
+
+  // ── real-time stats ────────────────────────────────────────────
+  const [liveStats, setLiveStats] = React.useState(null);
+  const [statsLoading, setStatsLoading] = React.useState(true);
+  const [statsUpdated, setStatsUpdated] = React.useState(null);
+
+  const fetchStats = React.useCallback(async () => {
+    try {
+      const res = await api.get('/stats');
+      setLiveStats(res.data);
+      setStatsUpdated(new Date());
+    } catch {
+      // keep previous values on error
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchStats();
+    const id = setInterval(fetchStats, 30000);
+    return () => clearInterval(id);
+  }, [fetchStats]);
 
   const handleLogout = async () => {
     setError('');
@@ -194,16 +218,27 @@ export default function Home({ user, onLoggedOut }) {
       </div>
 
       <div className="relative z-10">
-        {/* 1. HERO SECTION (Cinematic & Personalized - FULL SCREEN WIDTH) */}
-        <section className="relative overflow-hidden min-h-[75vh] flex items-center bg-slate-900 text-white shadow-2xl shadow-blue-500/20">
-          {/* Pro Background */}
+        {/* 1. HERO SECTION */}
+        <section className="relative overflow-hidden min-h-[75vh] flex items-center bg-[#060d1f] text-white shadow-2xl shadow-blue-500/20">
+
+          {/* ── Background image with layered shading ── */}
           <div className="absolute inset-0 z-0">
+            {/* Base image — full opacity, clearly visible */}
             <img
-              src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1600&q=80"
+              src="https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1800&q=80"
               alt="Campus"
-              className="w-full h-full object-cover opacity-50 scale-105"
+              className="w-full h-full object-cover object-center scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/40 to-transparent"></div>
+            {/* Semi-dark tint — image shows through but stays dark enough */}
+            <div className="absolute inset-0 bg-slate-950/65" />
+            {/* Left side stronger fade so text stays readable */}
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/50 to-slate-950/20" />
+            {/* Top fade for navbar */}
+            <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-slate-950 to-transparent" />
+            {/* Bottom fade */}
+            <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-slate-950 to-transparent" />
+            {/* Blue ambient glow behind logo area */}
+            <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-blue-600/20 blur-[100px]" />
           </div>
 
           <div className="container mx-auto px-8 lg:px-20 relative z-10">
@@ -241,56 +276,103 @@ export default function Home({ user, onLoggedOut }) {
                 </div>
               </div>
 
-              <div className="hidden lg:block relative h-[500px]">
-                <div className="absolute top-0 right-0 w-64 p-6 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[2rem] shadow-2xl animate-float">
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/40">
-                      <BookText className="text-white" size={24} />
+              <div className="hidden lg:block relative h-[520px]">
+
+                {/* ── Dark backdrop circle so logo is always clear ── */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[360px] h-[360px] rounded-full"
+                  style={{ background: 'radial-gradient(circle, rgba(6,13,31,0.97) 55%, rgba(6,13,31,0.80) 75%, transparent 100%)' }}
+                />
+
+                {/* ── Glowing ring around logo ── */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[345px] h-[345px] rounded-full"
+                  style={{ boxShadow: '0 0 0 1.5px rgba(99,179,237,0.4), 0 0 28px 10px rgba(59,130,246,0.55), 0 0 70px 22px rgba(99,179,237,0.22)' }}
+                />
+                {/* Spinning dashed ring */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[345px] h-[345px] border border-dashed border-blue-400/30 rounded-full animate-[spin_22s_linear_infinite]" />
+
+                {/* ── Center Logo ── */}
+                <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                  <img src="/campuscore-logo.png" alt="CampusCore" className="w-auto h-auto drop-shadow-[0_0_20px_rgba(59,130,246,0.4)]" width={340} height={180} loading="eager" fetchpriority="high" decoding="async" />
+                </div>
+
+                {/* ── Floating Module Cards ── */}
+
+                {/* TOP — Study Material */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 hero-card-1">
+                  <div className="flex items-center gap-4 px-5 py-4 rounded-[18px] backdrop-blur-2xl border border-white/[0.08]"
+                    style={{ background: 'linear-gradient(135deg,rgba(17,25,50,0.85) 0%,rgba(10,18,40,0.90) 100%)', boxShadow: '0 4px 6px rgba(0,0,0,0.3), 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.07)' }}>
+                    <div className="w-11 h-11 rounded-2xl bg-blue-500 flex items-center justify-center shadow-[0_4px_14px_rgba(59,130,246,0.5)] shrink-0">
+                      <BookText size={20} className="text-white" />
                     </div>
                     <div>
-                      <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Next Study</p>
-                      <p className="font-bold text-sm">Calculus II</p>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-[0.16em] font-bold mb-0.5">Study Material</p>
+                      <p className="text-white font-bold text-[15px] leading-tight">45,000+ Resources</p>
                     </div>
-                  </div>
-                  <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full w-2/3 bg-blue-500"></div>
                   </div>
                 </div>
 
-                <div className="absolute bottom-10 -left-10 w-72 p-6 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[2rem] shadow-2xl animate-float-delayed">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/40">
-                      <Building2 className="text-white" size={28} />
+                {/* RIGHT — Library */}
+                <div className="absolute top-1/2 -translate-y-1/2 -right-16 z-20 hero-card-2">
+                  <div className="flex items-center gap-4 px-5 py-4 rounded-[18px] backdrop-blur-2xl border border-white/[0.08]"
+                    style={{ background: 'linear-gradient(135deg,rgba(17,25,50,0.85) 0%,rgba(10,18,40,0.90) 100%)', boxShadow: '0 4px 6px rgba(0,0,0,0.3), 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.07)' }}>
+                    <div className="w-11 h-11 rounded-2xl bg-violet-500 flex items-center justify-center shadow-[0_4px_14px_rgba(139,92,246,0.5)] shrink-0">
+                      <BookOpen size={20} className="text-white" />
                     </div>
                     <div>
-                      <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Room Status</p>
-                      <p className="font-bold text-lg">{hostelInfo.room}</p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span className="text-[10px] text-emerald-300 font-bold uppercase">All Safe</span>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-[0.16em] font-bold mb-0.5">Library</p>
+                      <p className="text-white font-bold text-[15px] leading-tight">Books & Reserves</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* BOTTOM-RIGHT — Clubs */}
+                <div className="absolute bottom-8 right-0 z-20 hero-card-3">
+                  <div className="flex items-center gap-4 px-5 py-4 rounded-[18px] backdrop-blur-2xl border border-white/[0.08]"
+                    style={{ background: 'linear-gradient(135deg,rgba(17,25,50,0.85) 0%,rgba(10,18,40,0.90) 100%)', boxShadow: '0 4px 6px rgba(0,0,0,0.3), 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.07)' }}>
+                    <div className="w-11 h-11 rounded-2xl bg-rose-500 flex items-center justify-center shadow-[0_4px_14px_rgba(244,63,94,0.5)] shrink-0">
+                      <Users2 size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-[0.16em] font-bold mb-0.5">Clubs & Society</p>
+                      <p className="text-white font-bold text-[15px] leading-tight">80+ Communities</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* BOTTOM-LEFT — Hostel */}
+                <div className="absolute bottom-8 left-0 z-20 hero-card-4">
+                  <div className="flex items-center gap-4 px-5 py-4 rounded-[18px] backdrop-blur-2xl border border-white/[0.08]"
+                    style={{ background: 'linear-gradient(135deg,rgba(17,25,50,0.85) 0%,rgba(10,18,40,0.90) 100%)', boxShadow: '0 4px 6px rgba(0,0,0,0.3), 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.07)' }}>
+                    <div className="w-11 h-11 rounded-2xl bg-emerald-500 flex items-center justify-center shadow-[0_4px_14px_rgba(16,185,129,0.5)] shrink-0">
+                      <Building2 size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-[0.16em] font-bold mb-0.5">Hostel</p>
+                      <p className="text-white font-bold text-[15px] leading-tight">{hostelInfo.room}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-wider">All Safe</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Center Logo (Hero Graphic) */}
-                <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                  <div>
-                    <img
-                      src="/campuscore-logo.png"
-                      alt="CampusCore"
-                      className="w-auto h-auto opacity-95"
-                      width={396}
-                      height={206}
-                      loading="eager"
-                      fetchpriority="high"
-                      decoding="async"
-                    />
+                {/* LEFT — Students */}
+                <div className="absolute top-1/2 -translate-y-1/2 -left-2 z-20 hero-card-5">
+                  <div className="flex items-center gap-4 px-5 py-4 rounded-[18px] backdrop-blur-2xl border border-white/[0.08]"
+                    style={{ background: 'linear-gradient(135deg,rgba(17,25,50,0.85) 0%,rgba(10,18,40,0.90) 100%)', boxShadow: '0 4px 6px rgba(0,0,0,0.3), 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.07)' }}>
+                    <div className="w-11 h-11 rounded-2xl bg-amber-500 flex items-center justify-center shadow-[0_4px_14px_rgba(245,158,11,0.5)] shrink-0">
+                      <GraduationCap size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-[0.16em] font-bold mb-0.5">Students</p>
+                      <p className="text-white font-bold text-[15px] leading-tight">
+                        {liveStats?.totalStudents != null ? `${liveStats.totalStudents.toLocaleString()}+` : '12,400+'}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] border-2 border-dashed border-white/10 rounded-full animate-[spin_20s_linear_infinite]"></div>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-blue-600/20 blur-[80px]"></div>
               </div>
             </div>
           </div>
@@ -298,22 +380,93 @@ export default function Home({ user, onLoggedOut }) {
 
         {/* MAIN CONTENT AREA (Centered Container) */}
         <div className="container mx-auto px-4 relative z-10 pb-24">
-          {/* 2. STATS BAR (Social Proof & Impact) */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-24 -mt-6 md:-mt-10 relative z-20 px-4 md:px-0">
-            {[
-              { icon: Users2, label: 'Active Students', value: '12,400+', color: 'text-blue-600', bg: 'bg-blue-50' },
-              { icon: BookOpen, label: 'Study Resources', value: '45,000+', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-              { icon: Bell, label: 'Daily Events', value: '85+', color: 'text-indigo-600', bg: 'bg-indigo-50' },
-              { icon: GraduationCap, label: 'Average GPA', value: '3.8', color: 'text-pink-600', bg: 'bg-pink-50' },
-            ].map((stat, idx) => (
-              <div key={idx} className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 flex flex-col items-center text-center group hover:-translate-y-2 transition-all">
-                <div className={`h-16 w-16 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                  <stat.icon size={32} />
-                </div>
-                <div className="text-3xl font-black text-slate-900 mb-1">{stat.value}</div>
-                <div className="text-slate-500 font-bold text-sm uppercase tracking-wider">{stat.label}</div>
+          {/* 2. STATS BAR — Live from database */}
+          <div className="mb-24 -mt-6 md:-mt-10 relative z-20 px-4 md:px-0">
+            {/* header row */}
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs font-semibold text-slate-500">Live campus data</span>
               </div>
-            ))}
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                {statsUpdated && <span>Updated {statsUpdated.toLocaleTimeString()}</span>}
+                <button
+                  onClick={() => { setStatsLoading(true); fetchStats(); }}
+                  className="p-1 rounded-lg hover:bg-white/60 transition-colors"
+                  title="Refresh"
+                >
+                  <RefreshCw size={12} className={`text-slate-400 ${statsLoading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </div>
+            {/* cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              {[
+                {
+                  icon: Users2,
+                  label: 'Total Students',
+                  sub: 'Registered on platform',
+                  value: liveStats?.totalStudents,
+                  iconBg: 'bg-blue-500',
+                  suffix: '+',
+                },
+                {
+                  icon: Building2,
+                  label: 'Hostel Students',
+                  sub: 'Approved residents',
+                  value: liveStats?.hostelStudents,
+                  iconBg: 'bg-emerald-500',
+                  suffix: '',
+                },
+                {
+                  icon: BookText,
+                  label: 'Study Resources',
+                  sub: 'Published materials',
+                  value: liveStats?.studyMaterials,
+                  iconBg: 'bg-violet-500',
+                  suffix: '+',
+                },
+                {
+                  icon: BookOpen,
+                  label: 'Library Books',
+                  sub: 'Available in library',
+                  value: liveStats?.libraryBooks,
+                  iconBg: 'bg-amber-500',
+                  suffix: '+',
+                },
+                {
+                  icon: Users2,
+                  label: 'Clubs & Societies',
+                  sub: 'Active communities',
+                  value: liveStats?.clubs,
+                  iconBg: 'bg-rose-500',
+                  suffix: '',
+                },
+              ].map((stat, idx) => (
+                <div key={idx} className="bg-white p-5 rounded-2xl shadow-md border border-slate-100 flex flex-col gap-3 hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <div className={`h-10 w-10 rounded-xl ${stat.iconBg} flex items-center justify-center`}>
+                      <stat.icon size={18} className="text-white" />
+                    </div>
+                    {statsLoading ? (
+                      <RefreshCw size={11} className="text-slate-300 animate-spin" />
+                    ) : (
+                      <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Live</span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-2xl font-black text-slate-900 tabular-nums">
+                      {statsLoading || stat.value == null
+                        ? <span className="text-slate-300">—</span>
+                        : <>{stat.value.toLocaleString()}{stat.suffix}</>
+                      }
+                    </div>
+                    <div className="text-[13px] font-semibold text-slate-700 mt-0.5">{stat.label}</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">{stat.sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* 3. CORE MODULES (Feature Showcase) */}
@@ -402,6 +555,7 @@ export default function Home({ user, onLoggedOut }) {
                         <span className="px-3 py-1 rounded-lg bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-wider">{e.club?.name || 'Academic'}</span>
                         <button className="text-blue-600 font-bold text-sm">Join Event →</button>
                       </div>
+
                     </div>
                   ))
                 )}
