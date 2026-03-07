@@ -9,6 +9,8 @@ const SEMESTER_OPTIONS = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2'
 export default function CentralUploadAndMaterialsPage() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
+  const [scanLoading, setScanLoading] = React.useState(false);
+  const [scanError, setScanError] = React.useState('');
 
   const [isUploadOpen, setIsUploadOpen] = React.useState(false);
 
@@ -28,6 +30,15 @@ export default function CentralUploadAndMaterialsPage() {
     allowedRoles: '',
   });
   const [uploadFiles, setUploadFiles] = React.useState([]);
+
+  const uploadTouchedRef = React.useRef({
+    title: false,
+    moduleCode: false,
+    subject: false,
+    semester: false,
+    category: false,
+    description: false,
+  });
 
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [editId, setEditId] = React.useState(null);
@@ -102,6 +113,17 @@ export default function CentralUploadAndMaterialsPage() {
   React.useEffect(() => {
     if (!isUploadOpen) return;
 
+    setScanLoading(false);
+    setScanError('');
+    uploadTouchedRef.current = {
+      title: false,
+      moduleCode: false,
+      subject: false,
+      semester: false,
+      category: false,
+      description: false,
+    };
+
     const onKeyDown = (ev) => {
       if (ev.key === 'Escape') setIsUploadOpen(false);
     };
@@ -115,6 +137,49 @@ export default function CentralUploadAndMaterialsPage() {
       document.body.style.overflow = prevOverflow;
     };
   }, [isUploadOpen]);
+
+  const scanAndAutofillUploadMeta = React.useCallback(async (files) => {
+    const list = Array.isArray(files) ? files : [];
+    const first = list.find((f) => f && typeof f.type === 'string' && (f.type === 'application/pdf' || f.type.startsWith('image/')));
+    if (!first) return;
+
+    setScanLoading(true);
+    setScanError('');
+    try {
+      const extracted = await studyMaterialService.scanSuggestionDocument(first);
+      setUploadMeta((prev) => {
+        const next = { ...prev };
+        const title = String(extracted?.title || '').trim();
+        const moduleCode = String(extracted?.moduleCode || '').trim();
+        const subject = String(extracted?.subject || '').trim();
+        const semester = String(extracted?.semester || '').trim();
+        const category = String(extracted?.category || '').trim();
+        const description = String(extracted?.description || '').trim();
+
+        if (!uploadTouchedRef.current.title && !next.title && title) next.title = title;
+        if (!uploadTouchedRef.current.moduleCode && !next.moduleCode && moduleCode) next.moduleCode = moduleCode;
+        if (!uploadTouchedRef.current.subject && !next.subject && subject) next.subject = subject;
+        if (!uploadTouchedRef.current.semester && !next.semester && semester) next.semester = semester;
+        if (!uploadTouchedRef.current.category && category) next.category = category;
+        if (!uploadTouchedRef.current.description && !next.description && description) next.description = description;
+
+        return next;
+      });
+    } catch (e) {
+      setScanError(e?.response?.data?.message || e?.message || 'Scan failed');
+    } finally {
+      setScanLoading(false);
+    }
+  }, []);
+
+  const onPickUploadFiles = React.useCallback(
+    (fileList) => {
+      const files = Array.from(fileList || []);
+      setUploadFiles(files);
+      if (files.length) scanAndAutofillUploadMeta(files);
+    },
+    [scanAndAutofillUploadMeta],
+  );
 
   const deleteMaterial = async (id) => {
     const ok = window.confirm('Delete this material?');
@@ -284,25 +349,37 @@ export default function CentralUploadAndMaterialsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <input
                     value={uploadMeta.title}
-                    onChange={(e) => setUploadMeta((p) => ({ ...p, title: e.target.value }))}
+                    onChange={(e) => {
+                      uploadTouchedRef.current.title = true;
+                      setUploadMeta((p) => ({ ...p, title: e.target.value }));
+                    }}
                     placeholder="Title (optional)"
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
                   />
                   <input
                     value={uploadMeta.moduleCode}
-                    onChange={(e) => setUploadMeta((p) => ({ ...p, moduleCode: e.target.value }))}
+                    onChange={(e) => {
+                      uploadTouchedRef.current.moduleCode = true;
+                      setUploadMeta((p) => ({ ...p, moduleCode: e.target.value }));
+                    }}
                     placeholder="Module code (optional)"
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
                   />
                   <input
                     value={uploadMeta.subject}
-                    onChange={(e) => setUploadMeta((p) => ({ ...p, subject: e.target.value }))}
+                    onChange={(e) => {
+                      uploadTouchedRef.current.subject = true;
+                      setUploadMeta((p) => ({ ...p, subject: e.target.value }));
+                    }}
                     placeholder="Subject (optional)"
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
                   />
                   <select
                     value={uploadMeta.semester}
-                    onChange={(e) => setUploadMeta((p) => ({ ...p, semester: e.target.value }))}
+                    onChange={(e) => {
+                      uploadTouchedRef.current.semester = true;
+                      setUploadMeta((p) => ({ ...p, semester: e.target.value }));
+                    }}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
                   >
                     <option value="">Semester (optional)</option>
@@ -314,7 +391,10 @@ export default function CentralUploadAndMaterialsPage() {
                   </select>
                   <select
                     value={uploadMeta.category}
-                    onChange={(e) => setUploadMeta((p) => ({ ...p, category: e.target.value }))}
+                    onChange={(e) => {
+                      uploadTouchedRef.current.category = true;
+                      setUploadMeta((p) => ({ ...p, category: e.target.value }));
+                    }}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
                   >
                     <option value="notes">Lecture Notes</option>
@@ -325,7 +405,10 @@ export default function CentralUploadAndMaterialsPage() {
                   </select>
                   <textarea
                     value={uploadMeta.description}
-                    onChange={(e) => setUploadMeta((p) => ({ ...p, description: e.target.value }))}
+                    onChange={(e) => {
+                      uploadTouchedRef.current.description = true;
+                      setUploadMeta((p) => ({ ...p, description: e.target.value }));
+                    }}
                     placeholder="Description (optional)"
                     className="md:col-span-2 w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
                     rows={3}
@@ -335,6 +418,11 @@ export default function CentralUploadAndMaterialsPage() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="space-y-2">
                     <div className="text-xs font-semibold text-gray-600">Select files (bulk) or folder</div>
+                    {scanLoading ? (
+                      <div className="text-xs text-gray-500">Scanning…</div>
+                    ) : scanError ? (
+                      <div className="text-xs text-red-600">{scanError}</div>
+                    ) : null}
                     <label className="text-sm text-gray-700 inline-flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -346,7 +434,8 @@ export default function CentralUploadAndMaterialsPage() {
                     <input
                       type="file"
                       multiple
-                      onChange={(e) => setUploadFiles(Array.from(e.target.files || []))}
+                      accept="application/pdf,image/*"
+                      onChange={(e) => onPickUploadFiles(e.target.files)}
                       className="text-sm"
                     />
                     <input
@@ -354,7 +443,8 @@ export default function CentralUploadAndMaterialsPage() {
                       multiple
                       webkitdirectory=""
                       directory=""
-                      onChange={(e) => setUploadFiles(Array.from(e.target.files || []))}
+                      accept="application/pdf,image/*"
+                      onChange={(e) => onPickUploadFiles(e.target.files)}
                       className="text-sm"
                     />
                     <div className="text-xs text-gray-500">Selected: {uploadFiles.length} file(s)</div>
@@ -362,7 +452,7 @@ export default function CentralUploadAndMaterialsPage() {
                   <button
                     type="submit"
                     className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-[#25f194] text-white rounded-xl font-semibold disabled:opacity-60"
-                    disabled={loading}
+                    disabled={loading || scanLoading}
                   >
                     <UploadCloud className="h-4 w-4" />
                     Upload

@@ -1,5 +1,9 @@
 const nodemailer = require("nodemailer");
 
+let cachedTransport = null;
+let cachedTransportKey = null;
+let cachedVerifyPromise = null;
+
 function requireEnv(name) {
   const value = process.env[name];
   if (!value) {
@@ -8,18 +12,52 @@ function requireEnv(name) {
   return value;
 }
 
+function normalizeSmtpPass(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return s;
+  if (/\s/.test(s)) {
+    const compact = s.replace(/\s+/g, "");
+    if (compact.length >= 8) return compact;
+  }
+  return s;
+}
+
+function getTransportCacheKey({ host, port, user }) {
+  return `${host}:${port}:${user}`;
+}
+
+async function verifyTransport(transporter) {
+  if (cachedVerifyPromise) return cachedVerifyPromise;
+  cachedVerifyPromise = transporter.verify().catch((err) => {
+    cachedVerifyPromise = null;
+    throw err;
+  });
+  return cachedVerifyPromise;
+}
+
 function getTransport() {
   const host = requireEnv("SMTP_HOST");
   const port = Number(requireEnv("SMTP_PORT"));
   const user = requireEnv("SMTP_USER");
-  const pass = requireEnv("SMTP_PASS");
+  const pass = normalizeSmtpPass(requireEnv("SMTP_PASS"));
 
-  return nodemailer.createTransport({
+  const cacheKey = getTransportCacheKey({ host, port, user });
+  if (cachedTransport && cachedTransportKey === cacheKey)
+    return cachedTransport;
+
+  cachedTransportKey = cacheKey;
+  cachedVerifyPromise = null;
+  cachedTransport = nodemailer.createTransport({
     host,
     port,
     secure: port === 465,
     auth: { user, pass },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
   });
+
+  return cachedTransport;
 }
 
 function chunkArray(arr, size) {
@@ -37,6 +75,7 @@ async function sendBulkEmail({
 }) {
   const from = requireEnv("SMTP_FROM");
   const transporter = getTransport();
+  await verifyTransport(transporter);
 
   const list = Array.from(
     new Set(
@@ -75,6 +114,7 @@ async function sendEmailOtp({ to, otp, ttlMinutes = 10 }) {
   const appName = process.env.APP_NAME || "CampusCore";
 
   const transporter = getTransport();
+  await verifyTransport(transporter);
 
   const subject = `${appName} verification code`;
   const text = `Your ${appName} verification code is: ${otp}\n\nIt expires in ${ttlMinutes} minutes.`;
@@ -102,6 +142,7 @@ async function sendPasswordResetOtp({ to, otp, ttlMinutes = 30 }) {
   const appName = process.env.APP_NAME || "CampusCore";
 
   const transporter = getTransport();
+  await verifyTransport(transporter);
 
   const subject = `${appName} password reset code`;
   const text = `We received a request to reset your ${appName} password.\n\nYour reset code is: ${otp}\n\nIt expires in ${ttlMinutes} minutes. If you didn't request this, you can ignore this email.`;
@@ -127,10 +168,12 @@ async function sendPasswordResetOtp({ to, otp, ttlMinutes = 30 }) {
 
 function getPrimaryClientOrigin() {
   const raw = process.env.CLIENT_ORIGIN || "http://localhost:5173";
-  return String(raw)
+  const first = String(raw)
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)[0];
+
+  return String(first || "http://localhost:5173").replace(/\/+$/, "");
 }
 
 async function sendPasswordResetEmail({ to, token, ttlMinutes = 30 }) {
@@ -143,6 +186,7 @@ async function sendPasswordResetEmail({ to, token, ttlMinutes = 30 }) {
   )}`;
 
   const transporter = getTransport();
+  await verifyTransport(transporter);
 
   const subject = `${appName} password reset`;
   const text = `We received a request to reset your ${appName} password.\n\nReset link: ${resetUrl}\n\nThis link expires in ${ttlMinutes} minutes. If you didn't request this, you can ignore this email.`;

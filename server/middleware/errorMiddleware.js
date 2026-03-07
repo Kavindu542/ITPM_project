@@ -3,6 +3,27 @@
 const errorHandler = (err, req, res, next) => {
   const message = err?.message || "Server error";
 
+  // Multer errors (file upload)
+  // https://github.com/expressjs/multer#error-handling
+  const isMulterError =
+    err &&
+    (err.name === "MulterError" ||
+      String(err?.code || "").startsWith("LIMIT_"));
+
+  if (isMulterError) {
+    const code = String(err.code || "");
+    if (code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ message: "File too large" });
+    }
+    if (code === "LIMIT_FILE_COUNT") {
+      return res.status(400).json({ message: "Too many files" });
+    }
+    if (code === "LIMIT_UNEXPECTED_FILE") {
+      return res.status(400).json({ message: "Unexpected file field" });
+    }
+    return res.status(400).json({ message });
+  }
+
   // If the API is running without a MongoDB connection, fail gracefully.
   const isDbUnavailable =
     message === "MONGODB_URI is missing" ||
