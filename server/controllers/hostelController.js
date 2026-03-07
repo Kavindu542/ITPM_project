@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const HostelApplication = require('../models/HostelApplication');
 const HostelComplaint = require('../models/HostelComplaint');
+const HostelReconsiderationRequest = require('../models/HostelReconsiderationRequest');
 const User = require('../models/User');
 const LaundryShop = require('../models/LaundryShop');
 const LaundryBooking = require('../models/LaundryBooking');
@@ -31,19 +32,28 @@ async function applyForHostel(req, res) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
+    const normalizedDistrict = String(district || '').trim();
+    const status = /^kandy$/i.test(normalizedDistrict) ? 'rejected' : 'pending';
+
     const app = await HostelApplication.create({
       user: userId,
       studentId,
       studentName,
       homeAddress,
-      district,
+      district: normalizedDistrict,
       roomType,
       preferredFloor,
       additionalInfo,
-      status: 'pending',
+      status,
     });
 
-    return res.status(201).json({ id: app._id, status: app.status });
+    return res.status(201).json({
+      id: app._id,
+      status: app.status,
+      message: app.status === 'rejected'
+        ? 'Your application was rejected based on district policy.'
+        : 'Application submitted successfully.',
+    });
   } catch (err) {
     console.error('applyForHostel error', err);
     return res.status(500).json({ message: 'Server error' });
@@ -79,7 +89,9 @@ async function getMyApplication(req, res) {
 // Admin (warden): list all applications
 async function adminListApplications(req, res) {
   try {
-    const apps = await HostelApplication.find({}).sort({ createdAt: -1 });
+    const apps = await HostelApplication.find({
+      district: { $not: /^kandy$/i },
+    }).sort({ createdAt: -1 });
     return res.json(
       apps.map((a) => ({
         id: a._id,
@@ -96,6 +108,125 @@ async function adminListApplications(req, res) {
     );
   } catch (err) {
     console.error('adminListApplications error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Student: submit reconsideration request for rejected application
+async function submitReconsiderationRequest(req, res) {
+  try {
+    const userId = req.user?._id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+
+    const { reason, preferredContact = '', additionalNotes = '' } = req.body || {};
+    const normalizedReason = String(reason || '').trim();
+    if (!normalizedReason) {
+      return res.status(400).json({ message: 'Reason is required' });
+    }
+
+    const latestApplication = await HostelApplication.findOne({ user: userId }).sort({ createdAt: -1 });
+    if (!latestApplication) {
+      return res.status(400).json({ message: 'No hostel application found' });
+    }
+
+    if (latestApplication.status !== 'rejected') {
+      return res.status(400).json({ message: 'Reconsideration is only available for rejected applications' });
+    }
+
+    const existingPending = await HostelReconsiderationRequest.findOne({
+      application: latestApplication._id,
+      status: 'pending',
+    });
+    if (existingPending) {
+      return res.status(409).json({ message: 'A pending request already exists for this application' });
+    }
+
+    const request = await HostelReconsiderationRequest.create({
+      user: userId,
+      application: latestApplication._id,
+      studentId: latestApplication.studentId,
+      studentName: latestApplication.studentName,
+      district: latestApplication.district,
+      reason: normalizedReason,
+      preferredContact: String(preferredContact || '').trim(),
+      additionalNotes: String(additionalNotes || '').trim(),
+      status: 'pending',
+    });
+
+    return res.status(201).json({
+      id: request._id,
+      status: request.status,
+      message: 'Reconsideration request submitted successfully',
+    });
+  } catch (err) {
+    console.error('submitReconsiderationRequest error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Student: get own reconsideration requests
+async function getMyReconsiderationRequests(req, res) {
+  try {
+    const userId = req.user?._id;
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+
+    const requests = await HostelReconsiderationRequest.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .select('studentId studentName district reason preferredContact additionalNotes adminMessage status createdAt');
+
+    return res.json(requests);
+  } catch (err) {
+    console.error('getMyReconsiderationRequests error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Admin (warden): list all reconsideration requests
+async function adminListReconsiderationRequests(_req, res) {
+  try {
+    const requests = await HostelReconsiderationRequest.find({})
+      .sort({ createdAt: -1 })
+      .select('studentId studentName district reason preferredContact additionalNotes adminMessage status createdAt');
+
+    return res.json(requests);
+  } catch (err) {
+    console.error('adminListReconsiderationRequests error', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
+
+// Admin (warden): approve/reject reconsideration request
+async function adminUpdateReconsiderationRequestStatus(req, res) {
+  try {
+    const { id } = req.params;
+    const { status, adminMessage = '' } = req.body || {};
+    if (!['approved', 'rejected'].includes(String(status))) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const request = await HostelReconsiderationRequest.findById(id);
+    if (!request) return res.status(404).json({ message: 'Request not found' });
+
+    const finalMessage = String(adminMessage || '').trim()
+      || (status === 'rejected' ? 'Sorry, your request was rejected.' : 'Your request was approved.');
+
+    request.status = String(status);
+    request.adminMessage = finalMessage;
+    await request.save();
+
+    if (status === 'approved') {
+      await HostelApplication.findByIdAndUpdate(request.application, {
+        $set: { status: 'approved' },
+      });
+    }
+
+    return res.json({
+      id: request._id,
+      status: request.status,
+      adminMessage: request.adminMessage,
+    });
+  } catch (err) {
+    console.error('adminUpdateReconsiderationRequestStatus error', err);
     return res.status(500).json({ message: 'Server error' });
   }
 }
@@ -552,6 +683,10 @@ module.exports = {
   getMyComplaints,
   adminListComplaints,
   adminUpdateComplaintStatus,
+  submitReconsiderationRequest,
+  getMyReconsiderationRequests,
+  adminListReconsiderationRequests,
+  adminUpdateReconsiderationRequestStatus,
   adminCreateMealShopAccount,
   adminCreateLaundryShopAccount,
   adminGetLaundryShopProfile,

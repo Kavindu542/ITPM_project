@@ -10,6 +10,10 @@ const {
   getMyComplaints,
   adminListComplaints,
   adminUpdateComplaintStatus,
+  submitReconsiderationRequest,
+  getMyReconsiderationRequests,
+  adminListReconsiderationRequests,
+  adminUpdateReconsiderationRequestStatus,
   adminCreateMealShopAccount,
   adminCreateLaundryShopAccount,
   adminGetLaundryShopProfile,
@@ -31,6 +35,8 @@ router.post('/apply', requireAuth, applyForHostel);
 router.get('/my-application', requireAuth, getMyApplication);
 router.post('/complaints', requireAuth, submitComplaint);
 router.get('/my-complaints', requireAuth, getMyComplaints);
+router.post('/reconsideration-requests', requireAuth, submitReconsiderationRequest);
+router.get('/my-reconsideration-requests', requireAuth, getMyReconsiderationRequests);
 router.get('/laundry/shops', requireAuth, listLaundryShops);
 router.post('/laundry/bookings', requireAuth, createLaundryBooking);
 router.get('/laundry/my-bookings', requireAuth, getMyLaundryBookings);
@@ -40,6 +46,8 @@ router.get('/admin/all-applications', requireAuth, requireModuleAdmin('hostel-wa
 router.put('/admin/applications/:id', requireAuth, requireModuleAdmin('hostel-warden'), adminUpdateApplicationStatus);
 router.get('/admin/all-complaints', requireAuth, requireModuleAdmin('hostel-warden'), adminListComplaints);
 router.put('/admin/complaints/:id', requireAuth, requireModuleAdmin('hostel-warden'), adminUpdateComplaintStatus);
+router.get('/admin/reconsideration-requests', requireAuth, requireModuleAdmin('hostel-warden'), adminListReconsiderationRequests);
+router.put('/admin/reconsideration-requests/:id/status', requireAuth, requireModuleAdmin('hostel-warden'), adminUpdateReconsiderationRequestStatus);
 router.post('/admin/meal-shop-accounts', requireAuth, requireModuleAdmin('hostel-warden'), adminCreateMealShopAccount);
 router.post('/admin/laundry-shop-accounts', requireAuth, requireModuleAdmin('hostel-warden'), adminCreateLaundryShopAccount);
 router.get('/admin/laundry/shop-profile', requireAuth, requireModuleAdmin('hostel-laundry'), adminGetLaundryShopProfile);

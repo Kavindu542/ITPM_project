@@ -26,6 +26,10 @@ export default function Hostel({ user, onLoggedOut }) {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState(false);
+  const [reconsiderationSubmitting, setReconsiderationSubmitting] = useState(false);
+  const [reconsiderationError, setReconsiderationError] = useState('');
+  const [reconsiderationSuccess, setReconsiderationSuccess] = useState('');
+  const [reconsiderationRequests, setReconsiderationRequests] = useState([]);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [laundryShops, setLaundryShops] = useState([]);
   const [laundryLoading, setLaundryLoading] = useState(false);
@@ -64,6 +68,11 @@ export default function Hostel({ user, onLoggedOut }) {
     roomType: '',
     preferredFloor: '',
     additionalInfo: '',
+  });
+  const [reconsiderationForm, setReconsiderationForm] = useState({
+    reason: '',
+    preferredContact: user?.contactNumber || '',
+    additionalNotes: '',
   });
 
   const roomTypeOptions = ['Single Room (1 person)', 'Double Room (2 persons)'];
@@ -121,6 +130,11 @@ export default function Hostel({ user, onLoggedOut }) {
           loadLaundryShops();
           loadMyLaundryBookings();
           loadMealShopProfile();
+          setReconsiderationRequests([]);
+          setReconsiderationError('');
+          setReconsiderationSuccess('');
+        } else if (application.status === 'rejected') {
+          loadMyReconsiderationRequests();
         } else {
           // Stop polling if status is no longer pending
           if (pollIntervalRef.current) {
@@ -132,6 +146,7 @@ export default function Hostel({ user, onLoggedOut }) {
         setApplicationStatus('none');
         setLaundryShops([]);
         setLaundryBookings([]);
+        setReconsiderationRequests([]);
         // Stop polling
         if (pollIntervalRef.current) {
           clearInterval(pollIntervalRef.current);
@@ -192,6 +207,16 @@ export default function Hostel({ user, onLoggedOut }) {
       console.error('Failed to load laundry bookings', err);
     } finally {
       setLaundryBookingLoading(false);
+    }
+  };
+
+  const loadMyReconsiderationRequests = async () => {
+    try {
+      const data = await hostelService.getMyReconsiderationRequests();
+      setReconsiderationRequests(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load reconsideration requests', err);
+      setReconsiderationError(err?.message || 'Failed to load reconsideration requests');
     }
   };
 
@@ -495,6 +520,11 @@ export default function Hostel({ user, onLoggedOut }) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleReconsiderationChange = (e) => {
+    const { name, value } = e.target;
+    setReconsiderationForm((prev) => ({ ...prev, [name]: value }));
+  };
+
   const isFormValid = () => {
     return (
       formData.studentId &&
@@ -523,7 +553,11 @@ export default function Hostel({ user, onLoggedOut }) {
       console.log('Application submitted:', response);
       setFormSuccess(true);
       setTimeout(() => {
-        setApplicationStatus('pending');
+        const nextStatus = response?.status || 'pending';
+        setApplicationStatus(nextStatus);
+        if (nextStatus === 'rejected') {
+          loadMyReconsiderationRequests();
+        }
         setFormSuccess(false);
       }, 2000);
     } catch (err) {
@@ -532,6 +566,33 @@ export default function Hostel({ user, onLoggedOut }) {
       setFormError(errorMessage);
     } finally {
       setFormSubmitting(false);
+    }
+  };
+
+  const handleReconsiderationSubmit = async (e) => {
+    e.preventDefault();
+    setReconsiderationError('');
+    setReconsiderationSuccess('');
+
+    if (!String(reconsiderationForm.reason || '').trim()) {
+      setReconsiderationError('Please enter the reason for reconsideration.');
+      return;
+    }
+
+    setReconsiderationSubmitting(true);
+    try {
+      await hostelService.submitReconsiderationRequest(reconsiderationForm);
+      setReconsiderationSuccess('Your application is rejected. Reconsideration request submitted successfully.');
+      setReconsiderationForm((prev) => ({
+        ...prev,
+        reason: '',
+        additionalNotes: '',
+      }));
+      await loadMyReconsiderationRequests();
+    } catch (err) {
+      setReconsiderationError(err?.message || 'Failed to submit reconsideration request');
+    } finally {
+      setReconsiderationSubmitting(false);
     }
   };
 
@@ -797,20 +858,132 @@ export default function Hostel({ user, onLoggedOut }) {
   // Rejected state
   if (applicationStatus === 'rejected') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 flex items-center justify-center p-6">
-        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-lg max-w-md text-center">
-          <div className="p-3 bg-red-50 rounded-lg w-fit mx-auto mb-4">
-            <AlertCircle className="h-6 w-6 text-red-600" />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 p-6">
+        <div className="mx-auto max-w-3xl space-y-4">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-lg">
+            <div className="p-3 bg-red-50 rounded-lg w-fit mb-4">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Your application is rejected</h2>
+            <p className="text-gray-600">
+              Your hostel application was rejected. You can submit a reconsideration request form below.
+            </p>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Rejected</h2>
-          <p className="text-gray-600 mb-6">Unfortunately, your hostel application was not approved. Contact the administration for details.</p>
-          <button
-            type="button"
-            onClick={() => navigate('/', { replace: true })}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Back to Home
-          </button>
+
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-lg">
+            <h3 className="text-lg font-semibold text-gray-900">Reconsider form</h3>
+            <p className="text-sm text-gray-500 mt-1">Submit your request to be reviewed by the warden admin.</p>
+
+            {reconsiderationError && (
+              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {reconsiderationError}
+              </div>
+            )}
+            {reconsiderationSuccess && (
+              <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                {reconsiderationSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleReconsiderationSubmit} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Reason *</label>
+                <textarea
+                  name="reason"
+                  value={reconsiderationForm.reason}
+                  onChange={handleReconsiderationChange}
+                  rows={4}
+                  required
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Explain why your application should be reconsidered."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Contact Number</label>
+                <input
+                  type="tel"
+                  name="preferredContact"
+                  value={reconsiderationForm.preferredContact}
+                  onChange={handleReconsiderationChange}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="07X XXX XXXX"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Additional Notes (optional)</label>
+                <textarea
+                  name="additionalNotes"
+                  value={reconsiderationForm.additionalNotes}
+                  onChange={handleReconsiderationChange}
+                  rows={3}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={reconsiderationSubmitting}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                >
+                  {reconsiderationSubmitting ? 'Submitting...' : 'Submit Reconsideration'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/', { replace: true })}
+                  className="px-6 py-2 bg-gray-200 text-gray-900 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Back to Home
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-lg">
+            <h4 className="text-base font-semibold text-gray-900 mb-3">Your reconsideration requests</h4>
+            {reconsiderationRequests.length === 0 ? (
+              <p className="text-sm text-gray-600">No request submitted yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {reconsiderationRequests.map((request) => (
+                  <div key={request._id || request.id} className="rounded-lg border border-gray-200 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm text-gray-800">{request.reason}</div>
+                      <span className={`rounded-md px-2 py-1 text-xs font-medium ${
+                        request.status === 'approved'
+                          ? 'bg-green-100 text-green-700'
+                          : request.status === 'rejected'
+                            ? 'bg-red-100 text-red-700'
+                            : request.status === 'reviewed'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {request.status}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      Submitted: {request.createdAt ? new Date(request.createdAt).toLocaleString() : '-'}
+                    </div>
+                    {request.adminMessage ? (
+                      <div className={`mt-2 text-xs font-medium ${
+                        request.status === 'rejected' ? 'text-red-700' : 'text-green-700'
+                      }`}>
+                        {request.adminMessage}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={checkApplicationStatus}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              >
+                Refresh Application Status
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
