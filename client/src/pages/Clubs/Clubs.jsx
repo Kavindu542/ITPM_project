@@ -1,11 +1,10 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CalendarDays, FileText, Home, Menu, Settings, Users, Users2, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, CalendarDays, FileText, Home, Users, Users2 } from 'lucide-react';
 import { clubService } from '../../services/clubService';
 
 export default function Clubs({ user, onLoggedOut }) {
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState('dashboard');
   const currentUserId = user?.id || user?._id;
   const roleNorm = String(user?.role || '')
@@ -14,6 +13,7 @@ export default function Clubs({ user, onLoggedOut }) {
     .replace(/\s+/g, '_')
     .replace(/-+/g, '_');
   const canApply = roleNorm === 'student' || roleNorm === 'club_leader';
+  const isClubLeader = roleNorm === 'club_leader';
   const [feedLoading, setFeedLoading] = React.useState(false);
   const [hasMembership, setHasMembership] = React.useState(false);
   const [myMeetings, setMyMeetings] = React.useState([]);
@@ -178,97 +178,122 @@ export default function Clubs({ user, onLoggedOut }) {
     return items;
   }, [hasMembership]);
 
+  const activeItem = React.useMemo(() => {
+    const found = menuItems.find((item) => item.key === activeTab);
+    return found || menuItems[0];
+  }, [menuItems, activeTab]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans">
-      <div className="flex h-screen overflow-hidden">
-        {/* Sidebar */}
-        <div
-          className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            } fixed inset-y-0 left-0 z-50 w-30 bg-[#2458e6] shadow-xl transition-transform duration-300 md:translate-x-0 md:left-4 md:top-24 md:bottom-4 md:inset-y-auto md:rounded-[30px]`}
-        >
-          <div className="flex flex-col h-full">
-            {/* Header */}
-            <div className="px-4 pt-5 pb-3">
-              <div className="flex flex-col items-center">
-                <div className="h-12 w-12 rounded-2xl bg-white grid place-items-center shadow-sm">
-                  <Users className="h-5 w-5 text-[#2458e6]" />
+    <div className="h-[calc(100vh-6rem)] bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 font-sans overflow-hidden">
+      <div className="relative w-full h-full p-6 lg:pt-0 lg:pb-0 flex flex-col">
+        <div className="mt-0 grid grid-cols-1 grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-12 lg:grid-rows-[minmax(0,1fr)] gap-6 flex-1 h-full min-h-0 overflow-hidden">
+          <div className="lg:col-span-1 lg:h-full lg:min-h-0">
+            <aside className="h-full">
+              {/* Mobile/tablet: list menu */}
+              <div className="lg:hidden bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                <div className="p-5 border-b border-gray-200">
+                  <div className="text-sm font-bold text-gray-900">Menu</div>
+                  <div className="text-xs text-gray-500 mt-1">Navigate club features</div>
                 </div>
+                <div className="p-3 space-y-1">
+                  {menuItems.map((item) => {
+                    const isActive = activeTab === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setActiveTab(item.key)}
+                        className={`w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
+                          isActive
+                            ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm'
+                            : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-800'
+                        }`}
+                      >
+                        <item.icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-700'}`} />
+                        <span className={isActive ? 'text-white' : 'text-gray-800'}>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Desktop: slim blue icon sidebar */}
+              <div className="hidden lg:flex w-30 self-stretch flex-col items-center justify-between rounded-[2rem] bg-blue-600 px-4 py-6 shadow-sm h-full min-h-0">
+                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shrink-0">
+                  <Users className="h-6 w-6 text-blue-600" />
+                </div>
+
+                <div className="w-full flex-1 min-h-0 flex flex-col items-center justify-start gap-3 py-2 overflow-y-auto no-scrollbar">
+                  {menuItems.map((item) => {
+                    const isActive = activeTab === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setActiveTab(item.key)}
+                        className={`w-full flex flex-col items-center rounded-2xl px-3 py-2 transition-colors ${
+                          isActive ? 'bg-white text-blue-700' : 'text-white/90 hover:bg-white/10'
+                        }`}
+                        title={item.label}
+                      >
+                        <item.icon className={`h-5 w-5 ${isActive ? 'text-blue-700' : 'text-white'}`} />
+                        <span
+                          className={`mt-1 text-[11px] font-semibold text-center leading-tight ${
+                            isActive ? 'text-gray-900' : 'text-white'
+                          }`}
+                        >
+                          {item.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          <div className="lg:col-span-11 h-full min-h-0 bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden shadow-sm overflow-y-auto no-scrollbar">
+            <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-bold text-gray-900">{activeItem?.label || 'Clubs'}</div>
+                <div className="text-xs text-gray-500 mt-1">Use the sidebar to switch sections.</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50"
+                  onClick={() => navigate('/')}
+                >
+                  <ArrowLeft className="h-4 w-4 text-gray-700" />
+                  <span className="font-medium text-gray-800">Back</span>
+                </button>
               </div>
             </div>
 
-            {/* Menu Items */}
-            <nav
-              className="flex-1 p-4 space-y-2 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {menuItems.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab(item.key);
-                    setSidebarOpen(false);
-                  }}
-                  className={`w-full flex flex-col items-center justify-center gap-1 px-2 py-3 rounded-2xl text-center transition-all ${
-                    activeTab === item.key
-                      ? 'bg-white text-[#1f3f9a] shadow-md'
-                      : 'text-blue-100 hover:bg-white/10'
-                  }`}
-                >
-                  <div
-                    className={`h-8 w-8 rounded-xl grid place-items-center ${
-                      activeTab === item.key ? 'bg-[#eef3ff]' : 'bg-white/15'
-                    }`}
-                  >
-                    <item.icon className={`h-4 w-4 ${activeTab === item.key ? 'text-[#2458e6]' : 'text-white'}`} />
-                  </div>
-                  <div className={`font-semibold text-xs leading-4 ${activeTab === item.key ? 'text-[#1f3f9a]' : 'text-white'}`}>
-                    {item.label}
-                  </div>
-                </button>
-              ))}
-            </nav>
+            <div className="p-6">
+              {activeTab === 'dashboard' ? (
+                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
+                  <div className="p-6 border-b border-gray-200 flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-pink-50 rounded-lg">
+                        <Users className="h-5 w-5 text-pink-600" />
+                      </div>
+                      <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Clubs Dashboard</h1>
+                        <p className="text-sm text-gray-500">Events and member updates</p>
+                      </div>
+                    </div>
 
-          </div>
-        </div>
-
-        {/* Main */}
-        <div className="flex-1 overflow-auto md:ml-44">
-          <div className="max-w-6xl mx-auto p-6">
-            <div className="flex items-center justify-between mb-6">
-              <button
-                type="button"
-                className="md:hidden inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-              >
-                {sidebarOpen ? (
-                  <X className="h-4 w-4 text-gray-700" />
-                ) : (
-                  <Menu className="h-4 w-4 text-gray-700" />
-                )}
-              </button>
-
-              <button
-                type="button"
-                className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50"
-                onClick={() => navigate('/')}
-              >
-                <ArrowLeft className="h-4 w-4 text-gray-700" />
-                <span className="font-medium text-gray-800">Back</span>
-              </button>
-            </div>
-
-            {activeTab === 'dashboard' ? (
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
-                <div className="p-6 border-b border-gray-200 flex items-center gap-3">
-                  <div className="p-2 bg-pink-50 rounded-lg">
-                    <Users className="h-5 w-5 text-pink-600" />
+                    {isClubLeader ? (
+                      <Link
+                        to="/leader/dashboard"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-indigo-200 bg-white text-sm font-semibold text-indigo-700 hover:bg-indigo-50 whitespace-nowrap"
+                      >
+                        Leader Dashboard
+                        <span aria-hidden="true">→</span>
+                      </Link>
+                    ) : null}
                   </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Clubs Dashboard</h1>
-                    <p className="text-sm text-gray-500">Events and member updates</p>
-                  </div>
-                </div>
 
                 <div className="p-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -744,6 +769,8 @@ export default function Clubs({ user, onLoggedOut }) {
           </div>
         </div>
       ) : null}
+
+      </div>
     </div>
   );
 }
