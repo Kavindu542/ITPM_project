@@ -1,7 +1,5 @@
 const express = require("express");
 const multer = require("multer");
-const path = require("path");
-const crypto = require("crypto");
 
 const { requireAuth } = require("../middleware/authMiddleware");
 const { requireModuleAdmin } = require("../middleware/moduleAuthMiddleware");
@@ -11,21 +9,25 @@ const aiChatController = require("../controllers/aiChatController");
 
 const router = express.Router();
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "..", "uploads", "study-materials"));
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname || "");
-    cb(null, `${crypto.randomUUID()}${ext}`);
-  },
-});
+const toPositiveInt = (rawValue, fallback) => {
+  const n = Number(rawValue);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+};
+
+const maxUploadMb = toPositiveInt(
+  process.env.STUDY_MATERIAL_UPLOAD_MAX_MB,
+  4,
+);
+const maxUploadFiles = toPositiveInt(
+  process.env.STUDY_MATERIAL_UPLOAD_MAX_FILES,
+  5,
+);
 
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: {
-    fileSize: 250 * 1024 * 1024, // 250MB
-    files: 25,
+    fileSize: maxUploadMb * 1024 * 1024,
+    files: maxUploadFiles,
   },
 });
 
@@ -103,7 +105,7 @@ router.post(
   "/admin/materials",
   requireAuth,
   requireModuleAdmin("study-material"),
-  upload.array("files", 25),
+  upload.array("files", maxUploadFiles),
   controller.adminCreateMaterials,
 );
 router.post(

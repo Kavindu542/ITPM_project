@@ -1,17 +1,11 @@
-const path = require('path');
-const fs = require('fs');
 const multer = require('multer');
 
-const uploadDir = path.join(__dirname, '..', 'uploads', 'library');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+const toPositiveInt = (rawValue, fallback) => {
+  const n = Number(rawValue);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+};
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
-  },
-});
+const maxUploadMb = toPositiveInt(process.env.LIBRARY_UPLOAD_MAX_MB, 4);
 
 const fileFilter = (_req, file, cb) => {
   const ok =
@@ -20,4 +14,11 @@ const fileFilter = (_req, file, cb) => {
   cb(ok ? null : new Error('Only images and PDFs are allowed'), ok);
 };
 
-module.exports = multer({ storage, fileFilter });
+module.exports = multer({
+  storage: multer.memoryStorage(),
+  fileFilter,
+  limits: {
+    fileSize: maxUploadMb * 1024 * 1024,
+    files: 2,
+  },
+});

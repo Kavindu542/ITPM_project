@@ -6,7 +6,6 @@ const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 const mongoose = require("mongoose");
-const path = require("path");
 
 const { connectDB } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
@@ -73,8 +72,6 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/study-material", studyMaterialRoutes);
-
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/library", libraryRoutes);
 
 app.use("/api/admin", adminClubRoutes);

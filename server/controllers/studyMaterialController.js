@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { Readable } = require("stream");
 const { PDFParse } = require("pdf-parse");
 const StudyMaterial = require("../models/StudyMaterial");
 const StudyMaterialDownload = require("../models/StudyMaterialDownload");
@@ -7,8 +8,11 @@ const StudyMaterialBookmark = require("../models/StudyMaterialBookmark");
 const StudyMaterialReview = require("../models/StudyMaterialReview");
 const User = require("../models/User");
 const { sendBulkEmail } = require("../utils/email");
-
-const UPLOAD_ROOT = path.join(__dirname, "..", "uploads", "study-materials");
+const {
+  isHttpUrl,
+  uploadBufferToObjectStorage,
+  deleteObjectFromStorage,
+} = require("../utils/objectStorage");
 
 const MAX_PDF_EXTRACT_BYTES = 15 * 1024 * 1024; // 15MB
 const MAX_EXTRACTED_TEXT_CHARS = 20000;
@@ -56,20 +60,60 @@ const extractModuleCodesFromText = (text) => {
   return Array.from(out).filter(Boolean);
 };
 
-const tryExtractPdfText = async (absolutePath, sizeBytes) => {
+const readBufferFromFileRef = async (fileRef, maxBytes) => {
+  const ref = String(fileRef || "").trim();
+  if (!ref) return null;
+
+  if (isHttpUrl(ref)) {
+    const response = await fetch(ref);
+    if (!response.ok) return null;
+
+    const contentLength = Number(response.headers.get("content-length"));
+    if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+      return null;
+    }
+
+    const arr = await response.arrayBuffer();
+    const buf = Buffer.from(arr);
+    if (buf.length > maxBytes) return null;
+    return buf;
+  }
+
+  const absolutePath = path.isAbsolute(ref) ? ref : path.join(__dirname, "..", ref);
+  const buf = await fs.promises.readFile(absolutePath);
+  if (buf.length > maxBytes) return null;
+  return buf;
+};
+
+const tryExtractPdfText = async ({
+  fileBuffer,
+  fileRef,
+  originalName,
+  mimeType,
+  sizeBytes,
+}) => {
   try {
-    if (!absolutePath) return { text: "", moduleCodes: [] };
-    const ext = String(path.extname(absolutePath) || "").toLowerCase();
-    if (ext !== ".pdf") return { text: "", moduleCodes: [] };
+    const ext = String(
+      path.extname(String(originalName || fileRef || "")) || "",
+    ).toLowerCase();
+    const mime = String(mimeType || "").toLowerCase();
+    const isPdf = ext === ".pdf" || mime === "application/pdf";
+    if (!isPdf) return { text: "", moduleCodes: [] };
 
     const knownSize = Number.isFinite(sizeBytes) ? sizeBytes : null;
     if (knownSize !== null && knownSize > MAX_PDF_EXTRACT_BYTES) {
       return { text: "", moduleCodes: [] };
     }
 
-    const buf = await fs.promises.readFile(absolutePath);
-    if (buf.length > MAX_PDF_EXTRACT_BYTES)
+    const buf =
+      fileBuffer && Buffer.isBuffer(fileBuffer)
+        ? fileBuffer
+        : fileBuffer
+          ? Buffer.from(fileBuffer)
+          : await readBufferFromFileRef(fileRef, MAX_PDF_EXTRACT_BYTES);
+    if (!buf || buf.length > MAX_PDF_EXTRACT_BYTES) {
       return { text: "", moduleCodes: [] };
+    }
 
     const rawText = await parsePdfTextFromBuffer(buf);
     const text = String(rawText || "")
@@ -86,12 +130,14 @@ const tryExtractPdfText = async (absolutePath, sizeBytes) => {
 const updateExtractedSearchForMaterial = async ({ material, version }) => {
   try {
     if (!material || !version?.filePath) return;
-    const absolutePath = path.join(__dirname, "..", String(version.filePath));
 
-    const { text, moduleCodes } = await tryExtractPdfText(
-      absolutePath,
-      version.sizeBytes,
-    );
+    const { text, moduleCodes } = await tryExtractPdfText({
+      fileRef: version.filePath,
+      originalName: version.originalName,
+      mimeType: version.mimeType,
+      sizeBytes: version.sizeBytes,
+      fileBuffer: version.fileBuffer,
+    });
 
     if (!text && (!moduleCodes || moduleCodes.length === 0)) return;
 
@@ -115,10 +161,6 @@ const updateExtractedSearchForMaterial = async ({ material, version }) => {
   } catch {
     // best-effort
   }
-};
-
-const ensureUploadDir = () => {
-  fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
 };
 
 const normalizeStringArray = (value) => {
@@ -181,6 +223,19 @@ const matchesAccess = (user, material) => {
 const getSafeFileName = (originalName) => {
   const base = String(originalName || "file").replace(/[^a-zA-Z0-9._-]+/g, "_");
   return base.slice(0, 120) || "file";
+};
+
+const uploadStudyMaterialFile = async (file) => {
+  if (!file) throw new Error("file is required");
+
+  const uploaded = await uploadBufferToObjectStorage({
+    buffer: file.buffer,
+    originalName: file.originalname,
+    mimeType: file.mimetype,
+    folder: "study-materials",
+  });
+
+  return uploaded.url;
 };
 
 const escapeRegExp = (value) =>
@@ -513,6 +568,11 @@ const adminDeleteMaterial = async (req, res) => {
   );
 
   for (const p of versionPaths) {
+    if (isHttpUrl(p)) {
+      await deleteObjectFromStorage(p).catch(() => {});
+      continue;
+    }
+
     const abs = path.isAbsolute(p) ? p : path.join(__dirname, "..", p);
     try {
       if (fs.existsSync(abs)) fs.unlinkSync(abs);
@@ -589,8 +649,6 @@ const getMaterial = async (req, res) => {
 };
 
 const streamMaterialFile = async (req, res) => {
-  ensureUploadDir();
-
   const material = await StudyMaterial.findById(req.params.id);
   if (!material) return res.status(404).json({ message: "Not found" });
 
@@ -614,13 +672,8 @@ const streamMaterialFile = async (req, res) => {
   );
   if (!version) return res.status(404).json({ message: "File not found" });
 
-  const filePath = version.filePath;
-  const abs = path.isAbsolute(filePath)
-    ? filePath
-    : path.join(__dirname, "..", filePath);
-
-  if (!fs.existsSync(abs))
-    return res.status(404).json({ message: "File not found" });
+  const fileRef = String(version.filePath || "").trim();
+  if (!fileRef) return res.status(404).json({ message: "File not found" });
 
   // Track downloads only for attachment mode
   if (disposition === "attachment") {
@@ -639,9 +692,57 @@ const streamMaterialFile = async (req, res) => {
     }).catch(() => {});
   }
 
-  const stat = fs.statSync(abs);
   const mime = version.mimeType || "application/octet-stream";
+  const range = req.headers.range;
+  if (isHttpUrl(fileRef)) {
+    const upstream = await fetch(fileRef, {
+      headers: range ? { Range: String(range) } : undefined,
+    });
 
+    if (upstream.status === 404) {
+      return res.status(404).json({ message: "File not found" });
+    }
+    if (!upstream.ok && upstream.status !== 206 && upstream.status !== 416) {
+      return res
+        .status(502)
+        .json({ message: "Unable to fetch file from storage" });
+    }
+
+    const statusCode = upstream.status === 206 || upstream.status === 416
+      ? upstream.status
+      : 200;
+    res.status(statusCode);
+    res.setHeader(
+      "Content-Type",
+      mime || upstream.headers.get("content-type") || "application/octet-stream",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `${disposition}; filename="${getSafeFileName(version.originalName)}"`,
+    );
+    res.setHeader(
+      "Accept-Ranges",
+      upstream.headers.get("accept-ranges") || "bytes",
+    );
+
+    const contentLength = upstream.headers.get("content-length");
+    if (contentLength) res.setHeader("Content-Length", contentLength);
+
+    const contentRange = upstream.headers.get("content-range");
+    if (contentRange) res.setHeader("Content-Range", contentRange);
+
+    if (statusCode === 416 || !upstream.body) return res.end();
+    return Readable.fromWeb(upstream.body).pipe(res);
+  }
+
+  const abs = path.isAbsolute(fileRef)
+    ? fileRef
+    : path.join(__dirname, "..", fileRef);
+  if (!fs.existsSync(abs)) {
+    return res.status(404).json({ message: "File not found" });
+  }
+
+  const stat = fs.statSync(abs);
   res.setHeader("Content-Type", mime);
   res.setHeader(
     "Content-Disposition",
@@ -649,7 +750,6 @@ const streamMaterialFile = async (req, res) => {
   );
   res.setHeader("Accept-Ranges", "bytes");
 
-  const range = req.headers.range;
   if (range) {
     const m = /bytes=(\d+)-(\d*)/.exec(range);
     if (m) {
@@ -673,11 +773,11 @@ const streamMaterialFile = async (req, res) => {
 };
 
 const createSuggestion = async (req, res) => {
-  ensureUploadDir();
-
   if (!req.file) {
     return res.status(400).json({ message: "file is required" });
   }
+
+  const uploadedFileUrl = await uploadStudyMaterialFile(req.file);
 
   const title = String(req.body.title || req.file.originalname).trim();
   if (!title) return res.status(400).json({ message: "title is required" });
@@ -729,7 +829,7 @@ const createSuggestion = async (req, res) => {
 
     versions: [
       {
-        filePath: path.relative(path.join(__dirname, ".."), req.file.path),
+        filePath: uploadedFileUrl,
         originalName: req.file.originalname,
         mimeType: req.file.mimetype,
         sizeBytes: req.file.size,
@@ -744,7 +844,10 @@ const createSuggestion = async (req, res) => {
 
   await updateExtractedSearchForMaterial({
     material,
-    version: material.versions[0],
+    version: {
+      ...material.versions[0].toObject(),
+      fileBuffer: req.file.buffer,
+    },
   });
 
   await material.save();
@@ -942,8 +1045,6 @@ const listHistory = async (req, res) => {
 // ---------------- Admin ----------------
 
 const adminCreateMaterials = async (req, res) => {
-  ensureUploadDir();
-
   const files = Array.isArray(req.files) ? req.files : [];
   if (!files.length)
     return res.status(400).json({ message: "files are required" });
@@ -958,6 +1059,8 @@ const adminCreateMaterials = async (req, res) => {
   };
 
   for (const file of files) {
+    const uploadedFileUrl = await uploadStudyMaterialFile(file);
+
     const title = String(
       req.body.title || path.parse(file.originalname).name,
     ).trim();
@@ -1005,7 +1108,7 @@ const adminCreateMaterials = async (req, res) => {
       },
       versions: [
         {
-          filePath: path.relative(path.join(__dirname, ".."), file.path),
+          filePath: uploadedFileUrl,
           originalName: file.originalname,
           mimeType: file.mimetype,
           sizeBytes: file.size,
@@ -1020,7 +1123,10 @@ const adminCreateMaterials = async (req, res) => {
 
     await updateExtractedSearchForMaterial({
       material: m,
-      version: m.versions[0],
+      version: {
+        ...m.versions[0].toObject(),
+        fileBuffer: file.buffer,
+      },
     });
 
     await m.save();
@@ -1036,15 +1142,16 @@ const adminCreateMaterials = async (req, res) => {
 };
 
 const adminAddVersion = async (req, res) => {
-  ensureUploadDir();
   if (!req.file) return res.status(400).json({ message: "file is required" });
+
+  const uploadedFileUrl = await uploadStudyMaterialFile(req.file);
 
   const material = await StudyMaterial.findById(req.params.id);
   if (!material) return res.status(404).json({ message: "Not found" });
 
   const note = String(req.body.note || "").trim();
   material.versions.push({
-    filePath: path.relative(path.join(__dirname, ".."), req.file.path),
+    filePath: uploadedFileUrl,
     originalName: req.file.originalname,
     mimeType: req.file.mimetype,
     sizeBytes: req.file.size,
@@ -1056,7 +1163,13 @@ const adminAddVersion = async (req, res) => {
   const newVersion = material.versions[material.versions.length - 1];
   material.currentVersionId = newVersion._id;
 
-  await updateExtractedSearchForMaterial({ material, version: newVersion });
+  await updateExtractedSearchForMaterial({
+    material,
+    version: {
+      ...newVersion.toObject(),
+      fileBuffer: req.file.buffer,
+    },
+  });
 
   await material.save();
 

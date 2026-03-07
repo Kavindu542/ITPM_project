@@ -1,4 +1,3 @@
-const path = require("path");
 const mongoose = require("mongoose");
 
 const User = require("../models/User");
@@ -9,6 +8,7 @@ const StudyMaterialForumCategory = require("../models/StudyMaterialForumCategory
 const StudyMaterialForumThread = require("../models/StudyMaterialForumThread");
 const StudyMaterialForumBan = require("../models/StudyMaterialForumBan");
 const { sendBulkEmail } = require("../utils/email");
+const { uploadBufferToObjectStorage } = require("../utils/objectStorage");
 
 const isAdmin = (req) => req.auth?.module === "study-material";
 
@@ -272,7 +272,14 @@ const adminFulfillRequest = async (req, res) => {
     uploadedBy: req.user._id,
     versions: [
       {
-        filePath: path.relative(path.join(__dirname, ".."), req.file.path),
+        filePath: (
+          await uploadBufferToObjectStorage({
+            buffer: req.file.buffer,
+            originalName: req.file.originalname,
+            mimeType: req.file.mimetype,
+            folder: "study-materials",
+          })
+        ).url,
         originalName: req.file.originalname,
         mimeType: req.file.mimetype,
         sizeBytes: req.file.size,
