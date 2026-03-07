@@ -11,6 +11,7 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
   const [error, setError] = React.useState('');
   const [applications, setApplications] = React.useState([]);
   const [complaints, setComplaints] = React.useState([]);
+  const [reconsiderationRequests, setReconsiderationRequests] = React.useState([]);
   const [activeTab, setActiveTab] = React.useState('applications');
 
   const [mealShopForm, setMealShopForm] = React.useState({
@@ -62,13 +63,28 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
     }
   }, [activeTab]);
 
+  const loadReconsiderationRequests = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await hostelService.getAllReconsiderationRequests();
+      setReconsiderationRequests(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setError(e?.message || 'Failed to load reconsideration requests');
+    } finally {
+      if (activeTab === 'requests') setLoading(false);
+    }
+  }, [activeTab]);
+
   React.useEffect(() => {
     if (activeTab === 'applications') {
       loadApplications();
-    } else {
+    } else if (activeTab === 'complaints') {
       loadComplaints();
+    } else if (activeTab === 'requests') {
+      loadReconsiderationRequests();
     }
-  }, [activeTab, loadApplications, loadComplaints]);
+  }, [activeTab, loadApplications, loadComplaints, loadReconsiderationRequests]);
 
   const updateStatus = async (appId, status) => {
     try {
@@ -89,6 +105,21 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
       setTimeout(() => loadComplaints(), 500);
     } catch (e) {
       setError(e?.message || 'Failed to update complaint status');
+    }
+  };
+
+  const updateReconsiderationStatus = async (requestId, status) => {
+    try {
+      const message = status === 'rejected' ? 'Sorry, your request was rejected.' : 'Your request was approved.';
+      await hostelService.updateReconsiderationRequestStatus(requestId, status, message);
+      setReconsiderationRequests((prev) =>
+        prev.map((r) => ((r._id === requestId || r.id === requestId)
+          ? { ...r, status, adminMessage: message }
+          : r))
+      );
+      setTimeout(() => loadReconsiderationRequests(), 400);
+    } catch (e) {
+      setError(e?.message || 'Failed to update request status');
     }
   };
 
@@ -215,6 +246,16 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
               <span className="font-medium text-sm">Applications</span>
             </button>
             <button
+              onClick={() => setActiveTab('requests')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm ${activeTab === 'requests'
+                ? 'bg-blue-600 text-white border border-blue-500'
+                : 'text-blue-100 hover:bg-blue-800 border border-transparent'
+                }`}
+            >
+              <LayoutDashboard size={18} />
+              <span className="font-medium text-sm">Request</span>
+            </button>
+            <button
               onClick={() => setActiveTab('complaints')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm ${activeTab === 'complaints'
                 ? 'bg-blue-600 text-white border border-blue-500'
@@ -262,6 +303,8 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
                 <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
                   {activeTab === 'applications'
                     ? 'Hostel Applications'
+                    : activeTab === 'requests'
+                      ? 'Reconsideration Requests'
                     : activeTab === 'complaints'
                       ? 'Hostel Complaints'
                       : activeTab === 'add-meal-shop'
@@ -428,6 +471,93 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
                             </tr>
                           );
                         })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'requests' && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">Student reconsideration requests</div>
+                    <div className="text-xs text-gray-500">Requests submitted by rejected students.</div>
+                  </div>
+                  <button
+                    onClick={loadReconsiderationRequests}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700"
+                  >
+                    <RefreshCw size={14} /> Refresh
+                  </button>
+                </div>
+
+                {error && (
+                  <div className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div>
+                )}
+
+                {loading ? (
+                  <div className="text-sm text-gray-600">Loading requests...</div>
+                ) : reconsiderationRequests.length === 0 ? (
+                  <div className="text-sm text-gray-600">No reconsideration requests found.</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-gray-600 border-b border-gray-200">
+                          <th className="px-3 py-3 font-semibold">Student ID</th>
+                          <th className="px-3 py-3 font-semibold">Name</th>
+                          <th className="px-3 py-3 font-semibold">District</th>
+                          <th className="px-3 py-3 font-semibold">Reason</th>
+                          <th className="px-3 py-3 font-semibold">Contact</th>
+                          <th className="px-3 py-3 font-semibold">Submitted</th>
+                          <th className="px-3 py-3 font-semibold">Status</th>
+                          <th className="px-3 py-3 font-semibold">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {reconsiderationRequests.map((request) => (
+                          <tr key={request._id || request.id} className="text-gray-800 hover:bg-gray-50 transition-colors">
+                            <td className="px-3 py-3 font-mono">{request.studentId || '-'}</td>
+                            <td className="px-3 py-3">{request.studentName || '-'}</td>
+                            <td className="px-3 py-3">{request.district || '-'}</td>
+                            <td className="px-3 py-3 max-w-md">{request.reason || '-'}</td>
+                            <td className="px-3 py-3">{request.preferredContact || '-'}</td>
+                            <td className="px-3 py-3 text-gray-600">{request.createdAt ? new Date(request.createdAt).toLocaleString() : '-'}</td>
+                            <td className="px-3 py-3">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
+                                request.status === 'approved'
+                                  ? 'bg-green-50 text-green-700 border border-green-200'
+                                  : request.status === 'rejected'
+                                    ? 'bg-red-50 text-red-700 border border-red-200'
+                                    : request.status === 'reviewed'
+                                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                      : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                              }`}>
+                                {request.status || 'pending'}
+                              </span>
+                            </td>
+                            <td className="px-3 py-3 space-x-2">
+                              <button
+                                type="button"
+                                onClick={() => updateReconsiderationStatus(request._id || request.id, 'approved')}
+                                disabled={request.status === 'approved'}
+                                className="px-3 py-1.5 rounded-lg text-xs bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-gray-300 transition-colors shadow-sm"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateReconsiderationStatus(request._id || request.id, 'rejected')}
+                                disabled={request.status === 'rejected'}
+                                className="px-3 py-1.5 rounded-lg text-xs bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-300 transition-colors shadow-sm"
+                              >
+                                Reject
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>

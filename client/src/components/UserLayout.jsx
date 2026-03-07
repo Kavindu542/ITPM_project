@@ -9,7 +9,9 @@ export default function UserLayout({ user, onLoggedOut }) {
     const hideFooter =
         location.pathname.startsWith('/materials')
         || location.pathname.startsWith('/library')
-        || location.pathname.startsWith('/hostel');
+        || location.pathname.startsWith('/hostel')
+        || location.pathname.startsWith('/clubs')
+        || location.pathname.startsWith('/leader');
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans flex flex-col">

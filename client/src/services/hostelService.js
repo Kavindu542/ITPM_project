@@ -68,6 +68,26 @@ export const hostelService = {
     }
   },
 
+  // Student: Submit reconsideration request after rejection
+  submitReconsiderationRequest: async (payload) => {
+    try {
+      const response = await api.post('/hostel/reconsideration-requests', payload);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Student: Get own reconsideration requests
+  getMyReconsiderationRequests: async () => {
+    try {
+      const response = await api.get('/hostel/my-reconsideration-requests');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
   // Student: Get my complaints
   getMyComplaints: async () => {
     try {
@@ -82,6 +102,29 @@ export const hostelService = {
   getAllComplaints: async () => {
     try {
       const response = await api.get('/hostel/admin/all-complaints');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Admin: Get all reconsideration requests
+  getAllReconsiderationRequests: async () => {
+    try {
+      const response = await api.get('/hostel/admin/reconsideration-requests');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Admin: Approve/reject reconsideration request
+  updateReconsiderationRequestStatus: async (requestId, status, adminMessage) => {
+    try {
+      const response = await api.put(`/hostel/admin/reconsideration-requests/${requestId}/status`, {
+        status,
+        adminMessage,
+      });
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
