@@ -24,6 +24,7 @@ import {
   Paperclip,
 } from 'lucide-react';
 import { bookService } from '../../../services/libraryService';
+import { toBackendAssetUrl } from '../../../utils/backendUrl';
 
 const INITIAL_BOOKS = [
   { id: 1, title: 'Clean Code', author: 'Robert C. Martin', isbn: '978-0132350884', category: 'Programming', copies: 5, available: 3, rating: 4.9, status: 'Active', coverImage: null, pdfFile: null },
@@ -48,8 +49,7 @@ const EMPTY_FORM = {
 
 const toAssetUrl = (p) => {
   if (!p) return '';
-  if (String(p).startsWith('http')) return p;
-  return `http://localhost:5000/${String(p).replace(/^\/+/, '')}`;
+  return toBackendAssetUrl(p);
 };
 
 // ── Helpers ────────────────────────────────────────────────

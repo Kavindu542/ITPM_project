@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { BookOpen, Download, Heart, Star, Clock, Search, X, Eye, Trash2, Share2, Edit, Plus, ChevronRight, Zap, Brain, Sparkles, BookMarked, FileText, Headphones, Play } from 'lucide-react';
+import { toBackendAssetUrl } from '../../utils/backendUrl';
 
 const styles = `
   .premium-card {
@@ -248,7 +249,7 @@ export default function MyLibrary() {
             <div key={item._id} className="premium-card group rounded-3xl overflow-hidden" style={{ animation: `fadeInUp 0.6s ease-out forwards ${idx * 0.1}s`, opacity: 0 }}>
               <div className="image-container relative h-48 overflow-hidden bg-gradient-to-br from-emerald-400 to-blue-500">
                 {item.bookId?.coverImage && (
-                  <img src={`http://localhost:5000/${item.bookId.coverImage}`} alt="cover" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                  <img src={toBackendAssetUrl(item.bookId.coverImage)} alt="cover" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                 )}
                 <div className="absolute top-4 left-4">
                   <span className={`px-3 py-1 rounded-xl text-xs font-bold text-white ${item.status === 'Favorite' ? 'bg-rose-500/90' : 'bg-blue-500/90'}`}>
@@ -286,7 +287,7 @@ export default function MyLibrary() {
 
               <div className="h-48 rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-emerald-400 to-blue-500">
                 {selectedItem.bookId?.coverImage && (
-                  <img src={`http://localhost:5000/${selectedItem.bookId.coverImage}`} alt="cover" className="w-full h-full object-cover" />
+                  <img src={toBackendAssetUrl(selectedItem.bookId.coverImage)} alt="cover" className="w-full h-full object-cover" />
                 )}
               </div>
 
@@ -298,7 +299,7 @@ export default function MyLibrary() {
 
             <div className="p-6 bg-slate-50 space-y-3">
               {selectedItem.bookId?.fileUrl && (
-                <a href={`http://localhost:5000/${selectedItem.bookId.fileUrl}`} target="_blank" rel="noreferrer" className="block w-full">
+                <a href={toBackendAssetUrl(selectedItem.bookId.fileUrl)} target="_blank" rel="noreferrer" className="block w-full">
                   <Button variant="primary" className="w-full py-4 text-sm font-black uppercase tracking-widest">
                     Read / Download
                     <ChevronRight size={20} />

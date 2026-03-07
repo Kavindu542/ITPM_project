@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Globe, Search, Download, Star, FileText, Headphones, BookOpen, BookMarked, Heart, Filter, Zap, Brain, Sparkles, TrendingUp, Clock, Eye, X, Play, Volume2 } from 'lucide-react';
 import { digitalResourceService } from '../../services/libraryService';
+import { toBackendAssetUrl } from '../../utils/backendUrl';
 
 const styles = `
   .premium-card {
@@ -278,8 +279,7 @@ function safeFileName(name) {
 
 const toAssetUrl = (p) => {
   if (!p) return '';
-  if (String(p).startsWith('http')) return p;
-  return `http://localhost:5000/${String(p).replace(/^\/+/, '')}`;
+  return toBackendAssetUrl(p);
 };
 
 export default function DigitalResources() {

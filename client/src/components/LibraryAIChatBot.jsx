@@ -1,6 +1,7 @@
 import React from 'react';
 import { MessageCircle, X, Send, Sparkles, BookOpen, Download, ExternalLink, Bot, User, Globe } from 'lucide-react';
 import { libraryAiService } from '../services/libraryService';
+import { toBackendAssetUrl } from '../utils/backendUrl';
 
 export default function LibraryAIChatBot() {
     const [isOpen, setIsOpen] = React.useState(false);
@@ -79,14 +80,6 @@ export default function LibraryAIChatBot() {
         formatted = formatted.replace(/\*(.+?)\*/g, '<em>$1</em>');
         formatted = formatted.replace(/\n/g, '<br/>');
         return formatted;
-    };
-
-    // Helper to format asset URLs from the backend
-    const toAssetUrl = (p) => {
-        if (!p) return '';
-        if (String(p).startsWith('http')) return p;
-        // In this project, images are usually in /uploads/...
-        return `http://127.0.0.1:5000/${String(p).replace(/^\/+/, '')}`;
     };
 
     return (
@@ -171,7 +164,7 @@ export default function LibraryAIChatBot() {
                                                     <div className="flex gap-3">
                                                         <div className="w-16 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-slate-100 border border-slate-100">
                                                             <img
-                                                                src={toAssetUrl(item.image) || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200'}
+                                                                src={toBackendAssetUrl(item.image) || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200'}
                                                                 className="w-full h-full object-cover"
                                                                 alt=""
                                                             />
@@ -189,7 +182,7 @@ export default function LibraryAIChatBot() {
                                                     </div>
                                                     <div className="flex gap-2 mt-3 pt-3 border-t border-slate-50">
                                                         <a
-                                                            href={toAssetUrl(item.pdf)}
+                                                            href={toBackendAssetUrl(item.pdf)}
                                                             target="_blank"
                                                             rel="noreferrer"
                                                             className="flex-1 py-1.5 rounded-lg bg-emerald-500 text-white text-[10px] font-bold text-center hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1"
@@ -197,7 +190,7 @@ export default function LibraryAIChatBot() {
                                                             <ExternalLink size={12} /> Preview
                                                         </a>
                                                         <a
-                                                            href={toAssetUrl(item.pdf)}
+                                                            href={toBackendAssetUrl(item.pdf)}
                                                             download
                                                             className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors flex items-center justify-center"
                                                         >

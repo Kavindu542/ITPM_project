@@ -7,6 +7,7 @@ import {
   BookOpen, Film, Music, ExternalLink, Loader2, RefreshCw,
 } from 'lucide-react';
 import { digitalResourceService } from '../../../services/libraryService';
+import { toBackendAssetUrl } from '../../../utils/backendUrl';
 
 // ── Sample Data (fallback) ─────────────────────────────────
 const INITIAL_RESOURCES = [
@@ -52,7 +53,7 @@ function getTypeMeta(type) {
 
 function getThumbnailSrc(resource) {
   if (resource.thumbnailPreview) return resource.thumbnailPreview;
-  if (resource.thumbnailImage) return `http://localhost:5000/${resource.thumbnailImage}`;
+  if (resource.thumbnailImage) return toBackendAssetUrl(resource.thumbnailImage);
   return null;
 }
 
