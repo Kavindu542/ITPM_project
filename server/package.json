@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node scripts/freePort.js 5000 && nodemon --config nodemon.json server.js",
-    "seed:module-admins": "node scripts/seedModuleAdmins.js"
+    "seed:module-admins": "node scripts/seedModuleAdmins.js",
+    "test:email": "node scripts/sendTestEmail.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

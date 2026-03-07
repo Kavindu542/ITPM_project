@@ -18,7 +18,8 @@ const normalizeLocalBaseUrl = (rawUrl) => {
 };
 
 const getBase = () => {
-  if (import.meta.env.VITE_API_URL) return normalizeLocalBaseUrl(import.meta.env.VITE_API_URL);
+  if (import.meta.env.VITE_API_URL)
+    return normalizeLocalBaseUrl(import.meta.env.VITE_API_URL);
   if (typeof window === "undefined") return "http://127.0.0.1:5000";
   return `${window.location.protocol}//${window.location.hostname}:5000`;
 };
@@ -47,6 +48,19 @@ export const studyMaterialService = {
   async uploadSuggestion(formData) {
     const res = await api.post(
       "/study-material/materials/suggestions",
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
+    );
+    return res.data;
+  },
+
+  async scanSuggestionDocument(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await api.post(
+      "/study-material/materials/suggestions/scan",
       formData,
       {
         headers: { "Content-Type": "multipart/form-data" },
@@ -319,9 +333,7 @@ export const studyMaterialService = {
     return res.data;
   },
   async deleteOwnForumThread(threadId) {
-    const res = await api.delete(
-      `/study-material/forum/threads/${threadId}`,
-    );
+    const res = await api.delete(`/study-material/forum/threads/${threadId}`);
     return res.data;
   },
 

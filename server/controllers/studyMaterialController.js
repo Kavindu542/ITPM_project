@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { PDFParse } = require("pdf-parse");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const StudyMaterial = require("../models/StudyMaterial");
 const StudyMaterialDownload = require("../models/StudyMaterialDownload");
 const StudyMaterialBookmark = require("../models/StudyMaterialBookmark");
@@ -12,6 +13,110 @@ const UPLOAD_ROOT = path.join(__dirname, "..", "uploads", "study-materials");
 
 const MAX_PDF_EXTRACT_BYTES = 15 * 1024 * 1024; // 15MB
 const MAX_EXTRACTED_TEXT_CHARS = 20000;
+
+const SUGGESTION_SCAN_MAX_TEXT_CHARS = 25000;
+const SUGGESTION_SEMESTER_OPTIONS = [
+  "",
+  "1.1",
+  "1.2",
+  "2.1",
+  "2.2",
+  "3.1",
+  "3.2",
+  "4.1",
+  "4.2",
+];
+const SUGGESTION_CATEGORY_OPTIONS = [
+  "notes",
+  "tutes",
+  "papers",
+  "links",
+  "other",
+];
+
+const getGenAI = () => {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error("GEMINI_API_KEY is not set in environment");
+  return new GoogleGenerativeAI(key);
+};
+
+const stripJsonFences = (text) => {
+  const s = String(text || "").trim();
+  if (!s) return "";
+  // Remove ```json ... ``` fences if present
+  const fenced = s.match(/^```(?:json)?\s*([\s\S]*?)\s*```\s*$/i);
+  if (fenced) return String(fenced[1] || "").trim();
+  return s;
+};
+
+const clampString = (value, maxLen) => {
+  const s = String(value || "").trim();
+  if (!s) return "";
+  return s.length > maxLen ? s.slice(0, maxLen) : s;
+};
+
+const normalizeModuleCode = (value) => {
+  const s = String(value || "")
+    .toUpperCase()
+    .replace(/\s+/g, "")
+    .trim();
+  const m = s.match(/\b[A-Z]{2,4}\d{3,4}\b/);
+  return m ? m[0] : "";
+};
+
+const normalizeSemester = (value) => {
+  const s = String(value ?? "").trim();
+  if (SUGGESTION_SEMESTER_OPTIONS.includes(s)) return s;
+  // Some models may respond with 1/2/3/4; treat as unknown to avoid wrong autofill.
+  return "";
+};
+
+const normalizeCategory = (value) => {
+  const s = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (SUGGESTION_CATEGORY_OPTIONS.includes(s)) return s;
+  return "";
+};
+
+const guessCategoryFromText = (text) => {
+  const t = String(text || "").toLowerCase();
+  if (/\b(past\s*paper|past\s*papers|exam|final|mid)\b/.test(t))
+    return "papers";
+  if (/\b(tute|tutorial|worksheet)\b/.test(t)) return "tutes";
+  if (/\b(link|url|website|resource)\b/.test(t)) return "links";
+  if (/\b(lecture\s*note|lecture\s*notes|notes)\b/.test(t)) return "notes";
+  return "";
+};
+
+const inferTitleFromFilename = (filename) => {
+  const base = String(filename || "")
+    .replace(/\.[a-z0-9]+$/i, "")
+    .replace(/[_\-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return clampString(base, 120);
+};
+
+const safeJsonParse = (raw) => {
+  const cleaned = stripJsonFences(raw);
+  if (!cleaned) return null;
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // Try to recover a JSON object substring
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(cleaned.slice(start, end + 1));
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+};
 
 const parsePdfTextFromBuffer = async (buf) => {
   const parser = new PDFParse({ data: buf });
@@ -28,6 +133,52 @@ const parsePdfTextFromBuffer = async (buf) => {
       await parser.destroy();
     } catch {
       // best-effort
+    }
+  }
+};
+
+const parsePdfTextFromUploadedBuffer = async (buf) => {
+  try {
+    if (!Buffer.isBuffer(buf) || buf.length === 0) return "";
+    if (buf.length > MAX_PDF_EXTRACT_BYTES) return "";
+    const rawText = await parsePdfTextFromBuffer(buf);
+    return String(rawText || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, SUGGESTION_SCAN_MAX_TEXT_CHARS);
+  } catch {
+    return "";
+  }
+};
+
+// Simple delay helper
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const callGeminiWithRetry = async (model, request, maxRetries = 3) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await model.generateContent(request);
+      const response = result?.response;
+      const text =
+        typeof response?.text === "function" ? response.text() : response?.text;
+      return String(text || "");
+    } catch (err) {
+      const msg = String(err?.message || "");
+      const isRetryable =
+        msg.includes("429") ||
+        msg.includes("503") ||
+        msg.includes("RESOURCE_EXHAUSTED") ||
+        msg.includes("retry") ||
+        msg.includes("RetryInfo") ||
+        msg.includes("overloaded") ||
+        msg.includes("quota");
+
+      if (isRetryable && attempt < maxRetries) {
+        const delayMs = attempt * 2000;
+        await sleep(delayMs);
+        continue;
+      }
+      throw err;
     }
   }
 };
@@ -759,6 +910,169 @@ const createSuggestion = async (req, res) => {
   });
 };
 
+const scanSuggestionDocument = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "file is required" });
+    }
+
+    const mimeType = String(req.file.mimetype || "application/octet-stream");
+    const originalName = String(req.file.originalname || "");
+    const filenameTitle = inferTitleFromFilename(originalName);
+
+    const isPdf =
+      mimeType === "application/pdf" ||
+      String(path.extname(originalName) || "").toLowerCase() === ".pdf";
+    const isImage =
+      mimeType === "image/png" ||
+      mimeType === "image/jpeg" ||
+      mimeType === "image/webp";
+
+    if (!isPdf && !isImage) {
+      return res.status(400).json({
+        message:
+          "Unsupported file type for scanning. Please upload a PDF or an image (PNG/JPG/WebP).",
+      });
+    }
+
+    let extractedText = "";
+    let moduleCodes = [];
+
+    if (isPdf) {
+      extractedText = await parsePdfTextFromUploadedBuffer(req.file.buffer);
+      moduleCodes = extractModuleCodesFromText(extractedText);
+    }
+
+    const genAI = getGenAI();
+    // Default to the same family already used elsewhere in this repo.
+    const preferredModel = String(
+      process.env.GEMINI_SUGGESTION_SCAN_MODEL || "",
+    ).trim();
+    const modelName = preferredModel || "gemini-flash-latest";
+    const model = genAI.getGenerativeModel({ model: modelName });
+
+    const system = `You are a document metadata extractor for a university study-material upload form.
+Return ONLY valid JSON (no markdown, no code fences).
+
+Schema:
+{
+  "title": string,
+  "moduleCode": string,
+  "subject": string,
+  "semester": string,
+  "category": string,
+  "description": string
+}
+
+Rules:
+- title: short, human-friendly, <= 120 chars. If uncertain, derive from filename.
+- moduleCode: uppercase like IT3030 or SE3020. Empty string if unknown.
+- subject: optional course/subject name (e.g., "Network Design and Management"). Empty string if unknown.
+- semester: must be exactly one of: ${JSON.stringify(SUGGESTION_SEMESTER_OPTIONS.filter((x) => x))} or "".
+- category: must be exactly one of: ${JSON.stringify(SUGGESTION_CATEGORY_OPTIONS)}.
+- description: a short SUMMARY of the document content (1–2 sentences), <= 300 chars.
+  Mention the main topics/chapters and any obvious keywords (e.g., "OOP", "SQL", "Networking") only if present.
+  If you cannot infer content, return an empty string.
+- Do not invent facts; prefer empty strings.
+`;
+
+    const userPrompt = `Filename: ${originalName || "(unknown)"}
+Detected mimeType: ${mimeType}
+If you see a module code, prefer it.
+If a category is implied (lecture notes/tutorial/past papers/links), map it to category.
+
+Heuristics:
+- If it's lecture notes => notes
+- If it's tutorial/tute => tutes
+- If it's past paper/exam => papers
+- If it's mostly URLs => links
+
+Known module codes found (may be empty): ${JSON.stringify(moduleCodes || [])}
+
+PDF extracted text (may be empty):
+${extractedText || ""}
+`;
+
+    const parts = [{ text: `${system}\n\n${userPrompt}` }];
+    if (isImage) {
+      parts.push({
+        inlineData: {
+          data: Buffer.from(req.file.buffer).toString("base64"),
+          mimeType,
+        },
+      });
+    }
+
+    const raw = await callGeminiWithRetry(
+      model,
+      {
+        contents: [{ role: "user", parts }],
+        // Keep config minimal for compatibility across SDK versions.
+        generationConfig: { temperature: 0.2 },
+      },
+      3,
+    );
+    const parsed = safeJsonParse(raw);
+    if (!parsed || typeof parsed !== "object") {
+      return res.status(502).json({
+        message: "AI scan returned an invalid response",
+      });
+    }
+
+    const normalized = {
+      title: clampString(parsed.title || "", 120) || filenameTitle,
+      moduleCode:
+        normalizeModuleCode(parsed.moduleCode) ||
+        (Array.isArray(moduleCodes) && moduleCodes.length
+          ? moduleCodes[0]
+          : ""),
+      subject: clampString(parsed.subject || "", 120),
+      semester: normalizeSemester(parsed.semester),
+      category:
+        normalizeCategory(parsed.category) ||
+        guessCategoryFromText(
+          `${parsed.title || ""} ${parsed.description || ""} ${extractedText || ""}`,
+        ) ||
+        "notes",
+      description: clampString(parsed.description || "", 450),
+    };
+
+    return res.json(normalized);
+  } catch (e) {
+    const msg = String(e?.message || "AI scan failed");
+    const lower = msg.toLowerCase();
+
+    if (lower.includes("gemini_api_key") || lower.includes("api key")) {
+      return res.status(500).json({ message: msg });
+    }
+    if (
+      lower.includes("429") ||
+      lower.includes("resource_exhausted") ||
+      lower.includes("quota")
+    ) {
+      return res
+        .status(429)
+        .json({
+          message: "AI scan is rate-limited. Please try again in a moment.",
+        });
+    }
+    if (
+      lower.includes("model") &&
+      lower.includes("not") &&
+      lower.includes("found")
+    ) {
+      return res
+        .status(502)
+        .json({
+          message:
+            "AI model is not available. Check GEMINI_SUGGESTION_SCAN_MODEL.",
+        });
+    }
+
+    return res.status(500).json({ message: msg });
+  }
+};
+
 const toggleBookmark = async (req, res) => {
   const material = await StudyMaterial.findById(req.params.id).lean();
   if (!material) return res.status(404).json({ message: "Not found" });
@@ -1337,6 +1651,7 @@ module.exports = {
   getMaterial,
   streamMaterialFile,
   createSuggestion,
+  scanSuggestionDocument,
   toggleBookmark,
   listBookmarks,
   listHistory,

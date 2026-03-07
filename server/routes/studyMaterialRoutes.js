@@ -29,6 +29,15 @@ const upload = multer({
   },
 });
 
+// In-memory upload for AI scanning (avoid persisting temp files)
+const scanUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 35 * 1024 * 1024, // 35MB
+    files: 1,
+  },
+});
+
 // Student endpoints
 router.get("/materials", requireAuth, controller.listMaterials);
 router.get("/materials/:id", requireAuth, controller.getMaterial);
@@ -38,6 +47,14 @@ router.post(
   requireAuth,
   upload.single("file"),
   controller.createSuggestion,
+);
+
+// AI scan for suggestion autofill
+router.post(
+  "/materials/suggestions/scan",
+  requireAuth,
+  scanUpload.single("file"),
+  controller.scanSuggestionDocument,
 );
 router.post("/materials/:id/bookmark", requireAuth, controller.toggleBookmark);
 router.get("/me/uploads", requireAuth, controller.listMyUploads);

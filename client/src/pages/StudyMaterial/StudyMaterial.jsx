@@ -43,6 +43,8 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
+  const [scanLoading, setScanLoading] = React.useState(false);
+  const [scanError, setScanError] = React.useState('');
   const [items, setItems] = React.useState([]);
   const [bookmarks, setBookmarks] = React.useState([]);
   const [history, setHistory] = React.useState([]);
@@ -67,6 +69,14 @@ export default function StudyMaterial({ user, onLoggedOut }) {
     category: 'notes',
     suggested: true,
     file: null,
+  });
+
+  const contribTouchedRef = React.useRef({
+    title: false,
+    moduleCode: false,
+    semester: false,
+    category: false,
+    description: false,
   });
 
   const loadAll = React.useCallback(async () => {
@@ -158,6 +168,51 @@ export default function StudyMaterial({ user, onLoggedOut }) {
       document.body.style.overflow = prev;
     };
   }, [uploadModalOpen]);
+
+  React.useEffect(() => {
+    if (!uploadModalOpen) return;
+    setScanLoading(false);
+    setScanError('');
+    contribTouchedRef.current = {
+      title: false,
+      moduleCode: false,
+      semester: false,
+      category: false,
+      description: false,
+    };
+  }, [uploadModalOpen]);
+
+  const scanAndAutofillFromFile = React.useCallback(async (file) => {
+    if (!file) return;
+
+    setScanLoading(true);
+    setScanError('');
+
+    try {
+      const extracted = await studyMaterialService.scanSuggestionDocument(file);
+      setContrib((prev) => {
+        const next = { ...prev };
+
+        const title = String(extracted?.title || '').trim();
+        const moduleCode = String(extracted?.moduleCode || '').trim();
+        const semester = String(extracted?.semester || '').trim();
+        const category = String(extracted?.category || '').trim();
+        const description = String(extracted?.description || '').trim();
+
+        if (!contribTouchedRef.current.title && !next.title && title) next.title = title;
+        if (!contribTouchedRef.current.moduleCode && !next.moduleCode && moduleCode) next.moduleCode = moduleCode;
+        if (!contribTouchedRef.current.semester && !next.semester && semester) next.semester = semester;
+        if (!contribTouchedRef.current.category && category) next.category = category;
+        if (!contribTouchedRef.current.description && !next.description && description) next.description = description;
+
+        return next;
+      });
+    } catch (e) {
+      setScanError(e?.response?.data?.message || e?.message || 'Scan failed');
+    } finally {
+      setScanLoading(false);
+    }
+  }, []);
 
   const onToggleBookmark = async (id) => {
     try {
@@ -823,19 +878,28 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input
                     value={contrib.title}
-                    onChange={(e) => setContrib((p) => ({ ...p, title: e.target.value }))}
+                    onChange={(e) => {
+                      contribTouchedRef.current.title = true;
+                      setContrib((p) => ({ ...p, title: e.target.value }));
+                    }}
                     placeholder="Title"
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
                   />
                   <input
                     value={contrib.moduleCode}
-                    onChange={(e) => setContrib((p) => ({ ...p, moduleCode: e.target.value }))}
+                    onChange={(e) => {
+                      contribTouchedRef.current.moduleCode = true;
+                      setContrib((p) => ({ ...p, moduleCode: e.target.value }));
+                    }}
                     placeholder="Module code"
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
                   />
                   <select
                     value={contrib.semester}
-                    onChange={(e) => setContrib((p) => ({ ...p, semester: e.target.value }))}
+                    onChange={(e) => {
+                      contribTouchedRef.current.semester = true;
+                      setContrib((p) => ({ ...p, semester: e.target.value }));
+                    }}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
                   >
                     <option value="">Semester (optional)</option>
@@ -847,7 +911,10 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   </select>
                   <select
                     value={contrib.category}
-                    onChange={(e) => setContrib((p) => ({ ...p, category: e.target.value }))}
+                    onChange={(e) => {
+                      contribTouchedRef.current.category = true;
+                      setContrib((p) => ({ ...p, category: e.target.value }));
+                    }}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none"
                   >
                     {categories
@@ -862,7 +929,10 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
                 <textarea
                   value={contrib.description}
-                  onChange={(e) => setContrib((p) => ({ ...p, description: e.target.value }))}
+                  onChange={(e) => {
+                    contribTouchedRef.current.description = true;
+                    setContrib((p) => ({ ...p, description: e.target.value }));
+                  }}
                   placeholder="Description (optional)"
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none min-h-[90px]"
                 />
@@ -877,17 +947,30 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                     Suggested
                   </label>
 
-                  <input
-                    type="file"
-                    onChange={(e) => setContrib((p) => ({ ...p, file: e.target.files?.[0] || null }))}
-                    className="text-sm"
-                  />
+                  <div className="flex items-center gap-3">
+                    {scanLoading ? (
+                      <div className="text-xs text-gray-500">Scanning…</div>
+                    ) : scanError ? (
+                      <div className="text-xs text-red-600">{scanError}</div>
+                    ) : null}
+
+                    <input
+                      type="file"
+                      accept="application/pdf,image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setContrib((p) => ({ ...p, file }));
+                        if (file) scanAndAutofillFromFile(file);
+                      }}
+                      className="text-sm"
+                    />
+                  </div>
                 </div>
 
                 <button
                   type="submit"
                   className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md disabled:opacity-60"
-                  disabled={loading}
+                  disabled={loading || scanLoading}
                 >
                   <UploadCloud className="h-4 w-4" />
                   Submit for approval
