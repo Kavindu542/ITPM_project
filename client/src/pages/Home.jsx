@@ -279,8 +279,11 @@ export default function Home({ user, onLoggedOut }) {
                     <img
                       src="/campuscore-logo.png"
                       alt="CampusCore"
-                      className="w- h-auto opacity-95"
-                      loading="lazy"
+                      className="w-auto h-auto opacity-95"
+                      width={396}
+                      height={206}
+                      loading="eager"
+                      fetchpriority="high"
                       decoding="async"
                     />
                   </div>
