@@ -49,6 +49,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
   const [bookmarks, setBookmarks] = React.useState([]);
   const [history, setHistory] = React.useState([]);
   const [myUploads, setMyUploads] = React.useState([]);
+  const [uploadViewTab, setUploadViewTab] = React.useState('pending');
 
   const [uploadModalOpen, setUploadModalOpen] = React.useState(false);
 
@@ -142,11 +143,17 @@ export default function StudyMaterial({ user, onLoggedOut }) {
     if (tab === 'favs') loadBookmarks();
     if (tab === 'history') loadHistory();
     if (tab === 'contribute') loadMyUploads();
-  }, [tab, loadAll, loadBookmarks, loadHistory]);
+  }, [tab, loadAll, loadBookmarks, loadHistory, loadMyUploads]);
 
   React.useEffect(() => {
     if (tab !== 'contribute') {
       setUploadModalOpen(false);
+    }
+  }, [tab]);
+
+  React.useEffect(() => {
+    if (tab === 'contribute') {
+      setUploadViewTab('pending');
     }
   }, [tab]);
 
@@ -359,6 +366,26 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
   const semesterOptions = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2'];
 
+  const pendingUploads = React.useMemo(
+    () =>
+      myUploads.filter((m) => {
+        const status = String(m?.status || '').toLowerCase();
+        return status !== 'published';
+      }),
+    [myUploads],
+  );
+
+  const approvedUploads = React.useMemo(
+    () =>
+      myUploads.filter((m) => {
+        const status = String(m?.status || '').toLowerCase();
+        return status === 'published';
+      }),
+    [myUploads],
+  );
+
+  const visibleUploads = uploadViewTab === 'approved' ? approvedUploads : pendingUploads;
+
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
   const paginatedItems = React.useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -403,6 +430,12 @@ export default function StudyMaterial({ user, onLoggedOut }) {
         </div>
       </div>
     );
+  };
+
+  const getUploadStatusLabel = (status) => {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized === 'published') return 'approved';
+    return normalized || 'pending';
   };
 
   return (
@@ -792,8 +825,51 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                     </div>
                   </div>
 
+                  <div className="mt-5 flex items-center gap-3 flex-wrap">
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                        uploadViewTab === 'pending'
+                          ? 'bg-gray-900 text-white shadow-sm'
+                          : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setUploadViewTab('pending')}
+                    >
+                      Pending
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs ${
+                          uploadViewTab === 'pending'
+                            ? 'bg-white/15 text-white'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {pendingUploads.length}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                        uploadViewTab === 'approved'
+                          ? 'bg-green-600 text-white shadow-sm'
+                          : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setUploadViewTab('approved')}
+                    >
+                      Approved
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs ${
+                          uploadViewTab === 'approved'
+                            ? 'bg-white/15 text-white'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {approvedUploads.length}
+                      </span>
+                    </button>
+                  </div>
+
                   <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {myUploads.map((m, idx) => (
+                    {visibleUploads.map((m, idx) => (
                       <div
                         key={`${m?.id || idx}`}
                         className="rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col gap-2"
@@ -804,7 +880,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                               m.status,
                             )}`}
                           >
-                            {String(m.status || 'pending')}
+                            {getUploadStatusLabel(m.status)}
                           </div>
                           <span className="text-xs text-gray-400">
                             {m.createdAt ? new Date(m.createdAt).toLocaleString() : '—'}
@@ -833,12 +909,34 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                         {String(m.status || '').toLowerCase() === 'rejected' && m?.moderation?.decisionReason ? (
                           <div className="text-xs text-red-600 mt-1">Reason: {m.moderation.decisionReason}</div>
                         ) : null}
+
+                        {String(m.status || '').toLowerCase() === 'published' ? (
+                          <div className="flex items-center gap-2 flex-wrap mt-2">
+                            <button
+                              type="button"
+                              className="px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                              onClick={() => openPreview(m)}
+                            >
+                              Preview
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-sm font-semibold"
+                              onClick={() => downloadFile(m)}
+                            >
+                              <Download className="h-4 w-4" />
+                              Download
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     ))}
 
-                    {!loading && myUploads.length === 0 ? (
+                    {!loading && visibleUploads.length === 0 ? (
                       <div className="col-span-full rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center text-sm text-gray-600">
-                        You haven’t uploaded anything yet.
+                        {uploadViewTab === 'approved'
+                          ? 'No approved uploads yet.'
+                          : 'No pending uploads right now.'}
                       </div>
                     ) : null}
                   </div>

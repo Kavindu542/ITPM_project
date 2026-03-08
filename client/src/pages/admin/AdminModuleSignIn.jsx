@@ -94,6 +94,13 @@ export default function AdminModuleSignIn({ title, moduleKey, onSignedIn, initia
   return (
     <AuthShell>
       <div>
+            <div className="mb-6 flex justify-center">
+              <img
+                src="/campuscore-logo.png"
+                alt="CampusCore"
+                className="h-20 w-auto object-contain"
+              />
+            </div>
             <div className="flex items-center justify-center gap-2 text-xs font-semibold text-gray-500">
               <span className="rounded-full bg-gray-100 px-3 py-1">Module access</span>
               {initialEmail || queryEmail ? (

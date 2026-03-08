@@ -30,11 +30,13 @@ export default function UserLayout({ user, onLoggedOut }) {
                     <div className="container mx-auto px-6">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
                             <div className="col-span-1 md:col-span-2">
-                                <div className="flex items-center gap-2 mb-6">
-                                    <div className="h-10 w-10 bg-gradient-to-br from-blue-600 to-[#25f194] rounded-xl flex items-center justify-center text-white shadow-lg">
-                                        <span className="font-bold text-xl">C</span>
-                                    </div>
-                                    <span className="text-xl font-bold dark:text-white">CampusCore</span>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <img
+                                        src="/campuscore-logo.png"
+                                        alt="CampusCore"
+                                        className="h-12 w-auto object-contain"
+                                    />
+                                    
                                 </div>
                                 <p className="text-gray-600 dark:text-gray-400 max-w-sm mb-6">
                                     The all-in-one campus management system designed to make student life smarter,

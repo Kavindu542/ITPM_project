@@ -7,6 +7,13 @@ export default function AdminSignIn({ onSignedIn }) {
   return (
     <AuthShell>
       <div>
+            <div className="mb-6 flex justify-center">
+              <img
+                src="/campuscore-logo.png"
+                alt="CampusCore"
+                className="h-20 w-auto object-contain"
+              />
+            </div>
             <div className="flex items-center justify-center gap-2 text-xs font-semibold text-gray-600">
               <Shield className="h-4 w-4" />
               <span>Admin access</span>
