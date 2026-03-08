@@ -58,18 +58,12 @@ export default function SignIn({ onSignedIn }) {
 		setFieldErrors(errs);
 		if (hasErrors(errs)) return;
 
-		console.log('Sign-in form submitted');
-		console.log('Email:', email);
-		console.log('Password:', password);
-
 		setBusy(true);
 		try {
 			const data = await authService.login({ email: email.trim(), password });
-			console.log('Login successful:', data);
 			onSignedIn?.(data.user);
 			navigate('/', { replace: true });
 		} catch (err) {
-			console.error('Login error:', err);
 			setError(err?.response?.data?.message || 'Sign in failed');
 		} finally {
 			setBusy(false);
@@ -77,52 +71,59 @@ export default function SignIn({ onSignedIn }) {
 	};
 
 	return (
-		<AuthShell>
-			<p className="text-xs font-semibold tracking-[0.2em] text-slate-600 uppercase">Campus Access</p>
-			<h1 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">Sign in</h1>
-			<p className="mt-2 text-sm text-gray-600">Continue with your campus email to access the portal.</p>
+		<AuthShell
+			panelTitle="Hello, Friend!"
+			panelDescription="Register with your campus details to access all CampusCore features in one secure place."
+			panelButtonText="SIGN UP"
+			panelButtonTo="/signup"
+			panelSide="right"
+		>
+			<div className="text-center">
+				<div className="mb-6 flex justify-center">
+					<img
+						src="/campuscore-logo.png"
+						alt="CampusCore"
+						className="h-20 w-auto object-contain"
+					/>
+				</div>
+				<h1 className="text-4xl font-extrabold tracking-tight text-slate-900">Sign In</h1>
+			</div>
 
-			<form onSubmit={onSubmit} noValidate className="mt-8 space-y-6">
+			<form onSubmit={onSubmit} noValidate className="mt-8 space-y-4">
 				<div>
-					<label className="block text-xs font-semibold tracking-wide text-gray-600 uppercase" htmlFor="email">
-						Email
-					</label>
 					<input
 						id="email"
-						className={`mt-2 w-full rounded-xl border bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-colors ${
+						className={`w-full rounded-lg border px-4 py-3 text-sm text-slate-900 outline-none transition ${
 							touched.email && fieldErrors.email
-								? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100'
-								: 'border-gray-200 focus:border-slate-500 focus:ring-2 focus:ring-slate-200'
+								? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-100'
+								: 'border-slate-200 bg-slate-100 focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100'
 						}`}
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
 						onBlur={() => onBlur('email')}
 						type="email"
-						placeholder="you@my.sliit.lk"
+						placeholder="Email"
 						required
 						autoComplete="email"
 						aria-invalid={Boolean(touched.email && fieldErrors.email)}
 					/>
-					{touched.email && fieldErrors.email ? <p className="mt-2 text-xs text-red-600">{fieldErrors.email}</p> : null}
+					{touched.email && fieldErrors.email ? <p className="mt-2 text-xs text-red-500">{fieldErrors.email}</p> : null}
 				</div>
 
 				<div>
-					<label className="block text-xs font-semibold tracking-wide text-gray-600 uppercase" htmlFor="password">
-						Password
-					</label>
 					<div className="relative">
 						<input
 							id="password"
-							className={`mt-2 w-full rounded-xl border bg-white px-4 py-3 pr-11 text-sm text-gray-900 outline-none transition-colors ${
+							className={`w-full rounded-lg border px-4 py-3 pr-11 text-sm text-slate-900 outline-none transition ${
 								touched.password && fieldErrors.password
-									? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100'
-									: 'border-gray-200 focus:border-slate-500 focus:ring-2 focus:ring-slate-200'
+									? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-100'
+									: 'border-slate-200 bg-slate-100 focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100'
 							}`}
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
 							onBlur={() => onBlur('password')}
 							type={showPassword ? 'text' : 'password'}
-							placeholder="Your password"
+							placeholder="Password"
 							required
 							autoComplete="current-password"
 							aria-invalid={Boolean(touched.password && fieldErrors.password)}
@@ -130,44 +131,37 @@ export default function SignIn({ onSignedIn }) {
 						<button
 							type="button"
 							onClick={() => setShowPassword((s) => !s)}
-							className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-2 text-gray-400 hover:text-gray-700"
+							className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-2 text-slate-400 transition hover:text-slate-700"
 							aria-label={showPassword ? 'Hide password' : 'Show password'}
 						>
 							{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
 						</button>
 					</div>
-					{touched.password && fieldErrors.password ? <p className="mt-2 text-xs text-red-600">{fieldErrors.password}</p> : null}
+					{touched.password && fieldErrors.password ? <p className="mt-2 text-xs text-red-500">{fieldErrors.password}</p> : null}
 				</div>
 
-				<div className="flex items-center justify-between">
-					<Link to="/forgot-password" className="text-sm font-semibold text-slate-700 hover:text-slate-600 hover:underline">
-						Forgot password?
+				{error ? <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
+
+				<div className="pt-2 text-center">
+					<Link to="/forgot-password" className="text-sm font-medium text-slate-500 transition hover:text-violet-600 hover:underline">
+						Forget Your Password?
 					</Link>
 				</div>
-
-				{error ? <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div> : null}
 
 				<button
 					type="submit"
 					disabled={busy}
-					className="w-full mt-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-[#25f194] px-6 py-3.5 text-sm font-semibold text-white shadow-lg hover:from-blue-500 hover:via-indigo-500 hover:to-[#25f194] disabled:opacity-60"
+					className="mx-auto mt-2 inline-flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-lg transition hover:brightness-110 disabled:opacity-60"
 				>
 					{busy ? (
 						<>
-							<Loader2 className="h-4 w-4 animate-spin" />
-							Signing in...
+							<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							Signing In...
 						</>
 					) : (
-						'Sign in'
+						'SIGN IN'
 					)}
 				</button>
-
-				<p className="text-center text-sm text-gray-500">
-					Don’t have an account?{' '}
-					<Link to="/signup" className="font-semibold text-slate-700 hover:text-slate-600 hover:underline">
-						Sign up
-					</Link>
-				</p>
 			</form>
 		</AuthShell>
 	);

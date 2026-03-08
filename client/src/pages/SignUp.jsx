@@ -151,30 +151,48 @@ export default function SignUp({ onSignedIn }) {
   };
 
   return (
-    <AuthShell>
-      <p className="text-xs font-semibold tracking-[0.2em] text-slate-600 uppercase">Campus Access</p>
-      <h1 className="mt-2 text-3xl md:text-4xl font-extrabold text-gray-900">{step === 'otp' ? 'Verify Email' : 'Create account'}</h1>
-      <p className="mt-2 text-sm text-gray-600">
-        {step === 'otp' ? 'Confirm your email to activate your account.' : 'Join the campus portal in under a minute.'}
-      </p>
+    <AuthShell
+      panelTitle={step === 'otp' ? 'Almost There!' : 'Welcome Back!'}
+      panelDescription={
+        step === 'otp'
+          ? 'Confirm your campus email with the OTP code to complete registration.'
+          : 'To keep connected with us please login with your personal info.'
+      }
+      panelButtonText={step === 'otp' ? 'SIGN IN' : 'SIGN IN'}
+      panelButtonTo="/signin"
+      panelSide="left"
+    >
+      <div className="text-center">
+        <div className="mb-6 flex justify-center">
+          <img
+            src="/campuscore-logo.png"
+            alt="CampusCore"
+            className="h-20 w-auto object-contain"
+          />
+        </div>
+        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">
+          {step === 'otp' ? 'Verify Email' : 'Sign Up'}
+        </h1>
+        {step === 'form' ? (
+          <p className="mt-4 text-sm text-slate-400">Create your account with your campus details below.</p>
+        ) : (
+          <p className="mt-4 text-sm text-slate-400">Enter the OTP sent to your campus email.</p>
+        )}
+      </div>
 
       {step === 'otp' ? (
-        <form onSubmit={onVerifyOtp} noValidate className="mt-8 space-y-6">
-          <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-            <p className="text-sm text-gray-700">
-              We sent a 6-digit OTP to <span className="font-semibold">{pendingEmail}</span>.
-            </p>
-            <p className="mt-1 text-xs text-gray-500">Enter it below to confirm your registration.</p>
+        <form onSubmit={onVerifyOtp} noValidate className="mt-8 space-y-4">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            We sent a 6-digit OTP to <span className="font-semibold">{pendingEmail}</span>.
           </div>
 
           <div>
-            <label className="block text-xs font-semibold tracking-wide text-gray-600 uppercase" htmlFor="otp">
-              OTP Code
-            </label>
             <input
               id="otp"
-              className={`mt-2 w-full rounded-xl border bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-colors ${
-                otpError ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100' : 'border-gray-200 focus:border-slate-500 focus:ring-2 focus:ring-slate-200'
+              className={`w-full rounded-lg border px-4 py-3 text-sm text-slate-900 outline-none transition ${
+                otpError
+                  ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-100'
+                  : 'border-slate-200 bg-slate-100 focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100'
               }`}
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
@@ -185,22 +203,22 @@ export default function SignUp({ onSignedIn }) {
               maxLength={6}
               aria-invalid={Boolean(otpError)}
             />
-            {otpError ? <p className="mt-2 text-xs text-red-600">{otpError}</p> : null}
-            {otpInfo ? <p className="mt-2 text-xs text-green-700">{otpInfo}</p> : null}
+            {otpError ? <p className="mt-2 text-xs text-red-500">{otpError}</p> : null}
+            {otpInfo ? <p className="mt-2 text-xs text-emerald-600">{otpInfo}</p> : null}
           </div>
 
           <button
             type="submit"
             disabled={otpBusy}
-            className="w-full mt-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-[#25f194] px-6 py-3.5 text-sm font-semibold text-white shadow-lg hover:from-blue-500 hover:via-indigo-500 hover:to-[#25f194] disabled:opacity-60"
+            className="w-full inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-lg transition hover:brightness-110 disabled:opacity-60"
           >
             {otpBusy ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Verifying...
               </>
             ) : (
-              'Verify OTP'
+              'VERIFY OTP'
             )}
           </button>
 
@@ -208,108 +226,89 @@ export default function SignUp({ onSignedIn }) {
             type="button"
             disabled={otpBusy}
             onClick={onResendOtp}
-            className="w-full inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-6 py-3.5 text-sm font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-60"
+            className="w-full inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-6 py-3 text-sm font-semibold uppercase tracking-wide text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
           >
-            Resend OTP
+            RESEND OTP
           </button>
-
-          <p className="text-center text-sm text-gray-500">
-            Want to sign in instead?{' '}
-            <Link to="/signin" className="font-semibold text-slate-700 hover:text-slate-600 hover:underline">
-              Sign in
-            </Link>
-          </p>
         </form>
       ) : (
-        <form onSubmit={onSubmit} noValidate className="mt-8 space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <form onSubmit={onSubmit} noValidate className="mt-8 space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-semibold tracking-wide text-gray-600 uppercase" htmlFor="studentId">
-                Student ID
-              </label>
               <input
                 id="studentId"
-                className={`mt-2 w-full rounded-xl border bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-colors ${
+                className={`w-full rounded-lg border px-4 py-3 text-sm text-slate-900 outline-none transition ${
                   touched.studentId && fieldErrors.studentId
-                    ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100'
-                    : 'border-gray-200 focus:border-slate-500 focus:ring-2 focus:ring-slate-200'
+                    ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-100'
+                    : 'border-slate-200 bg-slate-100 focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100'
                 }`}
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
                 onBlur={() => onBlur('studentId')}
                 type="text"
-                placeholder="e.g. IT123456"
+                placeholder="Student ID"
                 required
                 autoComplete="off"
                 aria-invalid={Boolean(touched.studentId && fieldErrors.studentId)}
               />
-              {touched.studentId && fieldErrors.studentId ? <p className="mt-2 text-xs text-red-600">{fieldErrors.studentId}</p> : null}
+              {touched.studentId && fieldErrors.studentId ? <p className="mt-2 text-xs text-red-500">{fieldErrors.studentId}</p> : null}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold tracking-wide text-gray-600 uppercase" htmlFor="name">
-                Name
-              </label>
               <input
                 id="name"
-                className={`mt-2 w-full rounded-xl border bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-colors ${
+                className={`w-full rounded-lg border px-4 py-3 text-sm text-slate-900 outline-none transition ${
                   touched.name && fieldErrors.name
-                    ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100'
-                    : 'border-gray-200 focus:border-slate-500 focus:ring-2 focus:ring-slate-200'
+                    ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-100'
+                    : 'border-slate-200 bg-slate-100 focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100'
                 }`}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onBlur={() => onBlur('name')}
                 type="text"
-                placeholder="Your full name"
+                placeholder="Full Name"
                 required
                 autoComplete="name"
                 aria-invalid={Boolean(touched.name && fieldErrors.name)}
               />
-              {touched.name && fieldErrors.name ? <p className="mt-2 text-xs text-red-600">{fieldErrors.name}</p> : null}
+              {touched.name && fieldErrors.name ? <p className="mt-2 text-xs text-red-500">{fieldErrors.name}</p> : null}
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold tracking-wide text-gray-600 uppercase" htmlFor="email">
-              Email
-            </label>
             <input
               id="email"
-              className={`mt-2 w-full rounded-xl border bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-colors ${
+              className={`w-full rounded-lg border px-4 py-3 text-sm text-slate-900 outline-none transition ${
                 touched.email && fieldErrors.email
-                  ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100'
-                  : 'border-gray-200 focus:border-slate-500 focus:ring-2 focus:ring-slate-200'
+                  ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-100'
+                  : 'border-slate-200 bg-slate-100 focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100'
               }`}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onBlur={() => onBlur('email')}
               type="email"
-              placeholder="you@my.sliit.lk"
+              placeholder="Email"
               required
               autoComplete="email"
               aria-invalid={Boolean(touched.email && fieldErrors.email)}
             />
-            {touched.email && fieldErrors.email ? <p className="mt-2 text-xs text-red-600">{fieldErrors.email}</p> : null}
+            {touched.email && fieldErrors.email ? <p className="mt-2 text-xs text-red-500">{fieldErrors.email}</p> : null}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold tracking-wide text-gray-600 uppercase" htmlFor="password">
-              Password
-            </label>
             <div className="relative">
               <input
                 id="password"
-                className={`mt-2 w-full rounded-xl border bg-white px-4 py-3 pr-11 text-sm text-gray-900 outline-none transition-colors ${
+                className={`w-full rounded-lg border px-4 py-3 pr-11 text-sm text-slate-900 outline-none transition ${
                   touched.password && fieldErrors.password
-                    ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100'
-                    : 'border-gray-200 focus:border-slate-500 focus:ring-2 focus:ring-slate-200'
+                    ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-100'
+                    : 'border-slate-200 bg-slate-100 focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100'
                 }`}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onBlur={() => onBlur('password')}
                 type={showPassword ? 'text' : 'password'}
-                placeholder="At least 6 characters"
+                placeholder="Password"
                 required
                 minLength={6}
                 autoComplete="new-password"
@@ -318,32 +317,29 @@ export default function SignUp({ onSignedIn }) {
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-2 text-gray-400 hover:text-gray-700"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-2 text-slate-400 transition hover:text-slate-700"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            {touched.password && fieldErrors.password ? <p className="mt-2 text-xs text-red-600">{fieldErrors.password}</p> : null}
+            {touched.password && fieldErrors.password ? <p className="mt-2 text-xs text-red-500">{fieldErrors.password}</p> : null}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold tracking-wide text-gray-600 uppercase" htmlFor="confirmPassword">
-              Confirm Password
-            </label>
             <div className="relative">
               <input
                 id="confirmPassword"
-                className={`mt-2 w-full rounded-xl border bg-white px-4 py-3 pr-11 text-sm text-gray-900 outline-none transition-colors ${
+                className={`w-full rounded-lg border px-4 py-3 pr-11 text-sm text-slate-900 outline-none transition ${
                   touched.confirmPassword && fieldErrors.confirmPassword
-                    ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-100'
-                    : 'border-gray-200 focus:border-slate-500 focus:ring-2 focus:ring-slate-200'
+                    ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-100'
+                    : 'border-slate-200 bg-slate-100 focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100'
                 }`}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 onBlur={() => onBlur('confirmPassword')}
                 type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="Re-enter your password"
+                placeholder="Confirm Password"
                 required
                 autoComplete="new-password"
                 aria-invalid={Boolean(touched.confirmPassword && fieldErrors.confirmPassword)}
@@ -351,38 +347,31 @@ export default function SignUp({ onSignedIn }) {
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword((s) => !s)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-2 text-gray-400 hover:text-gray-700"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-2 text-slate-400 transition hover:text-slate-700"
                 aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
               >
                 {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            {touched.confirmPassword && fieldErrors.confirmPassword ? <p className="mt-2 text-xs text-red-600">{fieldErrors.confirmPassword}</p> : null}
+            {touched.confirmPassword && fieldErrors.confirmPassword ? <p className="mt-2 text-xs text-red-500">{fieldErrors.confirmPassword}</p> : null}
           </div>
 
-          {error ? <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div> : null}
+          {error ? <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
 
           <button
             type="submit"
             disabled={busy}
-            className="w-full mt-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-[#25f194] px-6 py-3.5 text-sm font-semibold text-white shadow-lg hover:from-blue-500 hover:via-indigo-500 hover:to-[#25f194] disabled:opacity-60"
+            className="w-full inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-lg transition hover:brightness-110 disabled:opacity-60"
           >
             {busy ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Creating account...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating...
               </>
             ) : (
-              'Create account'
+              'SIGN UP'
             )}
           </button>
-
-          <p className="text-center text-sm text-gray-500">
-            Already a member?{' '}
-            <Link to="/signin" className="font-semibold text-slate-700 hover:text-slate-600 hover:underline">
-              Sign in
-            </Link>
-          </p>
         </form>
       )}
     </AuthShell>

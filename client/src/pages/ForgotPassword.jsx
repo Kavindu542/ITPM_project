@@ -1,13 +1,11 @@
 import React from 'react';
-import { Moon, Sun } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { authService } from '../services/authService';
+import AuthShell from '../components/AuthShell';
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
-  const bgImageUrl =
-    'https://img.freepik.com/free-photo/students-studying-street_23-2147860544.jpg?w=1060';
 
   const [email, setEmail] = React.useState('');
   const [busy, setBusy] = React.useState(false);
@@ -29,8 +27,6 @@ export default function ForgotPassword() {
     try {
       const res = await authService.forgotPassword({ email: trimmed });
       setInfo(res?.message || 'If an account exists, a reset code has been sent.');
-
-      // Move user to the next step (enter OTP + new password)
       navigate(`/reset-password?email=${encodeURIComponent(trimmed)}`);
     } catch (err) {
       setError(err?.response?.data?.message || 'Failed to send reset code');
@@ -40,79 +36,71 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div
-      className="min-h-screen font-sans relative overflow-hidden"
-      style={{
-        backgroundImage: `url('${bgImageUrl}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-      }}
+    <AuthShell
+      panelTitle="Need Help?"
+      panelDescription="Recover your account securely and continue with CampusCore in just a few steps."
+      panelButtonText="SIGN IN"
+      panelButtonTo="/signin"
+      panelSide="right"
     >
-      {/* Removed dark mode toggle button */}
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-xl rounded-3xl shadow-xl overflow-hidden">
-          <div className="p-8 md:p-10 bg-white/20 border border-white/20">
-            <h1 className="text-3xl font-bold text-gray-900 text-center">Forgot password</h1>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              Enter your email and we’ll send a 6-digit reset code (OTP).
-            </p>
-
-            <form onSubmit={onSubmit} className="mt-8 space-y-5" noValidate>
-              <div>
-                <label className="block text-xs font-medium text-gray-500" htmlFor="email">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  className={`mt-2 w-full bg-transparent border-b px-1 py-2 text-sm text-gray-900 outline-none transition-colors ${
-                    error ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-blue-600'
-                  }`}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  type="email"
-                  placeholder="you@my.sliit.lk"
-                  autoComplete="email"
-                />
-              </div>
-
-              {error ? (
-                <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-                  {error}
-                </div>
-              ) : null}
-
-              {info ? (
-                <div className="rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800">
-                  {info}
-                </div>
-              ) : null}
-
-              <button
-                type="submit"
-                disabled={busy}
-                className="w-full mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#25f194] to-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-md hover:from-[#25f194] hover:to-blue-500 disabled:opacity-60"
-              >
-                {busy ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  'Send reset code'
-                )}
-              </button>
-
-              <p className="text-center text-sm text-gray-500">
-                Back to{' '}
-                <Link to="/signin" className="font-semibold text-blue-600 hover:underline">
-                  Sign in
-                </Link>
-              </p>
-            </form>
-          </div>
-        </div>
+      <div className="text-center">
+        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">Forgot Password</h1>
+        <p className="mt-4 text-sm text-slate-400">
+          Enter your campus email and we will send a 6-digit reset code.
+        </p>
       </div>
-    </div>
+
+      <form onSubmit={onSubmit} className="mt-8 space-y-4" noValidate>
+        <div>
+          <input
+            id="email"
+            className={`w-full rounded-lg border px-4 py-3 text-sm text-slate-900 outline-none transition ${
+              error
+                ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-100'
+                : 'border-slate-200 bg-slate-100 focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100'
+            }`}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            placeholder="you@my.sliit.lk"
+            autoComplete="email"
+          />
+        </div>
+
+        {error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
+
+        {info ? (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {info}
+          </div>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={busy}
+          className="w-full inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-lg transition hover:brightness-110 disabled:opacity-60"
+        >
+          {busy ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Sending...
+            </>
+          ) : (
+            'SEND RESET CODE'
+          )}
+        </button>
+
+        <p className="pt-2 text-center text-sm text-slate-500">
+          Back to{' '}
+          <Link to="/signin" className="font-semibold text-violet-600 transition hover:text-violet-700 hover:underline">
+            Sign in
+          </Link>
+        </p>
+      </form>
+    </AuthShell>
   );
 }

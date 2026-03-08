@@ -1,44 +1,49 @@
 import React from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-export default function AuthShell({ children }) {
-  const bgImageUrl =
-    'https://img.freepik.com/free-photo/students-studying-street_23-2147860544.jpg?w=1060';
+export default function AuthShell({
+  children,
+  panelTitle,
+  panelDescription,
+  panelButtonText,
+  panelButtonTo,
+  panelSide = 'right',
+}) {
+  const isRightPanel = panelSide === 'right';
+  const panelImage =
+    'https://www.culko.in/blog/career-opportunities-after-graduating-from-chandigarh-university/assets/images/career-opportunities.png';
 
   return (
-    <div
-      className="min-h-screen font-sans relative overflow-hidden"
-      style={{
-        backgroundImage: `url('${bgImageUrl}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-      }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/20 to-slate-900/45" />
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4 md:p-6">
-        {/* Removed dark mode toggle button */}
-        <div className="w-full max-w-5xl rounded-3xl border border-white/25 bg-white/10 shadow-2xl overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-2">
-            <div className="hidden md:block relative min-h-[620px]">
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-700/60 via-slate-700/55 to-slate-800/70" />
-              <div className="absolute inset-0 opacity-35">
-                <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/30" />
-                <div className="absolute top-1/3 left-10 h-20 w-20 rounded-full bg-white/25" />
-                <div className="absolute bottom-12 left-1/4 h-28 w-28 rounded-full bg-white/20" />
-                <div className="absolute bottom-10 right-12 h-24 w-24 rounded-full bg-white/20" />
-              </div>
-              <div className="absolute inset-0 z-10 flex items-center justify-center p-8">
-                <div className="w-full max-w-sm rounded-3xl bg-slate-500/20 px-8 py-10 text-center shadow-xl">
-                  <div className="mx-auto mb-5 h-35 w-auto">
-                    <img src="/campuscore-logo.png" alt="CampusCore" className="mx-auto h-50 w-auto object-contain" />
-                  </div>
-                  <div className="mt-2 text-slate-100 text-sm font-medium tracking-wide">Smart Campus Portal</div>
-                </div>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-200 px-4 py-8 font-sans md:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-center">
+        <div className="grid w-full overflow-hidden rounded-[34px] bg-white shadow-[0_30px_80px_rgba(76,29,149,0.18)] lg:grid-cols-2">
+          <div className={`${isRightPanel ? 'order-1' : 'order-2'} flex items-center justify-center px-6 py-10 sm:px-10 md:px-12 lg:min-h-[680px]`}>
+            <div className="w-full max-w-md">{children}</div>
+          </div>
 
-            <div className="bg-white/92 p-8 md:p-10 lg:p-12 border-l border-white/60">{children}</div>
+          <div
+            className={`${isRightPanel ? 'order-2 lg:rounded-l-[120px]' : 'order-1 lg:rounded-r-[120px]'} relative flex min-h-[320px] items-center justify-center overflow-hidden bg-slate-900 px-8 py-12 text-center text-white sm:px-12 lg:min-h-[680px]`}
+          >
+            <img
+              src={panelImage}
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-80"
+            />
+            <div className="absolute inset-0 bg-slate-950/35" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.14),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.06),transparent_30%)]" />
+            <div className="absolute left-8 top-8 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute bottom-10 right-10 h-32 w-32 rounded-full bg-white/10 blur-3xl" />
+            <div className="relative z-10 max-w-sm">
+              <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{panelTitle}</h2>
+              <p className="mt-4 text-sm leading-6 text-white/85">{panelDescription}</p>
+              <Link
+                to={panelButtonTo}
+                className="mt-8 inline-flex min-w-40 items-center justify-center rounded-full border border-white/40 px-6 py-3 text-sm font-semibold tracking-wide text-white transition hover:bg-white/10"
+              >
+                {panelButtonText}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
