@@ -352,7 +352,8 @@ const buildLocalReply = (userMessage, picked) => {
 
 const extractTextFromGeminiResponse = (result) => {
   const response = result?.response;
-  const text = typeof response?.text === "function" ? response.text() : response?.text;
+  const text =
+    typeof response?.text === "function" ? response.text() : response?.text;
   return String(text || "").trim();
 };
 
@@ -380,13 +381,18 @@ const isInvalidModelError = (msg) => {
   const s = String(msg || "").toLowerCase();
   return (
     s.includes("not found") ||
-    s.includes("model") && (s.includes("invalid") || s.includes("does not exist"))
+    (s.includes("model") &&
+      (s.includes("invalid") || s.includes("does not exist")))
   );
 };
 
 const getCandidateModels = () => {
   const configured = String(process.env.GEMINI_MODEL || "").trim();
-  if (configured) return [configured, ...DEFAULT_GEMINI_MODELS.filter((m) => m !== configured)];
+  if (configured)
+    return [
+      configured,
+      ...DEFAULT_GEMINI_MODELS.filter((m) => m !== configured),
+    ];
   return DEFAULT_GEMINI_MODELS;
 };
 
@@ -513,7 +519,10 @@ Please analyze ONLY the materials provided and provide helpful recommendations. 
       aiReply = out.text;
       modelUsed = out.modelName;
     } catch (err2) {
-      console.error("Gemini generation failed (falling back):", err2?.message || err2);
+      console.error(
+        "Gemini generation failed (falling back):",
+        err2?.message || err2,
+      );
       usedFallback = true;
       aiReply = buildLocalReply(userMessage, pickedMaterials);
     }
