@@ -32,10 +32,40 @@ Always analyze ALL provided materials carefully before responding.
 Match materials based on module codes, subjects, titles, descriptions, and any relevant keywords.
 For example, if someone asks about "PAF", look for materials with moduleCode, subject, or title containing "PAF" or related terms.`;
 
+// Model fallback list: ordered by lowest friction / most likely to be enabled.
+// Note: the API returns names like "models/gemini-flash-latest", but the SDK typically
+// accepts the short name (without the "models/" prefix).
+const DEFAULT_GEMINI_MODELS = [
+  "gemini-flash-latest",
+  "gemini-flash-lite-latest",
+  "gemini-2.0-flash-lite-001",
+  "gemini-2.0-flash-lite",
+  "gemini-pro-latest",
+  "gemini-2.0-flash",
+];
+
 // Simple delay helper
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const normalize = (s) => String(s || "").toLowerCase();
+
+const escapeRegExp = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// For very short tokens (acronyms like "ndm"), avoid substring matches inside other words.
+// Example: token "ndm" should match "NDM" or "(ndm)" but not "random".
+const containsToken = (haystack, token) => {
+  const h = String(haystack || "");
+  const t = String(token || "").trim();
+  if (!h || !t) return false;
+
+  // Word-boundary style match for short alphanumeric tokens.
+  if (/^[a-z0-9]+$/.test(t) && t.length <= 4) {
+    const re = new RegExp(`(^|[^a-z0-9])${escapeRegExp(t)}([^a-z0-9]|$)`);
+    return re.test(h);
+  }
+
+  return h.includes(t);
+};
 
 const extractModuleCodes = (q) => {
   const text = String(q || "").toUpperCase();
@@ -223,11 +253,11 @@ const scoreMaterial = (
 
   for (const t of queryTokens) {
     if (t.length < 2) continue;
-    if (title.includes(t)) score += 6;
-    if (subject.includes(t)) score += 4;
-    if (description.includes(t)) score += 2;
-    if (versionNames.some((n) => n && n.includes(t))) score += 1;
-    if (extractedText && extractedText.includes(t)) score += 1;
+    if (containsToken(title, t)) score += 6;
+    if (containsToken(subject, t)) score += 4;
+    if (containsToken(description, t)) score += 2;
+    if (versionNames.some((n) => n && containsToken(n, t))) score += 1;
+    if (extractedText && containsToken(extractedText, t)) score += 1;
   }
 
   if (Array.isArray(semesters) && semesters.length > 0 && semester !== null) {
@@ -247,12 +277,27 @@ const pickTopMaterials = (materials, userMessage, limit) => {
   const semesters = extractSemesters(userMessage);
   const categoryHints = extractCategoryHints(userMessage);
 
+  // If the prompt has no usable signals, avoid returning noisy matches.
+  if (
+    moduleCodes.length === 0 &&
+    tokens.length === 0 &&
+    semesters.length === 0 &&
+    categoryHints.length === 0
+  ) {
+    return [];
+  }
+
+  // Minimum score required to consider a material "matched".
+  // - If module codes exist, scoreMaterial already enforces module evidence.
+  // - Otherwise, require a stronger match to reduce false positives.
+  const minScore = moduleCodes.length > 0 ? 1 : 6;
+
   const scored = materials
     .map((m) => ({
       m,
       s: scoreMaterial(m, tokens, moduleCodes, semesters, categoryHints),
     }))
-    .filter((x) => x.s > 0)
+    .filter((x) => x.s >= minScore)
     .sort((a, b) => b.s - a.s)
     .slice(0, limit)
     .map((x) => x.m);
@@ -305,36 +350,86 @@ const buildLocalReply = (userMessage, picked) => {
   return lines.join("\n").trim();
 };
 
-// Call Gemini with retry for rate-limit errors
-const callGeminiWithRetry = async (model, prompt, maxRetries = 3) => {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const result = await model.generateContent(prompt);
-      const response = result.response;
-      const text =
-        typeof response.text === "function" ? response.text() : response.text;
-      return text;
-    } catch (err) {
-      const msg = String(err.message || "");
-      const isRetryable =
-        msg.includes("429") ||
-        msg.includes("503") ||
-        msg.includes("RESOURCE_EXHAUSTED") ||
-        msg.includes("retry") ||
-        msg.includes("RetryInfo") ||
-        msg.includes("overloaded");
+const extractTextFromGeminiResponse = (result) => {
+  const response = result?.response;
+  const text = typeof response?.text === "function" ? response.text() : response?.text;
+  return String(text || "").trim();
+};
 
-      if (isRetryable && attempt < maxRetries) {
-        const delayMs = attempt * 3000; // 3s, 6s, 9s
-        console.log(
-          `Gemini rate-limited. Retry ${attempt}/${maxRetries} in ${delayMs}ms...`,
-        );
-        await sleep(delayMs);
-        continue;
+const isRateLimitOrQuotaError = (msg) => {
+  const s = String(msg || "");
+  return (
+    s.includes("429") ||
+    s.includes("RESOURCE_EXHAUSTED") ||
+    s.toLowerCase().includes("quota") ||
+    s.toLowerCase().includes("rate")
+  );
+};
+
+const isOverloadedOrTransientError = (msg) => {
+  const s = String(msg || "");
+  return (
+    s.includes("503") ||
+    s.toLowerCase().includes("overloaded") ||
+    s.toLowerCase().includes("unavailable") ||
+    s.toLowerCase().includes("timeout")
+  );
+};
+
+const isInvalidModelError = (msg) => {
+  const s = String(msg || "").toLowerCase();
+  return (
+    s.includes("not found") ||
+    s.includes("model") && (s.includes("invalid") || s.includes("does not exist"))
+  );
+};
+
+const getCandidateModels = () => {
+  const configured = String(process.env.GEMINI_MODEL || "").trim();
+  if (configured) return [configured, ...DEFAULT_GEMINI_MODELS.filter((m) => m !== configured)];
+  return DEFAULT_GEMINI_MODELS;
+};
+
+// Try a small set of models to avoid getting stuck on a zero-quota model.
+// - For 429/quota: switch models immediately (don't wait long).
+// - For transient (503): a couple quick retries per model.
+const generateWithModelFallback = async (prompt) => {
+  const genAI = getGenAI();
+  const candidates = getCandidateModels();
+  let lastErr = null;
+
+  for (const modelName of candidates) {
+    const model = genAI.getGenerativeModel({ model: modelName });
+
+    // Quick retries for transient failures (but not for quota issues).
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const result = await model.generateContent(prompt);
+        const text = extractTextFromGeminiResponse(result);
+        if (text) return { text, modelName };
+        // Empty response is treated as failure so we can try another model.
+        throw new Error("Empty Gemini response");
+      } catch (err) {
+        lastErr = err;
+        const msg = String(err?.message || "");
+
+        if (isRateLimitOrQuotaError(msg) || isInvalidModelError(msg)) {
+          // Switch models immediately.
+          break;
+        }
+
+        if (isOverloadedOrTransientError(msg) && attempt < 2) {
+          await sleep(800 * attempt);
+          continue;
+        }
+
+        // Non-transient errors: move to the next model.
+        break;
       }
-      throw err;
     }
   }
+
+  throw lastErr || new Error("Unable to generate AI response");
 };
 
 const aiChat = async (req, res) => {
@@ -411,23 +506,14 @@ Please analyze ONLY the materials provided and provide helpful recommendations. 
 
     let aiReply = "";
     let usedFallback = false;
+    let modelUsed = "";
 
     try {
-      const genAI = getGenAI();
-      const modelName = process.env.GEMINI_MODEL || "gemini-2.0-flash";
-      const model = genAI.getGenerativeModel({ model: modelName });
-      aiReply = await callGeminiWithRetry(model, fullPrompt);
+      const out = await generateWithModelFallback(fullPrompt);
+      aiReply = out.text;
+      modelUsed = out.modelName;
     } catch (err2) {
-      const msg2 = String(err2?.message || "");
-      const isRateLimit =
-        msg2.includes("429") ||
-        msg2.includes("RESOURCE_EXHAUSTED") ||
-        msg2.includes("retry") ||
-        msg2.includes("overloaded") ||
-        msg2.includes("GEMINI_API_KEY is not set");
-
-      if (!isRateLimit) throw err2;
-
+      console.error("Gemini generation failed (falling back):", err2?.message || err2);
       usedFallback = true;
       aiReply = buildLocalReply(userMessage, pickedMaterials);
     }
@@ -512,6 +598,10 @@ Please analyze ONLY the materials provided and provide helpful recommendations. 
       noMatches: matchedAll.length === 0,
       rateLimited: usedFallback,
     };
+
+    if (process.env.NODE_ENV === "development") {
+      payload.aiModelUsed = modelUsed || (usedFallback ? "fallback" : "");
+    }
 
     _cache.set(cacheKey, { ts: Date.now(), payload });
     res.json(payload);
