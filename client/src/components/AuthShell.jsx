@@ -11,7 +11,7 @@ export default function AuthShell({
 }) {
   const isRightPanel = panelSide === 'right';
   const panelImage =
-    'https://www.culko.in/blog/career-opportunities-after-graduating-from-chandigarh-university/assets/images/career-opportunities.png';
+    'https://t4.ftcdn.net/jpg/04/28/93/09/360_F_428930939_leNY57zgNgYL6FXFDPJPvs63N96D5hOg.jpg';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-slate-200 px-4 py-8 font-sans md:px-6 lg:px-8">
