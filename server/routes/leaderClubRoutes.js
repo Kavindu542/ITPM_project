@@ -7,6 +7,7 @@ const ClubMember = require("../models/ClubMember");
 const Meeting = require("../models/Meeting");
 const Event = require("../models/Event");
 const ClubMembershipApplication = require("../models/ClubMembershipApplication");
+const Attendance = require("../models/attendanceModel");
 
 const router = express.Router();
 
@@ -76,6 +77,72 @@ router.get("/meetings", requireAuth, async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({ message: "Failed to load meetings" });
+  }
+});
+
+// Leader Attendance: list (optional ?meetingId=...)
+router.get("/attendance", requireAuth, async (req, res) => {
+  try {
+    const club = await Club.findOne({ leader: req.user._id }).lean();
+    if (!club) {
+      return res.status(403).json({ message: "You are not a club leader" });
+    }
+
+    const meetingId = String(req.query?.meetingId || "").trim();
+    let meeting = null;
+
+    const filter = { club: club._id };
+    if (meetingId) {
+      if (!isValidId(meetingId)) {
+        return res.status(400).json({ message: "Valid meetingId is required" });
+      }
+      meeting = await Meeting.findById(meetingId).select("_id title date club").lean();
+      if (!meeting) {
+        return res.status(404).json({ message: "Meeting not found" });
+      }
+      if (String(meeting.club) !== String(club._id)) {
+        return res.status(403).json({ message: "Not allowed" });
+      }
+      filter.meeting = meeting._id;
+    }
+
+    const rows = await Attendance.find(filter)
+      .select("_id meeting studentId markedAt")
+      .sort({ markedAt: -1 })
+      .lean();
+
+    const studentIds = [...new Set(rows.map((r) => String(r.studentId || "").trim()).filter(Boolean))];
+    const users = studentIds.length
+      ? await User.find({ studentId: { $in: studentIds } }).select("studentId name email").lean()
+      : [];
+    const byStudentId = new Map(users.map((u) => [String(u.studentId || "").trim().toUpperCase(), u]));
+
+    const items = rows.map((r) => {
+      const sid = String(r.studentId || "").trim().toUpperCase();
+      const u = byStudentId.get(sid);
+      return {
+        id: r._id,
+        meetingId: String(r.meeting),
+        studentId: sid,
+        studentName: u?.name || null,
+        studentEmail: u?.email || null,
+        markedAt: r.markedAt,
+      };
+    });
+
+    return res.json({
+      meeting: meeting
+        ? {
+            id: meeting._id,
+            title: meeting.title,
+            date: meeting.date,
+          }
+        : null,
+      count: items.length,
+      items,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to load attendance" });
   }
 });
 

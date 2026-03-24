@@ -22,6 +22,7 @@ const clubFeedRoutes = require("./routes/clubFeedRoutes");
 const clubPublicRoutes = require("./routes/clubPublicRoutes");
 const hostelRoutes = require("./routes/hostelRoutes");
 const statsRoutes = require("./routes/statsRoutes");
+const attendanceRoutes = require("./routes/attendanceRoutes");
 
 const { errorHandler } = require("./middleware/errorMiddleware");
 
@@ -84,6 +85,7 @@ app.use("/api/club-feed", clubFeedRoutes);
 app.use("/api/clubs", clubPublicRoutes);
 app.use("/api/hostel", hostelRoutes);
 app.use("/api/stats", statsRoutes);
+app.use("/api/attendance", attendanceRoutes);
 
 app.use(errorHandler);
 
