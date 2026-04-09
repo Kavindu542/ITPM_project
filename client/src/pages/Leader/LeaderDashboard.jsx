@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, CalendarDays, PlusCircle, FileText, LayoutDashboard } from 'lucide-react';
 import { clubService } from '../../services/clubService';
 import QRCodeGenerator from '../../components/Clubs/QRCodeGenerator.jsx';
+import { attendanceService } from '../../services/attendanceService';
 
 export default function LeaderDashboard({ user, onLoggedOut }) {
   const navigate = useNavigate();
@@ -29,6 +30,41 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
   const [eventForm, setEventForm] = React.useState({ name: '', date: '', venue: '', type: 'Public' });
 
   const [qrMeetingId, setQrMeetingId] = React.useState(null);
+
+  const [attendanceOpenMeetingId, setAttendanceOpenMeetingId] = React.useState(null);
+  const [attendanceLoadingMeetingId, setAttendanceLoadingMeetingId] = React.useState(null);
+  const [attendanceByMeetingId, setAttendanceByMeetingId] = React.useState({});
+
+  const toggleMeetingAttendance = React.useCallback(
+    async (meetingId) => {
+      if (!meetingId) return;
+      if (String(attendanceOpenMeetingId) === String(meetingId)) {
+        setAttendanceOpenMeetingId(null);
+        return;
+      }
+
+      setAttendanceOpenMeetingId(meetingId);
+
+      setAttendanceLoadingMeetingId(meetingId);
+      try {
+        const data = await attendanceService.leaderGetAttendance({ meetingId });
+        const items = Array.isArray(data?.items) ? data.items : [];
+        const count = Number.isFinite(Number(data?.count)) ? Number(data.count) : items.length;
+        setAttendanceByMeetingId((prev) => ({
+          ...prev,
+          [String(meetingId)]: { count, items },
+        }));
+      } catch {
+        setAttendanceByMeetingId((prev) => ({
+          ...prev,
+          [String(meetingId)]: { count: 0, items: [], error: 'Failed to load attendance' },
+        }));
+      } finally {
+        setAttendanceLoadingMeetingId(null);
+      }
+    },
+    [attendanceOpenMeetingId]
+  );
 
   const deleteApplication = async (applicationId) => {
     if (!applicationId) return;
@@ -551,6 +587,13 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                                     </button>
                                     <button
                                       type="button"
+                                      onClick={() => toggleMeetingAttendance(m.id)}
+                                      className="px-3 py-1.5 rounded-lg border border-emerald-200 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                                    >
+                                      {String(attendanceOpenMeetingId) === String(m.id) ? 'Hide Attendance' : 'View Attendance'}
+                                    </button>
+                                    <button
+                                      type="button"
                                       onClick={() => openEditMeeting(m)}
                                       className="px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                                     >
@@ -570,6 +613,58 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                                   <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
                                     <div className="text-xs font-semibold text-gray-700 mb-3">Attendance QR</div>
                                     <QRCodeGenerator meetingId={m.id} size={220} />
+                                  </div>
+                                ) : null}
+
+                                {String(attendanceOpenMeetingId) === String(m.id) ? (
+                                  <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                      <div className="text-xs font-semibold text-gray-900">Attendance</div>
+                                      <div className="text-xs text-gray-500">
+                                        {attendanceLoadingMeetingId && String(attendanceLoadingMeetingId) === String(m.id)
+                                          ? 'Loading…'
+                                          : (() => {
+                                              const rec = attendanceByMeetingId[String(m.id)];
+                                              const c = Number.isFinite(Number(rec?.count)) ? Number(rec.count) : null;
+                                              return c === null ? '' : `Total: ${c}`;
+                                            })()}
+                                      </div>
+                                    </div>
+
+                                    {attendanceLoadingMeetingId && String(attendanceLoadingMeetingId) === String(m.id) ? (
+                                      <div className="mt-3 text-sm text-gray-500">Loading attendance…</div>
+                                    ) : (() => {
+                                        const rec = attendanceByMeetingId[String(m.id)] || { items: [], count: 0 };
+                                        if (rec?.error) {
+                                          return <div className="mt-3 text-sm text-red-600">{rec.error}</div>;
+                                        }
+                                        const items = Array.isArray(rec.items) ? rec.items : [];
+                                        if (items.length === 0) {
+                                          return <div className="mt-3 text-sm text-gray-500">No attendance marked yet.</div>;
+                                        }
+                                        return (
+                                          <ul className="mt-3 divide-y divide-gray-200">
+                                            {items.map((a) => (
+                                              <li key={a.id} className="py-3">
+                                                <div className="flex items-start justify-between gap-3">
+                                                  <div className="min-w-0">
+                                                    <div className="text-sm font-semibold text-gray-900 truncate">
+                                                      {a.studentName || a.studentId}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                      {a.studentName ? `ID: ${a.studentId}` : ''}
+                                                      {a.studentEmail ? ` • ${a.studentEmail}` : ''}
+                                                    </div>
+                                                  </div>
+                                                  <div className="text-xs text-gray-500 shrink-0">
+                                                    {a.markedAt ? new Date(a.markedAt).toLocaleString() : ''}
+                                                  </div>
+                                                </div>
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        );
+                                      })()}
                                   </div>
                                 ) : null}
                               </li>
