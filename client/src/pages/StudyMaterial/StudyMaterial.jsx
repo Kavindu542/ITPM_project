@@ -13,6 +13,7 @@ import {
   UploadCloud,
 } from 'lucide-react';
 import { studyMaterialService } from '../../services/studyMaterialService';
+import { toast } from '../../lib/toast';
 import AIChatBot from '../../components/AIChatBot';
 import StudyMaterialSidebar from '../../components/StudyMaterialSidebar';
 // Removed AI PDF export utilities
@@ -42,7 +43,6 @@ export default function StudyMaterial({ user, onLoggedOut }) {
   });
 
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
   const [scanLoading, setScanLoading] = React.useState(false);
   const [scanError, setScanError] = React.useState('');
   const [items, setItems] = React.useState([]);
@@ -82,7 +82,6 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
   const loadAll = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const params = {
         q: filters.q || undefined,
@@ -93,7 +92,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
       const res = await studyMaterialService.listMaterials(params);
       setItems(res?.items ?? []);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load materials');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load materials');
     } finally {
       setLoading(false);
     }
@@ -101,12 +100,11 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
   const loadBookmarks = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const res = await studyMaterialService.listBookmarks();
       setBookmarks(res?.items ?? []);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load favourites');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load favourites');
     } finally {
       setLoading(false);
     }
@@ -114,12 +112,11 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
   const loadHistory = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const res = await studyMaterialService.listHistory();
       setHistory(res?.items ?? []);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load history');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load history');
     } finally {
       setLoading(false);
     }
@@ -127,12 +124,11 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
   const loadMyUploads = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const res = await studyMaterialService.listMyUploads();
       setMyUploads(res?.items ?? []);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load your uploads');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load your uploads');
     } finally {
       setLoading(false);
     }
@@ -227,7 +223,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
       setItems((prev) => prev.map((m) => (m.id === id ? { ...m, bookmarked: !!res.bookmarked } : m)));
       if (tab === 'favs') loadBookmarks();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to update bookmark');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to update bookmark');
     }
   };
 
@@ -296,16 +292,15 @@ export default function StudyMaterial({ user, onLoggedOut }) {
       const res = await studyMaterialService.getMaterial(id);
       setDetailsById((p) => ({ ...p, [id]: res?.material ?? null }));
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load versions');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load versions');
     }
   };
 
   const submitContribution = async (e) => {
     e.preventDefault();
-    setError('');
 
     if (!contrib.file) {
-      setError('Please choose a file to upload');
+      toast.error('Please choose a file to upload');
       return;
     }
 
@@ -332,7 +327,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
       setUploadModalOpen(false);
       await loadMyUploads();
     } catch (e2) {
-      setError(e2?.response?.data?.message || e2?.message || 'Upload failed');
+      toast.error(e2?.response?.data?.message || e2?.message || 'Upload failed');
     } finally {
       setLoading(false);
     }
@@ -484,10 +479,6 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                   </button>
                 ) : null}
               </div>
-
-              {error ? (
-                <div className="p-5 text-sm text-red-700 bg-red-50 border-b border-red-100">{error}</div>
-              ) : null}
 
               {tab === 'all' ? (
                 <>

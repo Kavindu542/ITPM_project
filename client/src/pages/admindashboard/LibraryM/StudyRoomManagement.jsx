@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   DoorOpen, Plus, Search, Edit2, Trash2, X, Save,
-  ChevronLeft, ChevronRight, CheckCircle, AlertCircle,
+  ChevronLeft, ChevronRight, AlertCircle,
   Users, Clock, Wifi, Monitor, AirVent, Projector,
   Coffee, Volume2, Lock, Eye, Loader2, RefreshCw,
 } from 'lucide-react';
 import { studyRoomService } from '../../../services/libraryService';
+import { toast } from '../../../lib/toast';
 
 // ── Sample Data (fallback) ─────────────────────────────────
 const INITIAL_ROOMS = [
@@ -32,7 +33,7 @@ const AMENITY_LIST = [
   { key: 'Projector', icon: Projector, label: 'Projector', color: 'text-purple-500', bg: 'bg-purple-50' },
   { key: 'Whiteboard', icon: Monitor, label: 'Whiteboard', color: 'text-indigo-500', bg: 'bg-indigo-50' },
   { key: 'Coffee', icon: Coffee, label: 'Coffee', color: 'text-amber-500', bg: 'bg-amber-50' },
-  { key: 'Soundproof', icon: Volume2, label: 'Soundproof', color: 'text-green-500', bg: 'bg-green-50' },
+  { key: 'Soundproof', icon: Volume2, label: 'Soundproof', color: 'text-blue-600', bg: 'bg-blue-50' },
   { key: 'Lockable', icon: Lock, label: 'Lockable', color: 'text-red-500', bg: 'bg-red-50' },
 ];
 
@@ -45,7 +46,7 @@ const EMPTY_FORM = {
 // ── Status Badge ───────────────────────────────────────────
 function StatusBadge({ status }) {
   const map = {
-    Available: 'bg-emerald-100 text-emerald-700',
+    Available: 'bg-blue-100 text-blue-700',
     Occupied: 'bg-amber-100 text-amber-700',
     Maintenance: 'bg-red-100 text-red-600',
   };
@@ -255,7 +256,7 @@ function RoomForm({ form, setForm, onSave, onCancel, isEdit, saving }) {
 // ── Room Card ──────────────────────────────────────────────
 function RoomCard({ room, onEdit, onDelete, onView }) {
   const statusColor = {
-    Available: 'from-emerald-400 to-emerald-500',
+    Available: 'from-blue-500 to-blue-600',
     Occupied: 'from-amber-400 to-amber-500',
     Maintenance: 'from-red-400 to-red-500',
   };
@@ -316,22 +317,14 @@ export default function StudyRoomManagement() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [deleteId, setDeleteId] = useState(null);
   const [viewRoom, setViewRoom] = useState(null);
-  const [toast, setToast] = useState(null);
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState('grid');
   const PER_PAGE = 6;
-  const [errorMsg, setErrorMsg] = useState('');
-
-  const showToast = (msg, type = 'success') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   // ── Fetch Rooms ────────────────────────────────────────
   const fetchRooms = useCallback(async () => {
     try {
       setLoading(true);
-      setErrorMsg('');
       const res = await studyRoomService.getAll();
       const rawData = res?.data?.data || res?.data || [];
       // Map backend fields to frontend display fields
@@ -350,7 +343,7 @@ export default function StudyRoomManagement() {
     } catch (err) {
       setRooms(INITIAL_ROOMS);
       setUsingDummy(true);
-      setErrorMsg(err?.response?.data?.message || 'Failed to load study rooms.');
+      toast.error(err?.response?.data?.message || 'Failed to load study rooms.');
     } finally {
       setLoading(false);
     }
@@ -397,10 +390,10 @@ export default function StudyRoomManagement() {
         setRooms(rs => rs.map(r =>
           (r._id === editRoom._id || r.id === editRoom.id) ? { ...r, ...form } : r
         ));
-        showToast('Room updated! (demo mode)');
+        toast.success('Room updated! (demo mode)');
       } else {
         setRooms(rs => [{ ...form, id: Date.now(), _id: String(Date.now()) }, ...rs]);
-        showToast('Room added! (demo mode)');
+        toast.success('Room added! (demo mode)');
       }
       setShowModal(false);
       return;
@@ -430,7 +423,7 @@ export default function StudyRoomManagement() {
       };
       if (editRoom) {
         await studyRoomService.update(editRoom._id, payload);
-        showToast('Room updated successfully! ✅');
+        toast.success('Room updated successfully! ✅');
       } else {
         await studyRoomService.create(payload);
         showToast('Room added successfully! ✅');
@@ -438,7 +431,7 @@ export default function StudyRoomManagement() {
       setShowModal(false);
       fetchRooms();
     } catch (err) {
-      showToast(err.response?.data?.message || 'Something went wrong', 'error');
+      toast.error(err.response?.data?.message || 'Something went wrong');
     } finally {
       setSaving(false);
     }
@@ -456,10 +449,10 @@ export default function StudyRoomManagement() {
       setDeleting(true);
       await studyRoomService.delete(deleteId);
       setDeleteId(null);
-      showToast('Room deleted.', 'error');
+      toast.success('Room deleted.');
       fetchRooms();
     } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to delete', 'error');
+      toast.error(err.response?.data?.message || 'Failed to delete');
     } finally {
       setDeleting(false);
     }
@@ -467,13 +460,6 @@ export default function StudyRoomManagement() {
 
   return (
     <div className="space-y-6">
-
-      {toast && (
-        <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold text-white ${toast.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'}`}>
-          {toast.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-          {toast.msg}
-        </div>
-      )}
 
       <div className="flex items-center justify-between">
         <div>
@@ -490,7 +476,7 @@ export default function StudyRoomManagement() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Total Rooms', value: rooms.length, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-          { label: 'Available', value: rooms.filter(r => r.status === 'Available').length, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'Available', value: rooms.filter(r => r.status === 'Available').length, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Occupied', value: rooms.filter(r => r.status === 'Occupied').length, color: 'text-amber-600', bg: 'bg-amber-50' },
           { label: 'Maintenance', value: rooms.filter(r => r.status === 'Maintenance').length, color: 'text-red-600', bg: 'bg-red-50' },
         ].map((s, i) => (
@@ -631,8 +617,8 @@ export default function StudyRoomManagement() {
                 <Users className="h-5 w-5 text-indigo-500" />
                 <div><div className="text-xs text-gray-500">Capacity</div><div className="text-sm font-black text-gray-900">{viewRoom.capacity} seats</div></div>
               </div>
-              <div className="bg-emerald-50 rounded-xl p-3 flex items-center gap-3">
-                <Clock className="h-5 w-5 text-emerald-500" />
+              <div className="bg-blue-50 rounded-xl p-3 flex items-center gap-3">
+                <Clock className="h-5 w-5 text-blue-600" />
                 <div><div className="text-xs text-gray-500">Hours</div><div className="text-sm font-black text-gray-900">{viewRoom.openTime} – {viewRoom.closeTime}</div></div>
               </div>
             </div>

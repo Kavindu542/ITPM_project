@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../../services/authService';
 import { clubService } from '../../../services/clubService';
-import UserMenu from '../../../components/UserMenu';
+import AdminLibraryShell, { AdminSidebarNavButton } from '../../../components/admin/AdminLibraryShell';
+import { LayoutDashboard, Users, Shield } from 'lucide-react';
+import { toast } from '../../../lib/toast';
 
 
 export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
@@ -116,7 +118,7 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
   const handleCreateClub = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      alert('Club name is required');
+      toast.error('Club name is required');
       return;
     }
 
@@ -142,9 +144,9 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
       setStats(prev => ({ ...prev, totalClubs: prev.totalClubs + 1, vacantClubs: prev.vacantClubs + 1 }));
       setFormData({ name: '', description: '', rules: '', logoUrl: '' });
       setShowCreateForm(false);
-      alert('Club created successfully!');
+      toast.success('Club created successfully!');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to create club');
+      toast.error(err?.response?.data?.message || 'Failed to create club');
     }
   };
 
@@ -164,7 +166,7 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      alert('Club name is required');
+      toast.error('Club name is required');
       return;
     }
 
@@ -182,9 +184,9 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
       setEditingClub(null);
       setShowEditForm(false);
       setFormData({ name: '', description: '', rules: '', logoUrl: '' });
-      alert('Club updated successfully!');
+      toast.success('Club updated successfully!');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to update club');
+      toast.error(err?.response?.data?.message || 'Failed to update club');
     }
   };
 
@@ -205,9 +207,9 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
       }));
       setShowDeleteModal(false);
       setClubToDelete(null);
-      alert('Club deleted successfully!');
+      toast.success('Club deleted successfully!');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to delete club');
+      toast.error(err?.response?.data?.message || 'Failed to delete club');
     }
   };
 
@@ -220,7 +222,7 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
   const handleAssignLeader = async (e) => {
     e.preventDefault();
     if (!leaderFormData.clubId || !leaderFormData.studentId) {
-      alert('Please select both a club and a student');
+      toast.error('Please select both a club and a student');
       return;
     }
 
@@ -228,12 +230,12 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
     const selectedStudent = students.find(s => String(s.id) === String(leaderFormData.studentId));
 
     if (!selectedClub) {
-      alert('Selected club was not found. Please refresh and try again.');
+      toast.error('Selected club was not found. Please refresh and try again.');
       return;
     }
 
     if (!selectedStudent) {
-      alert('Selected student was not found. Please refresh and try again.');
+      toast.error('Selected student was not found. Please refresh and try again.');
       return;
     }
 
@@ -293,7 +295,7 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
       );
       setClubs(updatedClubs);
       const msg = res?.message || `${selectedStudent.name} is now the leader of ${selectedClub.name}`;
-      alert(msg);
+      toast.success(msg);
     } catch (err) {
       const status = err?.response?.status;
       const message = err?.response?.data?.message || 'Failed to assign leader';
@@ -330,7 +332,7 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
         }
       }
 
-      alert(message);
+      toast.error(message);
       return;
     }
 
@@ -371,84 +373,55 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
       }));
       setShowRemoveLeaderModal(false);
       setLeaderToRemove(null);
-      alert('Leader removed successfully!');
+      toast.success('Leader removed successfully!');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to remove leader');
+      toast.error(err?.response?.data?.message || 'Failed to remove leader');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 to-[#25f194] font-sans">
-      <header className="sticky top-0 z-10 border-b border-white/10 bg-white/10 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="rounded-2xl bg-white px-3 py-2 shadow-sm">
-              <div className="flex items-center gap-2">
-                <svg className="h-5 w-5 text-indigo-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <div>
-                  <div className="text-sm font-bold text-gray-900">CampusCore</div>
-                  <div className="text-xs font-medium text-gray-500">Admin</div>
-                </div>
-              </div>
-            </div>
-            <div className="text-white">
-              <div className="text-sm font-semibold">Club and Society</div>
-              <div className="text-xs text-white/80">Dashboard</div>
-            </div>
-          </div>
-          <UserMenu
-            user={user}
-            onProfile={() => navigate('/profile')}
-            onLogout={logout}
-            theme="light"
-            idLabel="ID"
+    <AdminLibraryShell
+      user={user}
+      productSubtitle="Club & Society Admin"
+      headerTitle="Club & Society"
+      headerSubtitle="Management dashboard"
+      roleLabel="Club admin"
+      roleIcon={Shield}
+      onLogout={logout}
+      onProfile={() => navigate('/profile')}
+      sidebarNav={({ collapsed }) => (
+        <div className="space-y-1">
+          <AdminSidebarNavButton
+            collapsed={collapsed}
+            active={activeTab === 'overview'}
+            onClick={() => setActiveTab('overview')}
+            icon={LayoutDashboard}
+            label="Overview"
+            description="Stats & events"
+          />
+          <AdminSidebarNavButton
+            collapsed={collapsed}
+            active={activeTab === 'clubs'}
+            onClick={() => setActiveTab('clubs')}
+            icon={Users}
+            label="Club management"
+            description="Create & edit clubs"
+          />
+          <AdminSidebarNavButton
+            collapsed={collapsed}
+            active={activeTab === 'leaders'}
+            onClick={() => setActiveTab('leaders')}
+            icon={Shield}
+            label="Leader management"
+            description="Assign leaders"
           />
         </div>
-      </header>
-
-      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mx-auto w-full max-w-6xl">
+      )}
+    >
+      <div className="mx-auto w-full max-w-6xl">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-white">Club & Society Management</h2>
-            <p className="mt-1 text-sm text-white/80">Signed in as {user?.email}</p>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex gap-4 mb-6 border-b border-white/20">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`pb-3 px-4 text-sm font-medium transition ${
-                activeTab === 'overview'
-                  ? 'text-white border-b-2 border-white'
-                  : 'text-white/70 hover:text-white'
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('clubs')}
-              className={`pb-3 px-4 text-sm font-medium transition ${
-                activeTab === 'clubs'
-                  ? 'text-white border-b-2 border-white'
-                  : 'text-white/70 hover:text-white'
-              }`}
-            >
-              Club Management
-            </button>
-            <button
-              onClick={() => setActiveTab('leaders')}
-              className={`pb-3 px-4 text-sm font-medium transition ${
-                activeTab === 'leaders'
-                  ? 'text-white border-b-2 border-white'
-                  : 'text-white/70 hover:text-white'
-              }`}
-            >
-              Leader Management
-            </button>
+            <h2 className="text-2xl font-bold text-gray-900">Club & Society Management</h2>
+            <p className="mt-1 text-sm text-gray-500">Signed in as {user?.email}</p>
           </div>
 
           {/* OVERVIEW TAB */}
@@ -457,14 +430,14 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
               {/* Dashboard Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
                 <DashboardCard title="Total Clubs" value={loading ? '...' : stats.totalClubs} color="indigo" />
-                <DashboardCard title="Total Students" value={loading ? '...' : stats.totalStudents} color="emerald" />
+                <DashboardCard title="Total Students" value={loading ? '...' : stats.totalStudents} color="sky" />
                 <DashboardCard title="Club Leaders" value={loading ? '...' : stats.totalLeaders} color="blue" />
                 <DashboardCard title="Vacant Clubs" value={loading ? '...' : stats.vacantClubs} color="red" />
                 <DashboardCard title="Upcoming Events" value={loading ? '...' : stats.upcomingEvents.length} color="yellow" />
               </div>
 
               {/* Upcoming Events List */}
-              <div className="bg-white rounded-2xl p-6 shadow-xl">
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Events (Next 7 Days)</h3>
                 {loading ? (
                   <div className="text-gray-500">Loading...</div>
@@ -492,7 +465,7 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
               <div className="mb-6 flex justify-end">
                 <button
                   onClick={() => setShowCreateForm(true)}
-                  className="bg-white hover:bg-gray-50 text-indigo-600 font-semibold py-2 px-4 rounded-lg transition"
+                  className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm hover:bg-gray-50 transition"
                 >
                   + Create New Club
                 </button>
@@ -687,9 +660,9 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
 
               {/* Clubs Table */}
               {loading ? (
-                <div className="text-center py-8 text-white">Loading clubs...</div>
+                <div className="text-center py-8 text-gray-500">Loading clubs...</div>
               ) : clubs.length === 0 ? (
-                <div className="text-center py-8 text-white/80">No clubs found. Create your first club!</div>
+                <div className="text-center py-8 text-gray-500">No clubs found. Create your first club!</div>
               ) : (
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                   <table className="w-full">
@@ -717,7 +690,7 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
                           <td className="px-6 py-4 text-sm text-gray-600">{club.members}</td>
                           <td className="px-6 py-4 text-sm text-gray-600">{club.events}</td>
                           <td className="px-6 py-4 text-sm">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${club.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${club.status === 'Active' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
                               {club.status}
                             </span>
                           </td>
@@ -752,7 +725,7 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
             <div>
               {/* Clubs Without Leaders Section */}
               <div className="mb-8">
-                <h3 className="text-lg font-bold text-white mb-4">Clubs Without Leaders (Vacant)</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Clubs Without Leaders (Vacant)</h3>
                 {clubs.filter(c => !c.leader).length === 0 ? (
                   <div className="bg-white rounded-lg p-6 text-gray-600">All clubs have leaders assigned!</div>
                 ) : (
@@ -765,7 +738,7 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
                         </div>
                         <button
                           onClick={() => openAssignLeaderModal(club)}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition text-sm"
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition text-sm"
                         >
                           Assign Now
                         </button>
@@ -968,24 +941,25 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
             </div>
           )}
         </div>
-      </main>
-    </div>
+    </AdminLibraryShell>
   );
 }
 
-// DashboardCard component
+// DashboardCard component — white cards with dark text; colored left accent per metric
 function DashboardCard({ title, value, color }) {
-  const colorMap = {
-    indigo: 'from-indigo-500 to-indigo-400',
-    emerald: 'from-emerald-500 to-emerald-400',
-    blue: 'from-blue-500 to-blue-400',
-    red: 'from-red-500 to-red-400',
-    yellow: 'from-yellow-400 to-yellow-300',
+  const accentMap = {
+    indigo: 'border-l-indigo-500',
+    sky: 'border-l-sky-500',
+    blue: 'border-l-blue-600',
+    red: 'border-l-red-500',
+    yellow: 'border-l-amber-500',
   };
   return (
-    <div className={`rounded-xl bg-gradient-to-br ${colorMap[color] || 'from-gray-200 to-gray-100'} p-5 shadow text-white`}>
-      <div className="text-xs font-medium opacity-80 mb-1">{title}</div>
-      <div className="text-2xl font-bold">{value}</div>
+    <div
+      className={`rounded-xl border border-gray-200 bg-white p-5 shadow-sm border-l-4 pl-4 ${accentMap[color] || 'border-l-gray-300'}`}
+    >
+      <div className="mb-1 text-xs font-medium text-gray-500">{title}</div>
+      <div className="text-2xl font-bold text-gray-900">{value}</div>
     </div>
   );
 }

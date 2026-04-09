@@ -1,10 +1,11 @@
 import React from 'react';
 
 import { studyMaterialService } from '../../../services/studyMaterialService';
+import { toast } from '../../../lib/toast';
+import { confirmDialog, promptDialog } from '../../../lib/dialog';
 
 export default function ForumManagementPage() {
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
 
   const [categories, setCategories] = React.useState([]);
   const [threads, setThreads] = React.useState([]);
@@ -19,7 +20,6 @@ export default function ForumManagementPage() {
 
   const load = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const [cRes, tRes, topRes] = await Promise.all([
         studyMaterialService.listForumCategories(),
@@ -30,7 +30,7 @@ export default function ForumManagementPage() {
       setThreads(tRes?.items ?? []);
       setContributors(topRes?.items ?? []);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load forum admin data');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load forum admin data');
     } finally {
       setLoading(false);
     }
@@ -43,29 +43,34 @@ export default function ForumManagementPage() {
   const createCategory = async (e) => {
     e.preventDefault();
     if (!newCategory.name.trim()) {
-      setError('Category name is required');
+      toast.error('Category name is required');
       return;
     }
 
-    setError('');
     try {
       await studyMaterialService.createForumCategory(newCategory);
       setNewCategory({ name: '', slug: '', description: '' });
       await load();
     } catch (e2) {
-      setError(e2?.response?.data?.message || e2?.message || 'Failed to create category');
+      toast.error(e2?.response?.data?.message || e2?.message || 'Failed to create category');
     }
   };
 
   const deleteCategory = async (slug) => {
     if (!slug) return;
-    if (!window.confirm(`Delete category "${slug}"? Threads will be moved to General Queries.`)) return;
-    setError('');
+    const ok = await confirmDialog({
+      title: 'Delete category',
+      message: `Delete category "${slug}"? Threads will be moved to General Queries.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await studyMaterialService.adminDeleteForumCategory(slug);
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to delete category');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to delete category');
     }
   };
 
@@ -76,82 +81,81 @@ export default function ForumManagementPage() {
     if (action === 'move') {
       const categorySlug = (threadCategoryById[threadId] || thread?.categorySlug || '').trim();
       if (!categorySlug) {
-        setError('Please select a valid category before moving this thread');
+        toast.error('Please select a valid category before moving this thread');
         return;
       }
       payload.categorySlug = categorySlug;
     }
 
-    setError('');
     try {
       await studyMaterialService.adminUpdateForumThread(threadId, payload);
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Thread update failed');
+      toast.error(e?.response?.data?.message || e?.message || 'Thread update failed');
     }
   };
 
   const toggleReplyHelpful = async (replyId, helpful) => {
-    setError('');
     try {
       await studyMaterialService.adminUpdateForumReply(replyId, {
         action: helpful ? 'mark-helpful' : 'unmark-helpful',
       });
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Reply update failed');
+      toast.error(e?.response?.data?.message || e?.message || 'Reply update failed');
     }
   };
 
   const removeReply = async (replyId) => {
-    const reason = window.prompt('Reason for removing reply:', '') || '';
-    setError('');
+    const reasonRaw = await promptDialog({
+      title: 'Remove reply',
+      message: 'Reason for removing reply (optional):',
+      defaultValue: '',
+    });
+    if (reasonRaw === null) return;
+    const reason = reasonRaw || '';
     try {
       await studyMaterialService.adminUpdateForumReply(replyId, { action: 'remove', reason });
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to remove reply');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to remove reply');
     }
   };
 
   const ban = async () => {
     const userId = banUserId.trim();
     if (!userId) {
-      setError('User ID is required to ban');
+      toast.error('User ID is required to ban');
       return;
     }
 
-    setError('');
     try {
       await studyMaterialService.adminBanForumUser(userId, banReason);
       setBanUserId('');
       setBanReason('');
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to ban user');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to ban user');
     }
   };
 
   const unban = async () => {
     const userId = banUserId.trim();
     if (!userId) {
-      setError('User ID is required to unban');
+      toast.error('User ID is required to unban');
       return;
     }
 
-    setError('');
     try {
       await studyMaterialService.adminUnbanForumUser(userId);
       setBanUserId('');
       setBanReason('');
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to unban user');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to unban user');
     }
   };
 
   return (
     <div className="space-y-6">
-      {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl border border-gray-200 p-5">
           <h2 className="text-lg font-bold text-gray-900">Category Management</h2>

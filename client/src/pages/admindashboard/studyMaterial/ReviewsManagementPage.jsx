@@ -1,10 +1,10 @@
 import React from 'react';
 
 import { studyMaterialService } from '../../../services/studyMaterialService';
+import { toast } from '../../../lib/toast';
 
 export default function ReviewsManagementPage() {
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
 
   const [statusFilter, setStatusFilter] = React.useState('');
   const [items, setItems] = React.useState([]);
@@ -14,7 +14,6 @@ export default function ReviewsManagementPage() {
 
   const load = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const [rRes, aRes] = await Promise.all([
         studyMaterialService.adminListReviews({ status: statusFilter || undefined }),
@@ -23,7 +22,7 @@ export default function ReviewsManagementPage() {
       setItems(rRes?.items ?? []);
       setAnalytics(aRes ?? { byMaterial: [], trends: [] });
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load review data');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load review data');
     } finally {
       setLoading(false);
     }
@@ -34,7 +33,6 @@ export default function ReviewsManagementPage() {
   }, [load]);
 
   const moderate = async (reviewId, action) => {
-    setError('');
     try {
       await studyMaterialService.adminModerateReview(reviewId, {
         action,
@@ -42,31 +40,28 @@ export default function ReviewsManagementPage() {
       });
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Moderation failed');
+      toast.error(e?.response?.data?.message || e?.message || 'Moderation failed');
     }
   };
 
   const respond = async (reviewId) => {
     const text = String(responseById[reviewId] || '').trim();
     if (!text) {
-      setError('Response text is required');
+      toast.error('Response text is required');
       return;
     }
 
-    setError('');
     try {
       await studyMaterialService.adminRespondReview(reviewId, text);
       setResponseById((p) => ({ ...p, [reviewId]: '' }));
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Response failed');
+      toast.error(e?.response?.data?.message || e?.message || 'Response failed');
     }
   };
 
   return (
     <div className="space-y-6">
-      {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-2xl border border-gray-200 bg-white p-5">
           <div className="text-sm text-gray-500">Most reviewed material</div>

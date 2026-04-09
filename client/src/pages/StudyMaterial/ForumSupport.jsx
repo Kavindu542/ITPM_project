@@ -13,6 +13,8 @@ import {
   UploadCloud,
 } from 'lucide-react';
 import { studyMaterialService } from '../../services/studyMaterialService';
+import { toast } from '../../lib/toast';
+import { confirmDialog } from '../../lib/dialog';
 import StudyMaterialSidebar from '../../components/StudyMaterialSidebar';
 
 
@@ -20,7 +22,6 @@ export default function ForumSupport({ user, onLoggedOut }) {
   const navigate = useNavigate();
 
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
 
   const [categories, setCategories] = React.useState([]);
   const [threads, setThreads] = React.useState([]);
@@ -42,7 +43,6 @@ export default function ForumSupport({ user, onLoggedOut }) {
 
   const load = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const [cRes, tRes] = await Promise.all([
         studyMaterialService.listForumCategories(),
@@ -56,7 +56,7 @@ export default function ForumSupport({ user, onLoggedOut }) {
         setThreadForm((p) => ({ ...p, categorySlug: c[0].slug }));
       }
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load forum');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load forum');
     } finally {
       setLoading(false);
     }
@@ -69,18 +69,17 @@ export default function ForumSupport({ user, onLoggedOut }) {
   const submitThread = async (e) => {
     e.preventDefault();
     if (!threadForm.title.trim() || !threadForm.body.trim()) {
-      setError('Title and question are required');
+      toast.error('Title and question are required');
       return;
     }
 
     setLoading(true);
-    setError('');
     try {
       await studyMaterialService.createForumThread(threadForm);
       setThreadForm((p) => ({ ...p, title: '', body: '', tags: '', moduleCode: '', topic: '' }));
       await load();
     } catch (e2) {
-      setError(e2?.response?.data?.message || e2?.message || 'Failed to post thread');
+      toast.error(e2?.response?.data?.message || e2?.message || 'Failed to post thread');
     } finally {
       setLoading(false);
     }
@@ -91,65 +90,59 @@ export default function ForumSupport({ user, onLoggedOut }) {
     if (!body) return;
 
     setLoading(true);
-    setError('');
     try {
       await studyMaterialService.createForumReply(threadId, body);
       setReplyBodyByThread((p) => ({ ...p, [threadId]: '' }));
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to add reply');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to add reply');
     } finally {
       setLoading(false);
     }
   };
 
   const deleteOwnThread = async (threadId) => {
-    setError('');
     try {
       await studyMaterialService.deleteOwnForumThread(threadId);
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to delete thread');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to delete thread');
     }
   };
 
   const upvoteThread = async (threadId) => {
-    setError('');
     try {
       await studyMaterialService.upvoteForumThread(threadId);
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to vote');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to vote');
     }
   };
 
   const upvoteReply = async (replyId) => {
-    setError('');
     try {
       await studyMaterialService.upvoteForumReply(replyId);
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to vote');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to vote');
     }
   };
 
   const acceptReply = async (replyId) => {
-    setError('');
     try {
       await studyMaterialService.acceptForumReply(replyId);
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to accept');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to accept');
     }
   };
 
   const subscribe = async (threadId) => {
-    setError('');
     try {
       await studyMaterialService.subscribeForumThread(threadId);
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to subscribe');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to subscribe');
     }
   };
 
@@ -188,8 +181,6 @@ export default function ForumSupport({ user, onLoggedOut }) {
                   Post Thread
                 </button>
               </div>
-
-              {error ? <div className="p-5 text-sm text-red-700 bg-red-50 border-b border-red-100">{error}</div> : null}
 
               <div className="p-5 border-b border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -306,8 +297,15 @@ export default function ForumSupport({ user, onLoggedOut }) {
                       {t.isMine ? (
                         <button
                           type="button"
-                          onClick={() => {
-                            if (window.confirm('Delete this thread?')) deleteOwnThread(t.id);
+                          onClick={async () => {
+                            const ok = await confirmDialog({
+                              title: 'Delete thread',
+                              message: 'Delete this thread? This cannot be undone.',
+                              confirmText: 'Delete',
+                              cancelText: 'Cancel',
+                              variant: 'danger',
+                            });
+                            if (ok) deleteOwnThread(t.id);
                           }}
                           className="px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-xs font-semibold text-red-700"
                         >

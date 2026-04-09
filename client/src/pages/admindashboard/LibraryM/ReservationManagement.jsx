@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Calendar, Search, Trash2, X,
-  ChevronLeft, ChevronRight, CheckCircle, AlertCircle,
+  ChevronLeft, ChevronRight, AlertCircle,
   Clock, User, BookOpen, DoorOpen,
   Eye, RefreshCw, Download, Loader2,
 } from 'lucide-react';
 import { reservationService } from '../../../services/libraryService';
+import { toast } from '../../../lib/toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -71,11 +72,8 @@ export default function ReservationManagement() {
   const [typeFilter, setTypeFilter] = useState('All');
   const [deleteId, setDeleteId] = useState(null);
   const [viewRes, setViewRes] = useState(null);
-  const [toast, setToast] = useState(null);
   const [page, setPage] = useState(1);
   const PER_PAGE = 8;
-
-  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
 
   // ── Fetch Reservations ─────────────────────────────────
   const fetchReservations = useCallback(async () => {
@@ -93,7 +91,7 @@ export default function ReservationManagement() {
     } catch (err) {
       setReservations([]); // still empty, but allow local add
       setUsingDummy(true);
-      showToast(err?.response?.data?.message || 'Failed to load reservations', 'error');
+      toast.error(err?.response?.data?.message || 'Failed to load reservations');
     } finally {
       setLoading(false);
     }
@@ -193,11 +191,11 @@ export default function ReservationManagement() {
       setSaving(true);
       if (editRes) {
         setReservations(rs => rs.map(r => (r.id === editRes.id || r._id === editRes._id) ? { ...r, ...form } : r));
-        showToast('Reservation updated! (demo mode)');
+        toast.success('Reservation updated! (demo mode)');
       } else {
         const newItem = { id: Date.now(), ...form };
         setReservations(rs => [newItem, ...rs]);
-        showToast('Reservation added! (demo mode)');
+        toast.success('Reservation added! (demo mode)');
       }
       setShowModal(false);
       setSaving(false);
@@ -207,15 +205,15 @@ export default function ReservationManagement() {
       setSaving(true);
       if (editRes) {
         await reservationService.update(editRes._id || editRes.id, form);
-        showToast('Reservation updated! ✅');
+        toast.success('Reservation updated! ✅');
       } else {
         await reservationService.create(form);
-        showToast('Reservation added! ✅');
+        toast.success('Reservation added! ✅');
       }
       setShowModal(false);
       fetchReservations();
     } catch (err) {
-      showToast(err?.response?.data?.message || 'Something went wrong', 'error');
+      toast.error(err?.response?.data?.message || 'Something went wrong');
     } finally {
       setSaving(false);
     }
@@ -226,7 +224,7 @@ export default function ReservationManagement() {
       setDeleting(true);
       setReservations(rs => rs.filter(r => (r.id !== deleteId && r._id !== deleteId)));
       setDeleteId(null);
-      showToast('Reservation deleted. (demo mode)', 'error');
+      toast.success('Reservation deleted. (demo mode)');
       setDeleting(false);
       return;
     }
@@ -237,7 +235,7 @@ export default function ReservationManagement() {
       showToast('Reservation deleted.', 'error');
       fetchReservations();
     } catch (err) {
-      showToast(err?.response?.data?.message || 'Failed to delete', 'error');
+      toast.error(err?.response?.data?.message || 'Failed to delete');
     } finally {
       setDeleting(false);
     }
@@ -255,13 +253,6 @@ export default function ReservationManagement() {
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold text-white ${toast.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'}`}>
-          {toast.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-black text-gray-900">Reservation Management</h2>

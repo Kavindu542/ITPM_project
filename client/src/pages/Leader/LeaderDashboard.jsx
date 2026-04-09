@@ -4,6 +4,8 @@ import { ArrowLeft, Users, CalendarDays, PlusCircle, FileText, LayoutDashboard }
 import { clubService } from '../../services/clubService';
 import QRCodeGenerator from '../../components/Clubs/QRCodeGenerator.jsx';
 import { attendanceService } from '../../services/attendanceService';
+import { toast } from '../../lib/toast';
+import { confirmDialog } from '../../lib/dialog';
 
 export default function LeaderDashboard({ user, onLoggedOut }) {
   const navigate = useNavigate();
@@ -68,14 +70,20 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
 
   const deleteApplication = async (applicationId) => {
     if (!applicationId) return;
-    const ok = window.confirm('Delete this application?');
+    const ok = await confirmDialog({
+      title: 'Delete application',
+      message: 'Delete this application?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
     if (!ok) return;
     try {
       const res = await clubService.leaderDeleteMembershipApplication(applicationId);
       setApplications((prev) => prev.filter((a) => String(a.id) !== String(applicationId)));
-      alert(res?.message || 'Application deleted');
+      toast.success(res?.message || 'Application deleted');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to delete application');
+      toast.error(err?.response?.data?.message || 'Failed to delete application');
     }
   };
 
@@ -170,16 +178,16 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
       setShowAddMember(false);
       setSelectedStudentId('');
       setSearch('');
-      alert(res?.message || 'Member added');
+      toast.success(res?.message || 'Member added');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to add member');
+      toast.error(err?.response?.data?.message || 'Failed to add member');
     }
   };
 
   const createMeeting = async (e) => {
     e?.preventDefault?.();
     if (!meetingForm.title.trim() || !meetingForm.date) {
-      alert('Title and date are required');
+      toast.error('Title and date are required');
       return;
     }
     try {
@@ -193,17 +201,17 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
         setMeetingModalMode('create');
         setEditingMeetingId(null);
         setMeetingForm({ title: '', date: '', venue: '', description: '' });
-        alert(res?.message || 'Meeting updated');
+        toast.success(res?.message || 'Meeting updated');
       } else {
         const res = await clubService.leaderCreateMeeting(meetingForm);
         const m = res?.meeting;
         if (m) setMeetings((prev) => sortByDateAsc([...prev, m]));
         setShowAddMeeting(false);
         setMeetingForm({ title: '', date: '', venue: '', description: '' });
-        alert(res?.message || 'Meeting created');
+        toast.success(res?.message || 'Meeting created');
       }
     } catch (err) {
-      alert(err?.response?.data?.message || (meetingModalMode === 'edit' ? 'Failed to update meeting' : 'Failed to create meeting'));
+      toast.error(err?.response?.data?.message || (meetingModalMode === 'edit' ? 'Failed to update meeting' : 'Failed to create meeting'));
     }
   };
 
@@ -228,21 +236,27 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
 
   const deleteMeeting = async (meetingId) => {
     if (!meetingId) return;
-    const ok = window.confirm('Delete this meeting?');
+    const ok = await confirmDialog({
+      title: 'Delete meeting',
+      message: 'Delete this meeting?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
     if (!ok) return;
     try {
       const res = await clubService.leaderDeleteMeeting(meetingId);
       setMeetings((prev) => prev.filter((m) => String(m.id) !== String(meetingId)));
-      alert(res?.message || 'Meeting deleted');
+      toast.success(res?.message || 'Meeting deleted');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to delete meeting');
+      toast.error(err?.response?.data?.message || 'Failed to delete meeting');
     }
   };
 
   const createEvent = async (e) => {
     e?.preventDefault?.();
     if (!eventForm.name.trim() || !eventForm.date) {
-      alert('Name and date are required');
+      toast.error('Name and date are required');
       return;
     }
     try {
@@ -256,17 +270,17 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
         setEventModalMode('create');
         setEditingEventId(null);
         setEventForm({ name: '', date: '', venue: '', type: 'Public' });
-        alert(res?.message || 'Event updated');
+        toast.success(res?.message || 'Event updated');
       } else {
         const res = await clubService.leaderCreateEvent(eventForm);
         const ev = res?.event;
         if (ev) setEvents((prev) => sortByDateAsc([...prev, ev]));
         setShowAddEvent(false);
         setEventForm({ name: '', date: '', venue: '', type: 'Public' });
-        alert(res?.message || 'Event created');
+        toast.success(res?.message || 'Event created');
       }
     } catch (err) {
-      alert(err?.response?.data?.message || (eventModalMode === 'edit' ? 'Failed to update event' : 'Failed to create event'));
+      toast.error(err?.response?.data?.message || (eventModalMode === 'edit' ? 'Failed to update event' : 'Failed to create event'));
     }
   };
 
@@ -291,14 +305,20 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
 
   const deleteEvent = async (eventId) => {
     if (!eventId) return;
-    const ok = window.confirm('Delete this event?');
+    const ok = await confirmDialog({
+      title: 'Delete event',
+      message: 'Delete this event?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
     if (!ok) return;
     try {
       const res = await clubService.leaderDeleteEvent(eventId);
       setEvents((prev) => prev.filter((e) => String(e.id) !== String(eventId)));
-      alert(res?.message || 'Event deleted');
+      toast.success(res?.message || 'Event deleted');
     } catch (err) {
-      alert(err?.response?.data?.message || 'Failed to delete event');
+      toast.error(err?.response?.data?.message || 'Failed to delete event');
     }
   };
 
