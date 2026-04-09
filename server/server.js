@@ -83,6 +83,7 @@ app.use("/api/admin", adminClubRoutes);
 app.use("/api/leader", leaderClubRoutes);
 app.use("/api/club-feed", clubFeedRoutes);
 app.use("/api/clubs", clubPublicRoutes);
+app.use("/api/attendance", attendanceRoutes);
 app.use("/api/hostel", hostelRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/attendance", attendanceRoutes);

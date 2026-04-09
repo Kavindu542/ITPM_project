@@ -338,7 +338,7 @@ export default function App() {
           }
         />
 
-        {/* Attendance (QR scan landing) */}
+        {/* Attendance (QR scan landing) - authenticated route */}
         <Route
           path="/attendance/:meetingId"
           element={
@@ -555,7 +555,6 @@ export default function App() {
         path="/signup"
         element={user ? <Navigate to="/" replace /> : <SignUp onSignedIn={(u) => setUser(u)} />}
       />
-
 
       {/* Catch All */}
       <Route

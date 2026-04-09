@@ -31,6 +31,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
 
   const [qrMeetingId, setQrMeetingId] = React.useState(null);
 
+  // New attendance state (resolved)
   const [attendanceOpenMeetingId, setAttendanceOpenMeetingId] = React.useState(null);
   const [attendanceLoadingMeetingId, setAttendanceLoadingMeetingId] = React.useState(null);
   const [attendanceByMeetingId, setAttendanceByMeetingId] = React.useState({});
@@ -44,7 +45,6 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
       }
 
       setAttendanceOpenMeetingId(meetingId);
-
       setAttendanceLoadingMeetingId(meetingId);
       try {
         const data = await attendanceService.leaderGetAttendance({ meetingId });
@@ -585,6 +585,8 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                                     >
                                       {String(qrMeetingId) === String(m.id) ? 'Hide QR' : 'Show QR'}
                                     </button>
+
+                                    {/* Single attendance button (resolved) */}
                                     <button
                                       type="button"
                                       onClick={() => toggleMeetingAttendance(m.id)}
@@ -592,6 +594,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                                     >
                                       {String(attendanceOpenMeetingId) === String(m.id) ? 'Hide Attendance' : 'View Attendance'}
                                     </button>
+
                                     <button
                                       type="button"
                                       onClick={() => openEditMeeting(m)}
@@ -974,6 +977,8 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
           </div>
         </div>
       )}
+
+      {/* Add Member Modal */}
       {showAddMember && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">

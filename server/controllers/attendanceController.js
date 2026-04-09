@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const Attendance = require('../models/attendanceModel');
+const Club = require('../models/Club');
 const Meeting = require('../models/Meeting');
 const User = require('../models/User');
 
@@ -69,5 +70,44 @@ exports.markAttendance = async (req, res) => {
     }
   } catch (e) {
     return res.status(500).json({ success: false, message: e.message || 'Failed to mark attendance' });
+  }
+};
+
+exports.listMeetingAttendance = async (req, res) => {
+  try {
+    const { meetingId } = req.params || {};
+
+    if (!meetingId || !isValidId(meetingId)) {
+      return res.status(400).json({ success: false, message: 'Valid meetingId is required' });
+    }
+
+    const meeting = await Meeting.findById(meetingId).select('_id club').lean();
+    if (!meeting) {
+      return res.status(404).json({ success: false, message: 'Meeting not found' });
+    }
+
+    const leaderId = req.user?._id || req.user?.id;
+    if (!leaderId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const allowed = await Club.exists({ _id: meeting.club, leader: leaderId });
+    if (!allowed) {
+      return res.status(403).json({ success: false, message: 'Not allowed' });
+    }
+
+    const docs = await Attendance.find({ meeting: meeting._id })
+      .sort({ markedAt: -1 })
+      .select('studentId markedAt')
+      .lean();
+
+    return res.json({
+      success: true,
+      meetingId: String(meeting._id),
+      count: docs.length,
+      items: docs.map((d) => ({ studentId: d.studentId, markedAt: d.markedAt })),
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, message: e.message || 'Failed to load attendance' });
   }
 };

@@ -41,6 +41,11 @@ export const clubService = {
     const res = await api.delete(`/leader/meetings/${meetingId}`);
     return res.data;
   },
+
+  async leaderGetMeetingAttendance(meetingId) {
+    const res = await api.get(`/attendance/${meetingId}`);
+    return res.data;
+  },
   async leaderListEvents() {
     const res = await api.get("/leader/events");
     return res.data;
