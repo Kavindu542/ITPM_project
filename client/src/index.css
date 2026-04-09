@@ -340,3 +340,34 @@ a {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes toastIn {
+  from {
+    transform: translateX(110%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toastProgress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.animate-toast-in {
+  animation: toastIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.toast-progress {
+  transform-origin: left center;
+  animation-name: toastProgress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}

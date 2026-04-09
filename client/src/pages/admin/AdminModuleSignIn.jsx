@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { authService } from '../../services/authService';
+import { toast } from '../../lib/toast';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import AuthShell from '../../components/AuthShell';
 
@@ -14,7 +15,6 @@ export default function AdminModuleSignIn({ title, moduleKey, onSignedIn, initia
   const [email, setEmail] = React.useState(queryEmail || initialEmail || '');
   const [password, setPassword] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
-  const [error, setError] = React.useState('');
   const [fieldErrors, setFieldErrors] = React.useState({ email: '', password: '' });
   const [touched, setTouched] = React.useState({ email: false, password: false });
   const [busy, setBusy] = React.useState(false);
@@ -57,10 +57,9 @@ export default function AdminModuleSignIn({ title, moduleKey, onSignedIn, initia
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
     if (!moduleKey) {
-      setError('Module is missing. Please go back and try again.');
+      toast.error('Module is missing. Please go back and try again.');
       return;
     }
 
@@ -85,7 +84,7 @@ export default function AdminModuleSignIn({ title, moduleKey, onSignedIn, initia
       };
       navigate(dashboards[moduleKey] || '/admin/signin', { replace: true });
     } catch (err) {
-      setError(err?.response?.data?.message || 'Sign in failed');
+      toast.error(err?.response?.data?.message || 'Sign in failed');
     } finally {
       setBusy(false);
     }
@@ -177,12 +176,6 @@ export default function AdminModuleSignIn({ title, moduleKey, onSignedIn, initia
                   <p className="mt-2 text-xs text-red-600">{fieldErrors.password}</p>
                 ) : null}
               </div>
-
-              {error ? (
-                <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-                  {error}
-                </div>
-              ) : null}
 
               <button
                 type="submit"

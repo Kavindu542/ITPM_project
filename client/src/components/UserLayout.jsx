@@ -13,14 +13,18 @@ export default function UserLayout({ user, onLoggedOut }) {
         || location.pathname.startsWith('/clubs')
         || location.pathname.startsWith('/leader');
 
+    const hideNavbar = location.pathname === '/profile';
+
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans flex flex-col">
-            <Navbar
-                user={user}
-                onLoggedOut={onLoggedOut}
-                onProfile={() => navigate('/profile')}
-            />
-            <main className="relative pt-20 flex-1 min-h-0">
+            {!hideNavbar ? (
+                <Navbar
+                    user={user}
+                    onLoggedOut={onLoggedOut}
+                    onProfile={() => navigate('/profile')}
+                />
+            ) : null}
+            <main className={`relative flex-1 min-h-0 ${hideNavbar ? '' : 'pt-20'}`}>
                 <Outlet />
             </main>
 

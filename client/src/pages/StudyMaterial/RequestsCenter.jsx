@@ -16,6 +16,7 @@ import {
   Heart,
 } from 'lucide-react';
 import { studyMaterialService } from '../../services/studyMaterialService';
+import { toast } from '../../lib/toast';
 import StudyMaterialSidebar from '../../components/StudyMaterialSidebar';
 
 
@@ -23,7 +24,6 @@ export default function RequestsCenter({ user, onLoggedOut }) {
   const navigate = useNavigate();
 
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
   const [items, setItems] = React.useState([]);
   const [history, setHistory] = React.useState([]);
   const [requestsTab, setRequestsTab] = React.useState('open');
@@ -39,7 +39,6 @@ export default function RequestsCenter({ user, onLoggedOut }) {
 
   const load = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const [allRes, myRes] = await Promise.all([
         studyMaterialService.listRequests(),
@@ -48,7 +47,7 @@ export default function RequestsCenter({ user, onLoggedOut }) {
       setItems(allRes?.items ?? []);
       setHistory(myRes?.items ?? []);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load requests');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load requests');
     } finally {
       setLoading(false);
     }
@@ -60,9 +59,8 @@ export default function RequestsCenter({ user, onLoggedOut }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    setError('');
     if (!form.title.trim() || !form.description.trim()) {
-      setError('Title and description are required');
+      toast.error('Title and description are required');
       return;
     }
 
@@ -72,19 +70,18 @@ export default function RequestsCenter({ user, onLoggedOut }) {
       setForm({ title: '', description: '', moduleCode: '', courseCode: '', syllabusLink: '' });
       await load();
     } catch (e2) {
-      setError(e2?.response?.data?.message || e2?.message || 'Failed to submit request');
+      toast.error(e2?.response?.data?.message || e2?.message || 'Failed to submit request');
     } finally {
       setLoading(false);
     }
   };
 
   const upvote = async (id) => {
-    setError('');
     try {
       await studyMaterialService.upvoteRequest(id);
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to upvote');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to upvote');
     }
   };
 
@@ -165,8 +162,6 @@ export default function RequestsCenter({ user, onLoggedOut }) {
                     New request
                   </button>
                 </div>
-
-                {error ? <div className="p-5 text-sm text-red-700 bg-red-50 border-b border-red-100">{error}</div> : null}
 
                 <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3 flex-wrap">
                   <div className="text-sm text-gray-600">

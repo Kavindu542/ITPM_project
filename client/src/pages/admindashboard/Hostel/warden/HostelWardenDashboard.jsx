@@ -1,9 +1,12 @@
 import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../../../../services/authService';
-import UserMenu from '../../../../components/UserMenu';
+import AdminLibraryShell, {
+  AdminSidebarNavButton,
+  AdminSidebarNavLinkItem,
+} from '../../../../components/admin/AdminLibraryShell';
 import { hostelService } from '../../../../services/hostelService';
-import { LayoutDashboard, AlertCircle, RefreshCw, Store, Upload, CheckCircle, Building2 } from 'lucide-react';
+import { LayoutDashboard, AlertCircle, RefreshCw, Store, Shirt, Upload, CheckCircle, Building2 } from 'lucide-react';
 
 export default function HostelWardenDashboard({ user, onLoggedOut }) {
   const navigate = useNavigate();
@@ -204,100 +207,68 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
-      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-sm">
-        <div className="mx-auto flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="rounded-2xl bg-blue-50 px-3 py-2 border border-blue-100">
-              <div className="flex items-center gap-2">
-                <img src="/campuscore-logo.png" alt="CampusCore" className="h-10 w-auto object-contain" />
-                <div className="text-xs font-bold text-blue-800">Admin</div>
-              </div>
-            </div>
-            <div className="text-gray-900">
-              <div className="text-sm font-bold">Hostel (Warden)</div>
-              <div className="text-xs text-gray-500 font-medium">Dashboard</div>
-            </div>
-          </div>
-
-          <UserMenu
-            user={user}
-            onProfile={() => navigate('/profile')}
-            onLogout={logout}
-            theme="light"
-            idLabel="ID"
+    <AdminLibraryShell
+      user={user}
+      productSubtitle="Warden Admin"
+      headerTitle="Hostel (Warden)"
+      headerSubtitle="Warden dashboard"
+      roleLabel="Warden"
+      onLogout={logout}
+      onProfile={() => navigate('/profile')}
+      sidebarNav={({ collapsed }) => (
+        <div className="space-y-1">
+          <AdminSidebarNavButton
+            collapsed={collapsed}
+            active={activeTab === 'applications'}
+            onClick={() => setActiveTab('applications')}
+            icon={LayoutDashboard}
+            label="Applications"
+            description="Hostel applications"
+          />
+          <AdminSidebarNavButton
+            collapsed={collapsed}
+            active={activeTab === 'requests'}
+            onClick={() => setActiveTab('requests')}
+            icon={LayoutDashboard}
+            label="Requests"
+            description="Reconsideration"
+          />
+          <AdminSidebarNavButton
+            collapsed={collapsed}
+            active={activeTab === 'complaints'}
+            onClick={() => setActiveTab('complaints')}
+            icon={AlertCircle}
+            label="Complaints"
+            description="Student issues"
+          />
+          <AdminSidebarNavButton
+            collapsed={collapsed}
+            active={activeTab === 'add-meal-shop'}
+            onClick={() => setActiveTab('add-meal-shop')}
+            icon={Store}
+            label="Add meal shop"
+            description="New provider account"
+          />
+          <AdminSidebarNavButton
+            collapsed={collapsed}
+            active={activeTab === 'add-laundry-shop'}
+            onClick={() => setActiveTab('add-laundry-shop')}
+            icon={Shirt}
+            label="Add laundry shop"
+            description="New provider account"
+          />
+          <AdminSidebarNavLinkItem
+            collapsed={collapsed}
+            to="/admin/hostel"
+            end
+            icon={Building2}
+            label="Hostel services"
+            description="Back to hub"
           />
         </div>
-      </header>
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <div className="w-64 bg-blue-900 border-r border-blue-800 p-4 flex flex-col z-10 hidden md:flex shadow-inner">
-          <div className="text-blue-300 text-xs font-bold tracking-wider uppercase mb-4 px-2 mt-2">Warden Menu</div>
-          <nav className="space-y-2">
-            <button
-              onClick={() => setActiveTab('applications')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm ${activeTab === 'applications'
-                ? 'bg-blue-600 text-white border border-blue-500'
-                : 'text-blue-100 hover:bg-blue-800 border border-transparent'
-                }`}
-            >
-              <LayoutDashboard size={18} />
-              <span className="font-medium text-sm">Applications</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('requests')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm ${activeTab === 'requests'
-                ? 'bg-blue-600 text-white border border-blue-500'
-                : 'text-blue-100 hover:bg-blue-800 border border-transparent'
-                }`}
-            >
-              <LayoutDashboard size={18} />
-              <span className="font-medium text-sm">Request</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('complaints')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm ${activeTab === 'complaints'
-                ? 'bg-blue-600 text-white border border-blue-500'
-                : 'text-blue-100 hover:bg-blue-800 border border-transparent'
-                }`}
-            >
-              <AlertCircle size={18} />
-              <span className="font-medium text-sm">Complaints</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('add-meal-shop')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm ${activeTab === 'add-meal-shop'
-                ? 'bg-blue-600 text-white border border-blue-500'
-                : 'text-blue-100 hover:bg-blue-800 border border-transparent'
-                }`}
-            >
-              <Store size={18} />
-              <span className="font-medium text-sm">Add Meal Shop</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('add-laundry-shop')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm ${activeTab === 'add-laundry-shop'
-                ? 'bg-blue-600 text-white border border-blue-500'
-                : 'text-blue-100 hover:bg-blue-800 border border-transparent'
-                }`}
-            >
-              <Store size={18} />
-              <span className="font-medium text-sm">Add Laundry Shop</span>
-            </button>
-            <Link
-              to="/admin/hostel"
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm text-blue-100 hover:bg-blue-800 border border-transparent"
-            >
-              <Building2 size={18} />
-              <span className="font-medium text-sm">Hostel services</span>
-            </Link>
-          </nav>
-        </div>
-
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 lg:px-8 bg-gray-50">
-          <div className="mx-auto max-w-7xl">
+      )}
+    >
+      <div className="mx-auto max-w-7xl">
             <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
@@ -856,8 +827,6 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
               </div>
             )}
           </div>
-        </main>
-      </div>
-    </div>
+    </AdminLibraryShell>
   );
 }

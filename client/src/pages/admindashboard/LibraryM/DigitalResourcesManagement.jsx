@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Monitor, Plus, Search, Edit2, Trash2, X, Save,
-  ChevronLeft, ChevronRight, CheckCircle, AlertCircle,
+  ChevronLeft, ChevronRight, AlertCircle,
   FileText, Image, Download, Eye, Upload,
   Tag, User, Calendar, Link, File,
   BookOpen, Film, Music, ExternalLink, Loader2, RefreshCw,
 } from 'lucide-react';
 import { digitalResourceService } from '../../../services/libraryService';
+import { toast } from '../../../lib/toast';
 
 // ── Sample Data (fallback) ─────────────────────────────────
 const INITIAL_RESOURCES = [
@@ -105,8 +106,8 @@ function ThumbnailUpload({ form, setForm }) {
   const [drag, setDrag] = useState(false);
   const handleFile = (file) => {
     if (!file) return;
-    if (!file.type.startsWith('image/')) { alert('Please upload an image file'); return; }
-    if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB'); return; }
+    if (!file.type.startsWith('image/')) { toast.error('Please upload an image file'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
     const reader = new FileReader();
     reader.onload = (e) => setForm(f => ({ ...f, thumbnail: file, thumbnailPreview: e.target.result }));
     reader.readAsDataURL(file);
@@ -153,7 +154,7 @@ function ResourceFileUpload({ form, setForm }) {
   const cfg = ACCEPTED[form.type] || ACCEPTED['Other'];
   const handleFile = (file) => {
     if (!file) return;
-    if (file.size > cfg.maxMB * 1024 * 1024) { alert(`File must be under ${cfg.maxMB}MB`); return; }
+    if (file.size > cfg.maxMB * 1024 * 1024) { toast.error(`File must be under ${cfg.maxMB}MB`); return; }
     setForm(f => ({ ...f, file, fileName: file.name, fileSize: formatBytes(file.size) }));
   };
   return (
@@ -341,12 +342,9 @@ export default function DigitalResourcesManagement() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [deleteId, setDeleteId] = useState(null);
   const [viewResource, setViewResource] = useState(null);
-  const [toast, setToast] = useState(null);
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState('grid');
   const PER_PAGE = 6;
-
-  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
 
   const fetchResources = useCallback(async () => {
     try {
@@ -414,10 +412,10 @@ export default function DigitalResourcesManagement() {
     if (usingDummy) {
       if (editResource) {
         setResources(rs => rs.map(r => (r._id === editResource._id || r.id === editResource.id) ? { ...r, ...form } : r));
-        showToast('Resource updated! (demo mode)');
+        toast.success('Resource updated! (demo mode)');
       } else {
         setResources(rs => [{ ...form, id: Date.now(), _id: String(Date.now()) }, ...rs]);
-        showToast('Resource added! (demo mode)');
+        toast.success('Resource added! (demo mode)');
       }
       setShowModal(false);
       return;
@@ -448,14 +446,14 @@ export default function DigitalResourcesManagement() {
         : await digitalResourceService.create(formData);
 
       if (res?.data?.success) {
-        showToast(editResource ? 'Resource updated successfully ✅' : 'Resource added successfully ✅');
+        toast.success(editResource ? 'Resource updated successfully ✅' : 'Resource added successfully ✅');
         await fetchResources();
         setShowModal(false);
       } else {
         throw new Error('Save failed');
       }
     } catch (err) {
-      showToast(err.response?.data?.message || 'Something went wrong', 'error');
+      toast.error(err.response?.data?.message || 'Something went wrong');
     } finally {
       setSaving(false);
     }
@@ -465,17 +463,17 @@ export default function DigitalResourcesManagement() {
     if (usingDummy) {
       setResources(rs => rs.filter(r => r._id !== deleteId && r.id !== deleteId));
       setDeleteId(null);
-      showToast('Resource deleted. (demo mode)', 'error');
+      toast.success('Resource deleted. (demo mode)');
       return;
     }
     try {
       setDeleting(true);
       await digitalResourceService.delete(deleteId);
       setDeleteId(null);
-      showToast('Resource deleted.', 'error');
+      toast.success('Resource deleted.');
       fetchResources();
     } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to delete', 'error');
+      toast.error(err.response?.data?.message || 'Failed to delete');
     } finally {
       setDeleting(false);
     }
@@ -483,13 +481,6 @@ export default function DigitalResourcesManagement() {
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold text-white ${toast.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'}`}>
-          {toast.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-black text-gray-900">Digital Resources</h2>

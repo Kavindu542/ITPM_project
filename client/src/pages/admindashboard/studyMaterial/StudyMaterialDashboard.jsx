@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import UserMenu from '../../../components/UserMenu';
 import { authService } from '../../../services/authService';
 import { studyMaterialService } from '../../../services/studyMaterialService';
+import { toast } from '../../../lib/toast';
+import { promptDialog } from '../../../lib/dialog';
 import {
   BarChart3,
   Bell,
@@ -19,7 +21,6 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
   const navigate = useNavigate();
 
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
 
   const [materials, setMaterials] = React.useState([]);
   const [queue, setQueue] = React.useState([]);
@@ -54,7 +55,6 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
 
   const refreshAll = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const [mRes, qRes, aRes] = await Promise.all([
         studyMaterialService.adminListMaterials({ status: statusFilter }),
@@ -65,7 +65,7 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
       setQueue(qRes?.items ?? []);
       setAnalytics(aRes ?? { topMaterials: [], popularModules: [], recentDownloads: [] });
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load dashboard data');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -82,9 +82,8 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
 
   const submitUpload = async (e) => {
     e.preventDefault();
-    setError('');
     if (!uploadFiles.length) {
-      setError('Please choose at least one file');
+      toast.error('Please choose at least one file');
       return;
     }
 
@@ -104,7 +103,7 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
       setUploadMeta((p) => ({ ...p, title: '', description: '' }));
       await refreshAll();
     } catch (e2) {
-      setError(e2?.response?.data?.message || e2?.message || 'Upload failed');
+      toast.error(e2?.response?.data?.message || e2?.message || 'Upload failed');
     } finally {
       setLoading(false);
     }
@@ -112,8 +111,12 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
 
   const uploadNewVersion = async (materialId, file) => {
     if (!file) return;
-    setError('');
-    const note = window.prompt('Version note (optional):', '') ?? '';
+    const noteResult = await promptDialog({
+      title: 'New version',
+      message: 'Version note (optional):',
+      defaultValue: '',
+    });
+    const note = noteResult === null ? '' : noteResult;
 
     const fd = new FormData();
     fd.append('file', file);
@@ -124,7 +127,7 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
       await studyMaterialService.adminAddVersion(materialId, fd);
       await refreshAll();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to upload new version');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to upload new version');
     } finally {
       setLoading(false);
     }
@@ -143,18 +146,17 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
       const res = await studyMaterialService.getMaterial(id);
       setDetailsById((p) => ({ ...p, [id]: res?.material ?? null }));
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load versions');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load versions');
     }
   };
 
   const approve = async (id) => {
     setLoading(true);
-    setError('');
     try {
       await studyMaterialService.adminApprove(id, '');
       await refreshAll();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Approve failed');
+      toast.error(e?.response?.data?.message || e?.message || 'Approve failed');
     } finally {
       setLoading(false);
     }
@@ -163,18 +165,17 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
   const reject = async (id) => {
     const reason = String(rejectReason[id] || '').trim();
     if (!reason) {
-      setError('Rejection reason is required');
+      toast.error('Rejection reason is required');
       return;
     }
 
     setLoading(true);
-    setError('');
     try {
       await studyMaterialService.adminReject(id, reason);
       setRejectReason((p) => ({ ...p, [id]: '' }));
       await refreshAll();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Reject failed');
+      toast.error(e?.response?.data?.message || e?.message || 'Reject failed');
     } finally {
       setLoading(false);
     }
@@ -323,10 +324,6 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
         </header>
 
         <div className="p-6">
-          {error ? (
-            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm text-red-700">{error}</div>
-          ) : null}
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-2xl p-6">
               <div className="flex items-center justify-between">

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from '../../../lib/toast';
 
 export default function ClubManagement() {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export default function ClubManagement() {
   const handleCreateClub = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      alert('Club name is required');
+      toast.error('Club name is required');
       return;
     }
 
@@ -60,7 +61,7 @@ export default function ClubManagement() {
     setClubs([...clubs, newClub]);
     setFormData({ name: '', description: '', rules: '', logoUrl: '' });
     setShowCreateForm(false);
-    alert('Club created successfully!');
+    toast.success('Club created successfully!');
   };
 
   // Edit Club
@@ -79,7 +80,7 @@ export default function ClubManagement() {
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      alert('Club name is required');
+      toast.error('Club name is required');
       return;
     }
 
@@ -92,7 +93,7 @@ export default function ClubManagement() {
     setEditingClub(null);
     setShowEditForm(false);
     setFormData({ name: '', description: '', rules: '', logoUrl: '' });
-    alert('Club updated successfully!');
+    toast.success('Club updated successfully!');
   };
 
   // Delete Club
@@ -106,7 +107,7 @@ export default function ClubManagement() {
     setClubs(clubs.filter(club => club.id !== clubToDelete.id));
     setShowDeleteModal(false);
     setClubToDelete(null);
-    alert('Club deleted successfully!');
+    toast.success('Club deleted successfully!');
   };
 
   return (

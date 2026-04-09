@@ -1,15 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  BookOpen,
   Lock,
   Trash2,
   ArrowLeft,
-  Moon,
-  Sun,
+  ImageOff,
 } from 'lucide-react';
 
 import { authService } from '../services/authService';
+import { toast } from '../lib/toast';
+import { confirmDialog } from '../lib/dialog';
 
 export default function Profile({ user, onUserUpdated, onLoggedOut }) {
   const navigate = useNavigate();
@@ -33,8 +33,6 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
   const [deletePassword, setDeletePassword] = React.useState('');
 
   const [busy, setBusy] = React.useState(false);
-  const [message, setMessage] = React.useState('');
-  const [error, setError] = React.useState('');
 
   React.useEffect(() => {
     setName(user?.name || '');
@@ -54,17 +52,14 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
   const onSelectAvatar = async (file) => {
     if (!file) return;
 
-    setError('');
-    setMessage('');
-
     if (!file.type.startsWith('image/')) {
-      setError('Please select an image file.');
+      toast.error('Please select an image file.');
       return;
     }
 
     const maxBytes = 10 * 1024 * 1024;
     if (file.size > maxBytes) {
-      setError('Profile image is too large. Max size is 10MB.');
+      toast.error('Profile image is too large. Max size is 10MB.');
       return;
     }
 
@@ -80,14 +75,12 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
       const dataUrl = await toDataUrl(file);
       setAvatarUrl(dataUrl);
     } catch {
-      setError('Failed to load image.');
+      toast.error('Failed to load image.');
     }
   };
 
   const saveProfile = async () => {
     setBusy(true);
-    setError('');
-    setMessage('');
     try {
       const enrolledModules = String(enrolledModulesText || '')
         .split(',')
@@ -104,9 +97,9 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
         enrolledModules: uniqueModules,
       });
       onUserUpdated?.(res?.user ?? user);
-      setMessage('Profile updated.');
+      toast.success('Profile updated.');
     } catch (e) {
-      setError(e?.response?.data?.message || 'Failed to update profile.');
+      toast.error(e?.response?.data?.message || 'Failed to update profile.');
     } finally {
       setBusy(false);
     }
@@ -114,8 +107,6 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
 
   const changePassword = async () => {
     setBusy(true);
-    setError('');
-    setMessage('');
     try {
       await authService.updatePassword({
         currentPassword,
@@ -125,9 +116,9 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setMessage('Password updated.');
+      toast.success('Password updated.');
     } catch (e) {
-      setError(e?.response?.data?.message || 'Failed to update password.');
+      toast.error(e?.response?.data?.message || 'Failed to update password.');
     } finally {
       setBusy(false);
     }
@@ -135,14 +126,48 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
 
   const deleteAccount = async () => {
     setBusy(true);
-    setError('');
-    setMessage('');
     try {
       await authService.deleteAccount({ password: deletePassword });
       onLoggedOut?.();
       navigate('/signin', { replace: true });
     } catch (e) {
-      setError(e?.response?.data?.message || 'Failed to delete account.');
+      toast.error(e?.response?.data?.message || 'Failed to delete account.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeProfilePicture = async () => {
+    if (!String(avatarUrl || '').trim()) return;
+    const ok = await confirmDialog({
+      title: 'Remove profile picture',
+      message: 'Remove your profile picture? You can upload a new one anytime.',
+      confirmText: 'Remove',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+    if (!ok) return;
+
+    setBusy(true);
+    try {
+      const enrolledModules = String(enrolledModulesText || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => s.toUpperCase());
+      const uniqueModules = Array.from(new Set(enrolledModules));
+
+      const res = await authService.updateProfile({
+        name,
+        avatarUrl: '',
+        semester: semester === '' ? null : Number(semester),
+        enrolledModules: uniqueModules,
+      });
+      setAvatarUrl('');
+      onUserUpdated?.(res?.user ?? user);
+      toast.success('Profile picture removed.');
+    } catch (e) {
+      toast.error(e?.response?.data?.message || 'Failed to remove profile picture.');
     } finally {
       setBusy(false);
     }
@@ -164,13 +189,6 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
           </div>
 
           <section>
-            {error ? (
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-300 text-sm">{error}</div>
-            ) : null}
-            {message ? (
-              <div className="mb-4 p-3 bg-green-50 dark:bg-emerald-950/40 border border-green-200 dark:border-emerald-800 rounded-xl text-green-700 dark:text-emerald-300 text-sm">{message}</div>
-            ) : null}
-
               <div className="space-y-6">
                 <div className="bg-white/90 dark:bg-slate-900/95 backdrop-blur rounded-3xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
                   <div className="p-6 md:p-7 border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-white to-indigo-50/60 dark:from-slate-900 dark:to-slate-800">
@@ -201,6 +219,17 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
                                 onChange={(e) => onSelectAvatar(e.target.files?.[0])}
                               />
                             </label>
+                            {String(avatarUrl || '').trim() ? (
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={removeProfilePicture}
+                                className="mt-3 inline-flex w-full max-w-[14rem] items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 bg-white text-sm font-semibold text-red-700 hover:bg-red-50 dark:border-red-900/50 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950/30 disabled:opacity-50"
+                              >
+                                <ImageOff className="h-4 w-4 shrink-0" />
+                                Delete profile picture
+                              </button>
+                            ) : null}
                             <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">JPG, PNG • Max 10MB</div>
                           </div>
                         </div>
@@ -287,7 +316,7 @@ export default function Profile({ user, onUserUpdated, onLoggedOut }) {
                         type="button"
                         disabled={busy}
                         onClick={saveProfile}
-                        className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white font-semibold shadow-sm hover:from-blue-500 hover:to-[#25f194] transition-all disabled:opacity-50"
+                        className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold shadow-sm hover:from-blue-500 hover:to-blue-400 transition-all disabled:opacity-50"
                       >
                         {busy ? 'Saving...' : 'Save changes'}
                       </button>

@@ -3,20 +3,19 @@ import { FileDown, RefreshCw } from 'lucide-react';
 
 import { studyMaterialService } from '../../../services/studyMaterialService';
 import { exportPdfTable } from '../../../utils/pdfExport';
+import { toast } from '../../../lib/toast';
 
 export default function DownloadsHistoryPage() {
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
   const [items, setItems] = React.useState([]);
 
   const load = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const res = await studyMaterialService.adminDownloadsHistory({ limit: 200 });
       setItems(res?.items ?? []);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load downloads history');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load downloads history');
     } finally {
       setLoading(false);
     }
@@ -70,10 +69,6 @@ export default function DownloadsHistoryPage() {
           </button>
         </div>
       </div>
-
-      {error ? (
-        <div className="px-6 py-3 text-sm text-red-700 bg-red-50 border-b border-red-100">{error}</div>
-      ) : null}
 
       <div className="overflow-x-auto">
         <table className="w-full">

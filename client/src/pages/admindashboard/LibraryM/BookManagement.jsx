@@ -15,7 +15,6 @@ import {
   User,
   Hash,
   AlertCircle,
-  CheckCircle,
   Upload,
   FileText,
   Image,
@@ -24,6 +23,7 @@ import {
   Paperclip,
 } from 'lucide-react';
 import { bookService } from '../../../services/libraryService';
+import { toast } from '../../../lib/toast';
 
 const INITIAL_BOOKS = [
   { id: 1, title: 'Clean Code', author: 'Robert C. Martin', isbn: '978-0132350884', category: 'Programming', copies: 5, available: 3, rating: 4.9, status: 'Active', coverImage: null, pdfFile: null },
@@ -106,11 +106,11 @@ function CoverUpload({ form, setForm }) {
   const handleFile = (file) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file (JPG, PNG, WEBP)');
+      toast.error('Please upload an image file (JPG, PNG, WEBP)');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be under 5MB');
+      toast.error('Image must be under 5MB');
       return;
     }
     const reader = new FileReader();
@@ -205,11 +205,11 @@ function PdfUpload({ form, setForm }) {
   const handleFile = (file) => {
     if (!file) return;
     if (file.type !== 'application/pdf') {
-      alert('Please upload a PDF file only');
+      toast.error('Please upload a PDF file only');
       return;
     }
     if (file.size > 50 * 1024 * 1024) {
-      alert('PDF must be under 50MB');
+      toast.error('PDF must be under 50MB');
       return;
     }
     setForm(f => ({ ...f, pdfFile: file, pdfName: file.name }));
@@ -486,15 +486,9 @@ export default function BookManagement() {
   const [editBook, setEditBook] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [deleteId, setDeleteId] = useState(null);
-  const [toast, setToast] = useState(null);
   const [page, setPage] = useState(1);
   const [previewBook, setPreviewBook] = useState(null);
   const PER_PAGE = 6;
-
-  const showToast = (msg, type = 'success') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const loadBooks = async () => {
     try {
@@ -604,7 +598,7 @@ export default function BookManagement() {
           pdfUrl: b.pdfUrl,
           size: form.size || b.size,
         } : b));
-        showToast('Book updated! (demo mode)');
+        toast.success('Book updated! (demo mode)');
       } else {
         const newItem = {
           id: Date.now(),
@@ -623,7 +617,7 @@ export default function BookManagement() {
           size: form.size || '',
         };
         setBooks(bs => [newItem, ...bs]);
-        showToast('Book added! (demo mode)');
+        toast.success('Book added! (demo mode)');
       }
       setShowModal(false);
       return;
@@ -632,16 +626,16 @@ export default function BookManagement() {
       if (editBook?.id) {
         const fd = buildFormData();
         await bookService.update(editBook.id, fd);
-        showToast('Book updated successfully!');
+        toast.success('Book updated successfully!');
       } else {
         const fd = buildFormData();
         await bookService.create(fd);
-        showToast('Book added successfully!');
+        toast.success('Book added successfully!');
       }
       setShowModal(false);
       await loadBooks();
     } catch {
-      showToast('Action failed', 'error');
+      toast.error('Action failed');
     }
   };
 
@@ -649,30 +643,21 @@ export default function BookManagement() {
     if (usingDummy) {
       setBooks(bs => bs.filter(b => b.id !== deleteId));
       setDeleteId(null);
-      showToast('Book deleted. (demo mode)', 'error');
+      toast.success('Book deleted. (demo mode)');
       return;
     }
     try {
       await bookService.delete(deleteId);
       await loadBooks();
       setDeleteId(null);
-      showToast('Book deleted.', 'error');
+      toast.success('Book deleted.');
     } catch {
-      showToast('Delete failed', 'error');
+      toast.error('Delete failed');
     }
   };
 
   return (
     <div className="space-y-6">
-
-      {/* ── Toast ── */}
-      {toast && (
-        <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold text-white transition-all ${toast.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'
-          }`}>
-          {toast.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-          {toast.msg}
-        </div>
-      )}
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">

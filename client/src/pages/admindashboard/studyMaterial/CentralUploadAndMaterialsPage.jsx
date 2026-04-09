@@ -3,12 +3,13 @@ import { Download, Eye, FileDown, Pencil, RefreshCw, Trash2, UploadCloud } from 
 
 import { studyMaterialService } from '../../../services/studyMaterialService';
 import { exportPdfTable } from '../../../utils/pdfExport';
+import { toast } from '../../../lib/toast';
+import { confirmDialog, promptDialog } from '../../../lib/dialog';
 
 const SEMESTER_OPTIONS = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2', '4.1', '4.2'];
 
 export default function CentralUploadAndMaterialsPage() {
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
   const [scanLoading, setScanLoading] = React.useState(false);
   const [scanError, setScanError] = React.useState('');
 
@@ -56,12 +57,11 @@ export default function CentralUploadAndMaterialsPage() {
 
   const load = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const res = await studyMaterialService.adminListMaterials({ status: 'published' });
       setMaterials(res?.items ?? []);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load materials');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load materials');
     } finally {
       setLoading(false);
     }
@@ -78,9 +78,8 @@ export default function CentralUploadAndMaterialsPage() {
 
   const submitUpload = async (e) => {
     e.preventDefault();
-    setError('');
     if (!uploadFiles.length) {
-      setError('Please choose at least one file');
+      toast.error('Please choose at least one file');
       return;
     }
 
@@ -104,7 +103,7 @@ export default function CentralUploadAndMaterialsPage() {
       setIsUploadOpen(false);
       await load();
     } catch (e2) {
-      setError(e2?.response?.data?.message || e2?.message || 'Upload failed');
+      toast.error(e2?.response?.data?.message || e2?.message || 'Upload failed');
     } finally {
       setLoading(false);
     }
@@ -182,16 +181,21 @@ export default function CentralUploadAndMaterialsPage() {
   );
 
   const deleteMaterial = async (id) => {
-    const ok = window.confirm('Delete this material?');
+    const ok = await confirmDialog({
+      title: 'Delete material',
+      message: 'Delete this material? This cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
     if (!ok) return;
 
     setLoading(true);
-    setError('');
     try {
       await studyMaterialService.adminDeleteMaterial(id);
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Delete failed');
+      toast.error(e?.response?.data?.message || e?.message || 'Delete failed');
     } finally {
       setLoading(false);
     }
@@ -216,14 +220,13 @@ export default function CentralUploadAndMaterialsPage() {
     if (!editId) return;
 
     setLoading(true);
-    setError('');
     try {
       await studyMaterialService.adminUpdateMaterial(editId, editMeta);
       setIsEditOpen(false);
       setEditId(null);
       await load();
     } catch (e2) {
-      setError(e2?.response?.data?.message || e2?.message || 'Update failed');
+      toast.error(e2?.response?.data?.message || e2?.message || 'Update failed');
     } finally {
       setLoading(false);
     }
@@ -231,8 +234,12 @@ export default function CentralUploadAndMaterialsPage() {
 
   const uploadNewVersion = async (materialId, file) => {
     if (!file) return;
-    setError('');
-    const note = window.prompt('Version note (optional):', '') ?? '';
+    const noteResult = await promptDialog({
+      title: 'New version',
+      message: 'Version note (optional):',
+      defaultValue: '',
+    });
+    const note = noteResult === null ? '' : noteResult;
 
     const fd = new FormData();
     fd.append('file', file);
@@ -248,7 +255,7 @@ export default function CentralUploadAndMaterialsPage() {
         setDetailsById((p) => ({ ...p, [materialId]: res?.material ?? null }));
       }
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to upload new version');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to upload new version');
     } finally {
       setLoading(false);
     }
@@ -267,7 +274,7 @@ export default function CentralUploadAndMaterialsPage() {
       const res = await studyMaterialService.getMaterial(id);
       setDetailsById((p) => ({ ...p, [id]: res?.material ?? null }));
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load versions');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load versions');
     }
   };
 
@@ -288,10 +295,6 @@ export default function CentralUploadAndMaterialsPage() {
 
   return (
     <div className="space-y-6">
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm text-red-700">{error}</div>
-      ) : null}
-
       <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-200 overflow-hidden">
         <div className="p-6 border-b border-gray-200 flex items-start sm:items-center justify-between gap-4">
           <div>

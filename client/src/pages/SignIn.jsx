@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { authService } from '../services/authService';
+import { toast } from '../lib/toast';
 import AuthShell from '../components/AuthShell';
 
 export default function SignIn({ onSignedIn }) {
@@ -12,7 +13,6 @@ export default function SignIn({ onSignedIn }) {
 	const [password, setPassword] = React.useState('');
 	const [showPassword, setShowPassword] = React.useState(false);
 
-	const [error, setError] = React.useState('');
 	const [fieldErrors, setFieldErrors] = React.useState({ email: '', password: '' });
 	const [touched, setTouched] = React.useState({ email: false, password: false });
 	const [busy, setBusy] = React.useState(false);
@@ -51,8 +51,6 @@ export default function SignIn({ onSignedIn }) {
 
 	const onSubmit = async (e) => {
 		e.preventDefault();
-		setError('');
-
 		const nextTouched = { email: true, password: true };
 		setTouched(nextTouched);
 		const errs = validate({ email, password });
@@ -66,7 +64,7 @@ export default function SignIn({ onSignedIn }) {
 			const from = typeof location?.state?.from === 'string' ? location.state.from : '/';
 			navigate(from || '/', { replace: true });
 		} catch (err) {
-			setError(err?.response?.data?.message || 'Sign in failed');
+			toast.error(err?.response?.data?.message || 'Sign in failed');
 		} finally {
 			setBusy(false);
 		}
@@ -141,8 +139,6 @@ export default function SignIn({ onSignedIn }) {
 					</div>
 					{touched.password && fieldErrors.password ? <p className="mt-2 text-xs text-red-500">{fieldErrors.password}</p> : null}
 				</div>
-
-				{error ? <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
 
 				<div className="pt-2 text-center">
 					<Link to="/forgot-password" className="text-sm font-medium text-slate-500 transition hover:text-violet-600 hover:underline">

@@ -3,20 +3,19 @@ import { Link } from 'react-router-dom';
 import { BarChart3, Download, RefreshCw } from 'lucide-react';
 
 import { studyMaterialService } from '../../../services/studyMaterialService';
+import { toast } from '../../../lib/toast';
 
 export default function DashboardPage() {
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
   const [data, setData] = React.useState({ topMaterials: [], popularModules: [], recentDownloads: [] });
 
   const load = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const res = await studyMaterialService.adminAnalytics();
       setData(res ?? { topMaterials: [], popularModules: [], recentDownloads: [] });
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load analytics');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load analytics');
     } finally {
       setLoading(false);
     }
@@ -36,10 +35,6 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm text-red-700">{error}</div>
-      ) : null}
-
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <div>
