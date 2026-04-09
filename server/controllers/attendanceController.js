@@ -3,21 +3,36 @@ const mongoose = require('mongoose');
 const Attendance = require('../models/attendanceModel');
 const Club = require('../models/Club');
 const Meeting = require('../models/Meeting');
+const User = require('../models/User');
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(String(id || ''));
 
 exports.markAttendance = async (req, res) => {
   try {
     const { meetingId } = req.params || {};
-    const { studentId } = req.body || {};
+    const { studentId: studentIdFromBody } = req.body || {};
 
     if (!meetingId || !isValidId(meetingId)) {
       return res.status(400).json({ success: false, message: 'Valid meetingId is required' });
     }
 
-    const normalizedStudentId = String(studentId || '').trim().toUpperCase();
+    let normalizedStudentId = String(req.user?.studentId || '').trim().toUpperCase();
     if (!normalizedStudentId) {
-      return res.status(400).json({ success: false, message: 'studentId is required' });
+      // Fallback: fetch from DB (token may be missing/old)
+      const userId = req.user?.sub || req.user?._id || req.user?.id;
+      if (userId && isValidId(userId)) {
+        const u = await User.findById(userId).select('studentId').lean();
+        normalizedStudentId = String(u?.studentId || '').trim().toUpperCase();
+      }
+    }
+
+    // Backward-compatible fallback (only if user has no studentId)
+    if (!normalizedStudentId) {
+      normalizedStudentId = String(studentIdFromBody || '').trim().toUpperCase();
+    }
+
+    if (!normalizedStudentId) {
+      return res.status(400).json({ success: false, message: 'studentId is missing for this user' });
     }
 
     const meeting = await Meeting.findById(meetingId).select('_id club').lean();

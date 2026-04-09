@@ -1,11 +1,12 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { authService } from '../services/authService';
 import AuthShell from '../components/AuthShell';
 
 export default function SignIn({ onSignedIn }) {
 	const navigate = useNavigate();
+	const location = useLocation();
 
 	const [email, setEmail] = React.useState('');
 	const [password, setPassword] = React.useState('');
@@ -62,7 +63,8 @@ export default function SignIn({ onSignedIn }) {
 		try {
 			const data = await authService.login({ email: email.trim(), password });
 			onSignedIn?.(data.user);
-			navigate('/', { replace: true });
+			const from = typeof location?.state?.from === 'string' ? location.state.from : '/';
+			navigate(from || '/', { replace: true });
 		} catch (err) {
 			setError(err?.response?.data?.message || 'Sign in failed');
 		} finally {

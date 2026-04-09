@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 
 import Home from './pages/Home.jsx';
@@ -18,8 +18,8 @@ import LibraryBooks from './pages/LibrarySystem/LibraryBooks.jsx';
 import SearchBooks from './pages/LibrarySystem/SearchBooks.jsx';
 import StudyRooms from './pages/LibrarySystem/StudyRooms.jsx';
 import Clubs from './pages/Clubs/Clubs.jsx';
-import AttendancePage from './pages/Clubs/AttendancePage.jsx';
 import LeaderDashboard from './pages/Leader/LeaderDashboard.jsx';
+import AttendanceScan from './pages/Attendance/AttendanceScan.jsx';
 import AdminSignIn from './pages/admin/AdminSignIn.jsx';
 import AdminModuleSignIn from './pages/admin/AdminModuleSignIn.jsx';
 import HostelAdmins from './pages/admin/HostelAdmins.jsx';
@@ -58,8 +58,10 @@ import { authService } from './services/authService';
 
 // RequireAuth Component
 function RequireAuth({ user, children }) {
+  const location = useLocation();
   if (!user) {
-    return <Navigate to="/signin" replace />;
+    const from = `${location.pathname || '/'}${location.search || ''}`;
+    return <Navigate to="/signin" replace state={{ from }} />;
   }
   return children;
 }
@@ -336,8 +338,15 @@ export default function App() {
           }
         />
 
-        {/* Attendance QR Route (public) */}
-        <Route path="/attendance/:meetingId" element={<AttendancePage />} />
+        {/* Attendance (QR scan landing) - authenticated route */}
+        <Route
+          path="/attendance/:meetingId"
+          element={
+            <RequireAuth user={user}>
+              <AttendanceScan user={user} />
+            </RequireAuth>
+          }
+        />
 
         {/* Leader Dashboard */}
         <Route
@@ -546,7 +555,6 @@ export default function App() {
         path="/signup"
         element={user ? <Navigate to="/" replace /> : <SignUp onSignedIn={(u) => setUser(u)} />}
       />
-
 
       {/* Catch All */}
       <Route

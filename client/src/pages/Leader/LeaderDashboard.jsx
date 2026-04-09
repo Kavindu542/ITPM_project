@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, CalendarDays, PlusCircle, FileText, LayoutDashboard } from 'lucide-react';
 import { clubService } from '../../services/clubService';
 import QRCodeGenerator from '../../components/Clubs/QRCodeGenerator.jsx';
+import { attendanceService } from '../../services/attendanceService';
 
 export default function LeaderDashboard({ user, onLoggedOut }) {
   const navigate = useNavigate();
@@ -30,34 +31,40 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
 
   const [qrMeetingId, setQrMeetingId] = React.useState(null);
 
-  const [attendanceMeetingId, setAttendanceMeetingId] = React.useState(null);
-  const [attendanceLoading, setAttendanceLoading] = React.useState(false);
-  const [attendanceItems, setAttendanceItems] = React.useState([]);
-  const [attendanceError, setAttendanceError] = React.useState(null);
+  // New attendance state (resolved)
+  const [attendanceOpenMeetingId, setAttendanceOpenMeetingId] = React.useState(null);
+  const [attendanceLoadingMeetingId, setAttendanceLoadingMeetingId] = React.useState(null);
+  const [attendanceByMeetingId, setAttendanceByMeetingId] = React.useState({});
 
-  const toggleAttendance = async (meetingId) => {
-    if (!meetingId) return;
+  const toggleMeetingAttendance = React.useCallback(
+    async (meetingId) => {
+      if (!meetingId) return;
+      if (String(attendanceOpenMeetingId) === String(meetingId)) {
+        setAttendanceOpenMeetingId(null);
+        return;
+      }
 
-    if (String(attendanceMeetingId) === String(meetingId)) {
-      setAttendanceMeetingId(null);
-      return;
-    }
-
-    setAttendanceMeetingId(meetingId);
-    setAttendanceLoading(true);
-    setAttendanceItems([]);
-    setAttendanceError(null);
-
-    try {
-      const data = await clubService.leaderGetMeetingAttendance(meetingId);
-      setAttendanceItems(Array.isArray(data?.items) ? data.items : []);
-    } catch (err) {
-      setAttendanceError(err?.response?.data?.message || err?.message || 'Failed to load attendance');
-      setAttendanceItems([]);
-    } finally {
-      setAttendanceLoading(false);
-    }
-  };
+      setAttendanceOpenMeetingId(meetingId);
+      setAttendanceLoadingMeetingId(meetingId);
+      try {
+        const data = await attendanceService.leaderGetAttendance({ meetingId });
+        const items = Array.isArray(data?.items) ? data.items : [];
+        const count = Number.isFinite(Number(data?.count)) ? Number(data.count) : items.length;
+        setAttendanceByMeetingId((prev) => ({
+          ...prev,
+          [String(meetingId)]: { count, items },
+        }));
+      } catch {
+        setAttendanceByMeetingId((prev) => ({
+          ...prev,
+          [String(meetingId)]: { count: 0, items: [], error: 'Failed to load attendance' },
+        }));
+      } finally {
+        setAttendanceLoadingMeetingId(null);
+      }
+    },
+    [attendanceOpenMeetingId]
+  );
 
   const deleteApplication = async (applicationId) => {
     if (!applicationId) return;
@@ -579,13 +586,15 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                                       {String(qrMeetingId) === String(m.id) ? 'Hide QR' : 'Show QR'}
                                     </button>
 
+                                    {/* Single attendance button (resolved) */}
                                     <button
                                       type="button"
-                                      onClick={() => toggleAttendance(m.id)}
+                                      onClick={() => toggleMeetingAttendance(m.id)}
                                       className="px-3 py-1.5 rounded-lg border border-emerald-200 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
                                     >
-                                      {String(attendanceMeetingId) === String(m.id) ? 'Hide Attendance' : 'View Attendance'}
+                                      {String(attendanceOpenMeetingId) === String(m.id) ? 'Hide Attendance' : 'View Attendance'}
                                     </button>
+
                                     <button
                                       type="button"
                                       onClick={() => openEditMeeting(m)}
@@ -610,29 +619,55 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                                   </div>
                                 ) : null}
 
-                                {String(attendanceMeetingId) === String(m.id) ? (
-                                  <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                {String(attendanceOpenMeetingId) === String(m.id) ? (
+                                  <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4">
                                     <div className="flex items-center justify-between gap-3">
-                                      <div className="text-xs font-semibold text-gray-700">Attendance</div>
-                                      <div className="text-xs text-gray-500">Total: {attendanceItems.length}</div>
+                                      <div className="text-xs font-semibold text-gray-900">Attendance</div>
+                                      <div className="text-xs text-gray-500">
+                                        {attendanceLoadingMeetingId && String(attendanceLoadingMeetingId) === String(m.id)
+                                          ? 'Loading…'
+                                          : (() => {
+                                              const rec = attendanceByMeetingId[String(m.id)];
+                                              const c = Number.isFinite(Number(rec?.count)) ? Number(rec.count) : null;
+                                              return c === null ? '' : `Total: ${c}`;
+                                            })()}
+                                      </div>
                                     </div>
 
-                                    {attendanceLoading ? (
-                                      <div className="mt-3 text-sm text-gray-500">Loading…</div>
-                                    ) : attendanceError ? (
-                                      <div className="mt-3 text-sm text-red-700">{attendanceError}</div>
-                                    ) : attendanceItems.length === 0 ? (
-                                      <div className="mt-3 text-sm text-gray-500">No attendance marked yet.</div>
-                                    ) : (
-                                      <ul className="mt-3 divide-y divide-gray-200">
-                                        {attendanceItems.map((a) => (
-                                          <li key={`${a.studentId}-${a.markedAt || ''}`} className="py-2 flex items-center justify-between gap-3">
-                                            <div className="text-sm font-medium text-gray-900">{a.studentId}</div>
-                                            <div className="text-xs text-gray-500">{a.markedAt ? new Date(a.markedAt).toLocaleString() : ''}</div>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
+                                    {attendanceLoadingMeetingId && String(attendanceLoadingMeetingId) === String(m.id) ? (
+                                      <div className="mt-3 text-sm text-gray-500">Loading attendance…</div>
+                                    ) : (() => {
+                                        const rec = attendanceByMeetingId[String(m.id)] || { items: [], count: 0 };
+                                        if (rec?.error) {
+                                          return <div className="mt-3 text-sm text-red-600">{rec.error}</div>;
+                                        }
+                                        const items = Array.isArray(rec.items) ? rec.items : [];
+                                        if (items.length === 0) {
+                                          return <div className="mt-3 text-sm text-gray-500">No attendance marked yet.</div>;
+                                        }
+                                        return (
+                                          <ul className="mt-3 divide-y divide-gray-200">
+                                            {items.map((a) => (
+                                              <li key={a.id} className="py-3">
+                                                <div className="flex items-start justify-between gap-3">
+                                                  <div className="min-w-0">
+                                                    <div className="text-sm font-semibold text-gray-900 truncate">
+                                                      {a.studentName || a.studentId}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                      {a.studentName ? `ID: ${a.studentId}` : ''}
+                                                      {a.studentEmail ? ` • ${a.studentEmail}` : ''}
+                                                    </div>
+                                                  </div>
+                                                  <div className="text-xs text-gray-500 shrink-0">
+                                                    {a.markedAt ? new Date(a.markedAt).toLocaleString() : ''}
+                                                  </div>
+                                                </div>
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        );
+                                      })()}
                                   </div>
                                 ) : null}
                               </li>
@@ -942,6 +977,8 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
           </div>
         </div>
       )}
+
+      {/* Add Member Modal */}
       {showAddMember && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">

@@ -6,7 +6,7 @@ const { requireAuth } = require('../middleware/authMiddleware');
 const router = express.Router();
 
 // POST /api/attendance/:meetingId/mark
-router.post('/:meetingId/mark', attendanceController.markAttendance);
+router.post('/:meetingId/mark', requireAuth, attendanceController.markAttendance);
 
 // GET /api/attendance/:meetingId (leader-only)
 router.get('/:meetingId', requireAuth, attendanceController.listMeetingAttendance);

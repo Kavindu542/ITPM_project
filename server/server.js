@@ -86,6 +86,7 @@ app.use("/api/clubs", clubPublicRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/hostel", hostelRoutes);
 app.use("/api/stats", statsRoutes);
+app.use("/api/attendance", attendanceRoutes);
 
 app.use(errorHandler);
 
