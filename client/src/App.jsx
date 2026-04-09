@@ -18,6 +18,7 @@ import LibraryBooks from './pages/LibrarySystem/LibraryBooks.jsx';
 import SearchBooks from './pages/LibrarySystem/SearchBooks.jsx';
 import StudyRooms from './pages/LibrarySystem/StudyRooms.jsx';
 import Clubs from './pages/Clubs/Clubs.jsx';
+import AttendancePage from './pages/Clubs/AttendancePage.jsx';
 import LeaderDashboard from './pages/Leader/LeaderDashboard.jsx';
 import AdminSignIn from './pages/admin/AdminSignIn.jsx';
 import AdminModuleSignIn from './pages/admin/AdminModuleSignIn.jsx';
@@ -334,6 +335,9 @@ export default function App() {
             </RequireAuth>
           }
         />
+
+        {/* Attendance QR Route (public) */}
+        <Route path="/attendance/:meetingId" element={<AttendancePage />} />
 
         {/* Leader Dashboard */}
         <Route

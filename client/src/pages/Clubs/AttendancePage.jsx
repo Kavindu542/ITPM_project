@@ -32,7 +32,11 @@ export default function AttendancePage() {
       setResult({ type: 'success', message: msg });
     } catch (err) {
       const status = err?.response?.status;
-      const apiMessage = err?.response?.data?.message;
+      const responseData = err?.response?.data;
+      const apiMessage =
+        responseData?.message
+        || (typeof responseData === 'string' ? responseData : null)
+        || err?.message;
 
       if (status === 409) {
         setResult({ type: 'warning', message: apiMessage || 'Attendance already marked.' });

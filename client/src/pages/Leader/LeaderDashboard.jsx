@@ -30,6 +30,35 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
 
   const [qrMeetingId, setQrMeetingId] = React.useState(null);
 
+  const [attendanceMeetingId, setAttendanceMeetingId] = React.useState(null);
+  const [attendanceLoading, setAttendanceLoading] = React.useState(false);
+  const [attendanceItems, setAttendanceItems] = React.useState([]);
+  const [attendanceError, setAttendanceError] = React.useState(null);
+
+  const toggleAttendance = async (meetingId) => {
+    if (!meetingId) return;
+
+    if (String(attendanceMeetingId) === String(meetingId)) {
+      setAttendanceMeetingId(null);
+      return;
+    }
+
+    setAttendanceMeetingId(meetingId);
+    setAttendanceLoading(true);
+    setAttendanceItems([]);
+    setAttendanceError(null);
+
+    try {
+      const data = await clubService.leaderGetMeetingAttendance(meetingId);
+      setAttendanceItems(Array.isArray(data?.items) ? data.items : []);
+    } catch (err) {
+      setAttendanceError(err?.response?.data?.message || err?.message || 'Failed to load attendance');
+      setAttendanceItems([]);
+    } finally {
+      setAttendanceLoading(false);
+    }
+  };
+
   const deleteApplication = async (applicationId) => {
     if (!applicationId) return;
     const ok = window.confirm('Delete this application?');
@@ -549,6 +578,14 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                                     >
                                       {String(qrMeetingId) === String(m.id) ? 'Hide QR' : 'Show QR'}
                                     </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleAttendance(m.id)}
+                                      className="px-3 py-1.5 rounded-lg border border-emerald-200 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                                    >
+                                      {String(attendanceMeetingId) === String(m.id) ? 'Hide Attendance' : 'View Attendance'}
+                                    </button>
                                     <button
                                       type="button"
                                       onClick={() => openEditMeeting(m)}
@@ -570,6 +607,32 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                                   <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
                                     <div className="text-xs font-semibold text-gray-700 mb-3">Attendance QR</div>
                                     <QRCodeGenerator meetingId={m.id} size={220} />
+                                  </div>
+                                ) : null}
+
+                                {String(attendanceMeetingId) === String(m.id) ? (
+                                  <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                      <div className="text-xs font-semibold text-gray-700">Attendance</div>
+                                      <div className="text-xs text-gray-500">Total: {attendanceItems.length}</div>
+                                    </div>
+
+                                    {attendanceLoading ? (
+                                      <div className="mt-3 text-sm text-gray-500">Loading…</div>
+                                    ) : attendanceError ? (
+                                      <div className="mt-3 text-sm text-red-700">{attendanceError}</div>
+                                    ) : attendanceItems.length === 0 ? (
+                                      <div className="mt-3 text-sm text-gray-500">No attendance marked yet.</div>
+                                    ) : (
+                                      <ul className="mt-3 divide-y divide-gray-200">
+                                        {attendanceItems.map((a) => (
+                                          <li key={`${a.studentId}-${a.markedAt || ''}`} className="py-2 flex items-center justify-between gap-3">
+                                            <div className="text-sm font-medium text-gray-900">{a.studentId}</div>
+                                            <div className="text-xs text-gray-500">{a.markedAt ? new Date(a.markedAt).toLocaleString() : ''}</div>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )}
                                   </div>
                                 ) : null}
                               </li>
