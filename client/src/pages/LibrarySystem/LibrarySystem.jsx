@@ -8,7 +8,7 @@ import LibraryBooks from './LibraryBooks';
 import StudyRooms from './StudyRooms';
 import DigitalResources from './DigitalResources';
 import MyLibrary from './MyLibrary';
-import LibraryAIChatBot from '../../components/LibraryAIChatBot';
+import LibraryAIAssistant from '../../components/LibraryAIChatBot';
 import LibrarySidebar from '../../components/LibrarySidebar';
 
 export default function LibrarySystem({ user, onLoggedOut }) {
@@ -129,7 +129,7 @@ export default function LibrarySystem({ user, onLoggedOut }) {
           </div>
         </div>
       </div>
-      <LibraryAIChatBot />
+      <LibraryAIAssistant />
     </div>
   );
 }
