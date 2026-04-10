@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { studyRoomService, reservationService } from '../../services/libraryService';
-import { Calendar, Clock, Users, MapPin, Wifi, Coffee, Monitor, Volume2, X, Check, Star, ChevronRight, Zap, Shield, BookOpen, Search } from 'lucide-react';
+import { Wifi, Coffee, Monitor, X, Check, Star, ChevronRight, Zap, Shield, BookOpen, Search } from 'lucide-react';
 import SeatReservation from './SeatReservation';
 
 const styles = `
@@ -77,6 +77,7 @@ export default function StudyRooms() {
   const [activeTab, setActiveTab] = useState('rooms');
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const bookingPanelRef = useRef(null);
   const [bookingData, setBookingData] = useState({
     date: new Date().toISOString().split('T')[0], startTime: '', endTime: '', purpose: '', duration: '', userName: ''
   });
@@ -252,9 +253,17 @@ export default function StudyRooms() {
   };
 
   const openBookingModal = (room) => {
+    setActiveTab('rooms');
     setSelectedRoom(room);
+    setBookingError('');
     setShowBookingModal(true);
   };
+
+  useEffect(() => {
+    if (!showBookingModal) return;
+    if (!bookingPanelRef.current) return;
+    bookingPanelRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [showBookingModal, selectedRoom?.id]);
 
   return (
     <div className="min-h-screen bg-god-glass p-4 md:p-10 font-sans">
@@ -350,193 +359,239 @@ export default function StudyRooms() {
             </div>
           ) : (
             filteredRooms.map((room, index) => (
-              <div key={room.id} className="premium-card group rounded-3xl overflow-hidden"
-                style={{ animation: `fadeInUp 0.6s ease-out forwards ${index * 0.1}s`, opacity: 0 }}>
-                <div className="image-container relative h-48 overflow-hidden">
-                  <img src={room.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={room.name} />
-                  <div className="absolute top-4 left-4">
-                    <span className={`px-3 py-1 rounded-xl text-xs font-bold backdrop-blur-md border ${room.availability === 'Available'
-                      ? 'bg-emerald-500/90 text-white border-emerald-400'
-                      : 'bg-red-500/90 text-white border-red-400'
-                      }`}>
-                      {room.availability}
-                    </span>
-                  </div>
-                  <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md text-white px-3 py-1 rounded-xl text-xs font-bold">
-                    {room.capacity} {room.capacity === 1 ? 'Person' : 'People'}
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">{room.type}</span>
-                    <div className="flex items-center gap-1">
-                      <Star size={14} className="text-amber-400 fill-amber-400" />
-                      <span className="text-sm font-bold text-slate-700">{room.rating}</span>
+              <React.Fragment key={room.id}>
+                <div className="premium-card group rounded-3xl overflow-hidden"
+                  style={{ animation: `fadeInUp 0.6s ease-out forwards ${index * 0.1}s`, opacity: 0 }}>
+                  <div className="image-container relative h-48 overflow-hidden">
+                    <img src={room.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={room.name} />
+                    <div className="absolute top-4 left-4">
+                      <span className={`px-3 py-1 rounded-xl text-xs font-bold backdrop-blur-md border ${room.availability === 'Available'
+                        ? 'bg-emerald-500/90 text-white border-emerald-400'
+                        : 'bg-red-500/90 text-white border-red-400'
+                        }`}>
+                        {room.availability}
+                      </span>
+                    </div>
+                    <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md text-white px-3 py-1 rounded-xl text-xs font-bold">
+                      {room.capacity} {room.capacity === 1 ? 'Person' : 'People'}
                     </div>
                   </div>
 
-                  <h3 className="text-xl font-black text-slate-900 mb-3">{room.name}</h3>
-                  {room.description && <p className="text-sm text-slate-600 mb-4 line-clamp-2">{room.description}</p>}
-
-                  <div className="flex flex-wrap gap-2 mb-5">
-                    {room.amenities.slice(0, 4).map((amenity, idx) => {
-                      const IconComponent = amenityIcons[amenity] || BookOpen;
-                      return (
-                        <div key={idx} className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg">
-                          <IconComponent size={12} className="text-slate-500" />
-                          <span className="text-xs font-medium text-slate-600">{amenity}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {(() => {
-                    const roomBookings = roomReservations.filter(res =>
-                      res.studyRoomId === room.id || res.studyRoomId?._id === room.id
-                    );
-                    return roomBookings.length > 0 ? (
-                      <div className="space-y-1.5 mb-5">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="h-px flex-1 bg-slate-100"></div>
-                          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Today's Schedule</div>
-                          <div className="h-px flex-1 bg-slate-100"></div>
-                        </div>
-                        {roomBookings.map((res, i) => (
-                          <div key={i} className="flex items-center justify-between p-2 bg-emerald-50/70 rounded-xl border border-emerald-100/50 text-[11px] animate-in slide-in-from-bottom-1 fade-in duration-300">
-                            <div className="flex items-center gap-1.5 font-bold text-slate-700">
-                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              {res.userName || 'Student'}
-                            </div>
-                            <span className="font-black text-emerald-600 bg-white px-2 py-0.5 rounded-lg border border-emerald-100 shadow-sm">
-                              {res.startTime} - {res.endTime}
-                            </span>
-                          </div>
-                        ))}
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">{room.type}</span>
+                      <div className="flex items-center gap-1">
+                        <Star size={14} className="text-amber-400 fill-amber-400" />
+                        <span className="text-sm font-bold text-slate-700">{room.rating}</span>
                       </div>
-                    ) : null;
-                  })()}
+                    </div>
 
-                  <Button variant="primary" size="lg" className="w-full mt-2"
-                    onClick={() => openBookingModal(room)}
-                    disabled={room.availability === 'Busy'}>
-                    {room.availability === 'Available' ? 'Reserve Now' : 'Unavailable'}
-                    <ChevronRight size={18} />
-                  </Button>
+                    <h3 className="text-xl font-black text-slate-900 mb-3">{room.name}</h3>
+                    {room.description && <p className="text-sm text-slate-600 mb-4 line-clamp-2">{room.description}</p>}
+
+                    <div className="flex flex-wrap gap-2 mb-5">
+                      {room.amenities.slice(0, 4).map((amenity, idx) => {
+                        const IconComponent = amenityIcons[amenity] || BookOpen;
+                        return (
+                          <div key={idx} className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg">
+                            <IconComponent size={12} className="text-slate-500" />
+                            <span className="text-xs font-medium text-slate-600">{amenity}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {(() => {
+                      const roomBookings = roomReservations.filter(res =>
+                        res.studyRoomId === room.id || res.studyRoomId?._id === room.id
+                      );
+                      return roomBookings.length > 0 ? (
+                        <div className="space-y-1.5 mb-5">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="h-px flex-1 bg-slate-100"></div>
+                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Today's Schedule</div>
+                            <div className="h-px flex-1 bg-slate-100"></div>
+                          </div>
+                          {roomBookings.map((res, i) => (
+                            <div key={i} className="flex items-center justify-between p-2 bg-emerald-50/70 rounded-xl border border-emerald-100/50 text-[11px] animate-in slide-in-from-bottom-1 fade-in duration-300">
+                              <div className="flex items-center gap-1.5 font-bold text-slate-700">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                {res.userName || 'Student'}
+                              </div>
+                              <span className="font-black text-emerald-600 bg-white px-2 py-0.5 rounded-lg border border-emerald-100 shadow-sm">
+                                {res.startTime} - {res.endTime}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
+
+                    <Button variant="primary" size="lg" className="w-full mt-2"
+                      onClick={() => openBookingModal(room)}
+                      disabled={room.availability === 'Busy'}>
+                      {room.availability === 'Available' ? 'Reserve Now' : 'Unavailable'}
+                      <ChevronRight size={18} />
+                    </Button>
+                  </div>
                 </div>
-              </div>
+
+                {showBookingModal && selectedRoom?.id === room.id && (
+                  <div ref={bookingPanelRef} className="col-span-full">
+                    <div className="max-w-4xl mx-auto">
+                      <div className="booking-modal rounded-3xl shadow-2xl border border-white/60 overflow-hidden">
+                        <div className="p-4 md:p-5 border-b border-white/60 flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-xs font-black text-emerald-700 bg-[#25f194]/20 inline-flex px-4 py-2 rounded-full uppercase tracking-widest">
+                            Study Room Booking
+                          </div>
+                          <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-3">Reserve {selectedRoom?.name}</h3>
+                          <p className="text-sm text-slate-600 mt-1">Free Reservation • {selectedRoom?.type}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowBookingModal(false);
+                            setBookingError('');
+                            setBookingSuccess(false);
+                          }}
+                          className="p-3 rounded-2xl border border-slate-200 bg-white/70 hover:bg-white transition-colors"
+                          aria-label="Close booking form"
+                        >
+                          <X size={20} className="text-slate-700" />
+                        </button>
+                        </div>
+
+                        {bookingSuccess ? (
+                        <div className="p-10 text-center animate-in zoom-in duration-300">
+                          <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-200/40">
+                            <Check size={38} className="text-white" />
+                          </div>
+                          <h3 className="text-3xl font-black text-slate-900 mb-2">Booking Confirmed!</h3>
+                          <p className="text-slate-600">Your study room has been successfully reserved.</p>
+                        </div>
+                      ) : (
+                        <form onSubmit={handleBooking} className="p-5 md:p-8 space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                              <label htmlFor="sr-userName" className="block text-sm font-bold text-slate-700 mb-2">Student Name</label>
+                              <input
+                                id="sr-userName"
+                                type="text"
+                                required
+                                placeholder="Enter student name"
+                                value={bookingData.userName}
+                                onChange={(e) => setBookingData(prev => ({ ...prev, userName: e.target.value }))}
+                                className="glass-input w-full px-4 py-3 rounded-2xl outline-none transition-all"
+                              />
+                            </div>
+
+                            <div>
+                              <label htmlFor="sr-date" className="block text-sm font-bold text-slate-700 mb-2">Date</label>
+                              <input
+                                id="sr-date"
+                                type="date"
+                                required
+                                value={bookingData.date}
+                                onChange={(e) => setBookingData(prev => ({ ...prev, date: e.target.value }))}
+                                className="glass-input w-full px-4 py-3 rounded-2xl outline-none transition-all"
+                              />
+                            </div>
+
+                            <div>
+                              <label htmlFor="sr-duration" className="block text-sm font-bold text-slate-700 mb-2">Duration</label>
+                              <select
+                                id="sr-duration"
+                                required
+                                value={bookingData.duration}
+                                onChange={(e) => setBookingData(prev => ({ ...prev, duration: e.target.value }))}
+                                className="glass-input w-full px-4 py-3 rounded-2xl outline-none transition-all"
+                              >
+                                <option value="">Select</option>
+                                <option value="1h">1 Hour</option>
+                                <option value="2h">2 Hours</option>
+                                <option value="3h">3 Hours</option>
+                                <option value="4h">4 Hours</option>
+                                <option value="full">Full Day</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label htmlFor="sr-startTime" className="block text-sm font-bold text-slate-700 mb-2">Start Time</label>
+                              <select
+                                id="sr-startTime"
+                                required
+                                value={bookingData.startTime}
+                                onChange={(e) => setBookingData(prev => ({ ...prev, startTime: e.target.value }))}
+                                className="glass-input w-full px-4 py-3 rounded-2xl outline-none transition-all"
+                              >
+                                <option value="">Time</option>
+                                <option value="08:00">8:00 AM</option>
+                                <option value="09:00">9:00 AM</option>
+                                <option value="10:00">10:00 AM</option>
+                                <option value="11:00">11:00 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="13:00">1:00 PM</option>
+                                <option value="14:00">2:00 PM</option>
+                                <option value="15:00">3:00 PM</option>
+                                <option value="16:00">4:00 PM</option>
+                                <option value="17:00">5:00 PM</option>
+                                <option value="18:00">6:00 PM</option>
+                                <option value="19:00">7:00 PM</option>
+                              </select>
+                            </div>
+
+                            <div className="md:col-span-2">
+                              <label htmlFor="sr-purpose" className="block text-sm font-bold text-slate-700 mb-2">Purpose</label>
+                              <select
+                                id="sr-purpose"
+                                required
+                                value={bookingData.purpose}
+                                onChange={(e) => setBookingData(prev => ({ ...prev, purpose: e.target.value }))}
+                                className="glass-input w-full px-4 py-3 rounded-2xl outline-none transition-all"
+                              >
+                                <option value="">Select</option>
+                                <option value="study">Study</option>
+                                <option value="meeting">Meeting</option>
+                                <option value="project">Project Work</option>
+                                <option value="research">Research</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              className="flex-1"
+                              onClick={() => {
+                                setShowBookingModal(false);
+                                setBookingError('');
+                                setBookingSuccess(false);
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button type="submit" variant="primary" className="flex-1">
+                              Confirm
+                              <Check size={18} />
+                            </Button>
+                          </div>
+
+                          {bookingError && (
+                            <div className="text-center text-sm font-bold text-red-600">
+                              {bookingError}
+                            </div>
+                          )}
+                        </form>
+                      )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
             ))
           )}
-        </div>
-      )}
-
-      {showBookingModal && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="booking-modal rounded-3xl shadow-2xl max-w-md w-full border border-white/50 overflow-hidden">
-            {bookingSuccess ? (
-              <div className="p-8 text-center animate-in zoom-in duration-300">
-                <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Check size={32} className="text-white" />
-                </div>
-                <h3 className="text-2xl font-black text-slate-900 mb-2">Booking Confirmed!</h3>
-                <p className="text-slate-600">Your study room has been successfully reserved.</p>
-              </div>
-            ) : (
-              <>
-                <div className="p-6 border-b border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-black text-slate-900">Reserve {selectedRoom?.name}</h3>
-                    <button onClick={() => setShowBookingModal(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                      <X size={20} />
-                    </button>
-                  </div>
-                  <p className="text-sm text-slate-600 mt-2">Free Reservation • {selectedRoom?.type}</p>
-                </div>
-
-                <form onSubmit={handleBooking} className="p-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Student Name</label>
-                    <input type="text" required placeholder="Enter student name"
-                      value={bookingData.userName}
-                      onChange={(e) => setBookingData(prev => ({ ...prev, userName: e.target.value }))}
-                      className="glass-input w-full px-4 py-3 rounded-xl outline-none transition-all" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Date</label>
-                      <input type="date" required value={bookingData.date}
-                        onChange={(e) => setBookingData(prev => ({ ...prev, date: e.target.value }))}
-                        className="glass-input w-full px-4 py-3 rounded-xl outline-none transition-all" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Duration</label>
-                      <select required value={bookingData.duration}
-                        onChange={(e) => setBookingData(prev => ({ ...prev, duration: e.target.value }))}
-                        className="glass-input w-full px-4 py-3 rounded-xl outline-none transition-all">
-                        <option value="">Select</option>
-                        <option value="1h">1 Hour</option>
-                        <option value="2h">2 Hours</option>
-                        <option value="3h">3 Hours</option>
-                        <option value="4h">4 Hours</option>
-                        <option value="full">Full Day</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Start Time</label>
-                      <select required value={bookingData.startTime}
-                        onChange={(e) => setBookingData(prev => ({ ...prev, startTime: e.target.value }))}
-                        className="glass-input w-full px-4 py-3 rounded-xl outline-none transition-all">
-                        <option value="">Time</option>
-                        <option value="08:00">8:00 AM</option>
-                        <option value="09:00">9:00 AM</option>
-                        <option value="10:00">10:00 AM</option>
-                        <option value="11:00">11:00 AM</option>
-                        <option value="12:00">12:00 PM</option>
-                        <option value="13:00">1:00 PM</option>
-                        <option value="14:00">2:00 PM</option>
-                        <option value="15:00">3:00 PM</option>
-                        <option value="16:00">4:00 PM</option>
-                        <option value="17:00">5:00 PM</option>
-                        <option value="18:00">6:00 PM</option>
-                        <option value="19:00">7:00 PM</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Purpose</label>
-                      <select required value={bookingData.purpose}
-                        onChange={(e) => setBookingData(prev => ({ ...prev, purpose: e.target.value }))}
-                        className="glass-input w-full px-4 py-3 rounded-xl outline-none transition-all">
-                        <option value="">Select</option>
-                        <option value="study">Study</option>
-                        <option value="meeting">Meeting</option>
-                        <option value="project">Project Work</option>
-                        <option value="research">Research</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowBookingModal(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" variant="primary" className="flex-1">
-                      Confirm
-                      <Check size={18} />
-                    </Button>
-                  </div>
-                  {bookingError && (
-                    <div className="mt-3 text-center text-xs font-bold text-red-600">
-                      {bookingError}
-                    </div>
-                  )}
-                </form>
-              </>
-            )}
-          </div>
         </div>
       )}
     </div>

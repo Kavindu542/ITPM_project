@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import api from '../../services/api';
 import { toast } from '../../lib/toast';
 import { confirmDialog } from '../../lib/dialog';
-import { Calendar, Clock, Check, X } from 'lucide-react';
+import { Clock, Check, X } from 'lucide-react';
 
 const SEATS = Array.from({ length: 40 }, (_, i) => ({
     id: `seat-${i + 1}`,
@@ -17,6 +17,7 @@ export default function SeatReservation() {
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({ startTime: '', endTime: '', purpose: '', userName: '' });
     const [loading, setLoading] = useState(false);
+    const bookingFormRef = useRef(null);
 
     useEffect(() => {
         fetchSeatAvailability();
@@ -51,6 +52,12 @@ export default function SeatReservation() {
         setSelectedSeat(seat);
         setShowModal(true);
     };
+
+    useEffect(() => {
+        if (!showModal) return;
+        if (!bookingFormRef.current) return;
+        bookingFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, [showModal, selectedSeat?.id]);
 
     const handleBookSubmit = async (e) => {
         e.preventDefault();
@@ -171,6 +178,92 @@ export default function SeatReservation() {
                 </div>
             </div>
 
+            {showModal && selectedSeat && (
+                <div ref={bookingFormRef} className="max-w-4xl mx-auto mt-8">
+                    <div className="bg-white/90 rounded-3xl shadow-2xl border border-white/60 overflow-hidden">
+                        <div className="p-4 md:p-5 border-b border-white/60 flex items-start justify-between gap-3">
+                            <div>
+                                <div className="text-xs font-black text-emerald-700 bg-emerald-100 inline-flex px-4 py-2 rounded-full uppercase tracking-widest">
+                                    Seat Booking
+                                </div>
+                                <h2 className="text-xl md:text-2xl font-black text-slate-900 mt-3">Book Seat {selectedSeat.number}</h2>
+                                <p className="text-sm text-slate-600 mt-1">Reservation Date • {date}</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowModal(false);
+                                    setSelectedSeat(null);
+                                }}
+                                className="p-3 rounded-2xl border border-slate-200 bg-white/70 hover:bg-white transition-colors"
+                                aria-label="Close booking form"
+                            >
+                                <X size={20} className="text-slate-700" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleBookSubmit} className="p-5 md:p-8 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label htmlFor="seat-from" className="block text-sm font-bold text-slate-700 mb-2">From</label>
+                                    <input
+                                        id="seat-from"
+                                        type="time"
+                                        required
+                                        value={formData.startTime}
+                                        onChange={e => setFormData({ ...formData, startTime: e.target.value })}
+                                        className="w-full border border-slate-200 rounded-2xl px-4 py-3 outline-none focus:border-emerald-500 bg-white/70 font-bold"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="seat-to" className="block text-sm font-bold text-slate-700 mb-2">To</label>
+                                    <input
+                                        id="seat-to"
+                                        type="time"
+                                        required
+                                        value={formData.endTime}
+                                        onChange={e => setFormData({ ...formData, endTime: e.target.value })}
+                                        className="w-full border border-slate-200 rounded-2xl px-4 py-3 outline-none focus:border-emerald-500 bg-white/70 font-bold"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="seat-userName" className="block text-sm font-bold text-slate-700 mb-2">Your Name</label>
+                                    <input
+                                        id="seat-userName"
+                                        type="text"
+                                        placeholder="Enter your name"
+                                        required
+                                        value={formData.userName}
+                                        onChange={e => setFormData({ ...formData, userName: e.target.value })}
+                                        className="w-full border border-slate-200 rounded-2xl px-4 py-3 outline-none focus:border-emerald-500 bg-white/70 font-bold"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="seat-purpose" className="block text-sm font-bold text-slate-700 mb-2">Purpose</label>
+                                    <input
+                                        id="seat-purpose"
+                                        type="text"
+                                        placeholder="Study, Assignment, etc."
+                                        required
+                                        value={formData.purpose}
+                                        onChange={e => setFormData({ ...formData, purpose: e.target.value })}
+                                        className="w-full border border-slate-200 rounded-2xl px-4 py-3 outline-none focus:border-emerald-500 bg-white/70"
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                disabled={loading}
+                                type="submit"
+                                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-black rounded-2xl shadow-lg transition-colors"
+                            >
+                                {loading ? 'Booking...' : 'Confirm Reservation'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {myReservations.length > 0 && (
                 <div className="bg-white p-8 rounded-3xl shadow-xl max-w-4xl mx-auto border border-indigo-50">
                     <div className="flex items-center gap-3 mb-8">
@@ -211,40 +304,6 @@ export default function SeatReservation() {
                                 </button>
                             </div>
                         ))}
-                    </div>
-                </div>
-            )}
-
-            {showModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-2xl font-black">Book Seat {selectedSeat?.number}</h3>
-                            <button onClick={() => setShowModal(false)}><X size={24} className="text-slate-500 hover:text-red-500" /></button>
-                        </div>
-                        <form onSubmit={handleBookSubmit} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">From</label>
-                                    <input type="time" required value={formData.startTime} onChange={e => setFormData({ ...formData, startTime: e.target.value })} className="w-full border rounded-xl px-4 py-2 outline-none focus:border-emerald-500" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-2">To</label>
-                                    <input type="time" required value={formData.endTime} onChange={e => setFormData({ ...formData, endTime: e.target.value })} className="w-full border rounded-xl px-4 py-2 outline-none focus:border-emerald-500" />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Your Name</label>
-                                <input type="text" placeholder="Enter your name" required value={formData.userName} onChange={e => setFormData({ ...formData, userName: e.target.value })} className="w-full border rounded-xl px-4 py-2 outline-none focus:border-emerald-500 font-bold" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-700 mb-2">Purpose</label>
-                                <input type="text" placeholder="Study, Assignment, etc." required value={formData.purpose} onChange={e => setFormData({ ...formData, purpose: e.target.value })} className="w-full border rounded-xl px-4 py-2 outline-none focus:border-emerald-500" />
-                            </div>
-                            <button disabled={loading} type="submit" className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-xl shadow-lg transition-colors">
-                                {loading ? 'Booking...' : 'Confirm Reservation'}
-                            </button>
-                        </form>
                     </div>
                 </div>
             )}
