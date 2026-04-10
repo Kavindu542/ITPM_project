@@ -2,21 +2,20 @@ import React from 'react';
 import { CheckCircle, Eye, RefreshCw, XCircle } from 'lucide-react';
 
 import { studyMaterialService } from '../../../services/studyMaterialService';
+import { toast } from '../../../lib/toast';
 
 export default function ModerationQueuePage() {
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
   const [queue, setQueue] = React.useState([]);
   const [rejectReason, setRejectReason] = React.useState({});
 
   const load = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const res = await studyMaterialService.adminQueue('pending');
       setQueue(res?.items ?? []);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load queue');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load queue');
     } finally {
       setLoading(false);
     }
@@ -28,12 +27,11 @@ export default function ModerationQueuePage() {
 
   const approve = async (id) => {
     setLoading(true);
-    setError('');
     try {
       await studyMaterialService.adminApprove(id, '');
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Approve failed');
+      toast.error(e?.response?.data?.message || e?.message || 'Approve failed');
     } finally {
       setLoading(false);
     }
@@ -42,18 +40,17 @@ export default function ModerationQueuePage() {
   const reject = async (id) => {
     const reason = String(rejectReason[id] || '').trim();
     if (!reason) {
-      setError('Rejection reason is required');
+      toast.error('Rejection reason is required');
       return;
     }
 
     setLoading(true);
-    setError('');
     try {
       await studyMaterialService.adminReject(id, reason);
       setRejectReason((p) => ({ ...p, [id]: '' }));
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Reject failed');
+      toast.error(e?.response?.data?.message || e?.message || 'Reject failed');
     } finally {
       setLoading(false);
     }
@@ -79,10 +76,6 @@ export default function ModerationQueuePage() {
           Refresh
         </button>
       </div>
-
-      {error ? (
-        <div className="px-6 py-3 text-sm text-red-700 bg-red-50 border-b border-red-100">{error}</div>
-      ) : null}
 
       <div className="overflow-x-auto">
         <table className="w-full">

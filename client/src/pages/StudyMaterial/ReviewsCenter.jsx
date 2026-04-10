@@ -13,13 +13,14 @@ import {
   UploadCloud,
 } from 'lucide-react';
 import { studyMaterialService } from '../../services/studyMaterialService';
+import { toast } from '../../lib/toast';
+import { confirmDialog } from '../../lib/dialog';
 import StudyMaterialSidebar from '../../components/StudyMaterialSidebar';
 
 export default function ReviewsCenter({ user, onLoggedOut }) {
   const navigate = useNavigate();
 
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
 
   const [materials, setMaterials] = React.useState([]);
   const [selectedMaterialId, setSelectedMaterialId] = React.useState('');
@@ -44,7 +45,6 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
 
   const loadMaterials = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const res = await studyMaterialService.listHistory();
       const events = res?.items ?? [];
@@ -65,7 +65,7 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
         setSelectedMaterialId(list[0]?.id || '');
       }
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load downloaded materials');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load downloaded materials');
     } finally {
       setLoading(false);
     }
@@ -81,7 +81,6 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
       }
 
       setLoading(true);
-      setError('');
 
       try {
         const results = await Promise.allSettled(
@@ -100,7 +99,7 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
         }
         setReviewsByMaterialId(next);
       } catch (e) {
-        setError(e?.response?.data?.message || e?.message || 'Failed to load reviews');
+        toast.error(e?.response?.data?.message || e?.message || 'Failed to load reviews');
       } finally {
         setLoading(false);
       }
@@ -121,40 +120,43 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
     e.preventDefault();
     if (!selectedMaterialId) return;
     setLoading(true);
-    setError('');
     try {
       await studyMaterialService.createOrUpdateReview(selectedMaterialId, reviewForm);
       setReviewForm((p) => ({ ...p, reviewText: '' }));
       await loadMaterials();
       await loadAllReviews();
     } catch (e2) {
-      setError(e2?.response?.data?.message || e2?.message || 'Failed to submit review');
+      toast.error(e2?.response?.data?.message || e2?.message || 'Failed to submit review');
     } finally {
       setLoading(false);
     }
   };
 
   const voteReview = async (reviewId, vote) => {
-    setError('');
     try {
       await studyMaterialService.voteReview(reviewId, vote);
       await loadAllReviews();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Vote failed');
+      toast.error(e?.response?.data?.message || e?.message || 'Vote failed');
     }
   };
 
   const deleteReview = async (reviewId) => {
-    const ok = window.confirm('Delete your review?');
+    const ok = await confirmDialog({
+      title: 'Delete review',
+      message: 'Delete your review?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
     if (!ok) return;
 
-    setError('');
     try {
       await studyMaterialService.deleteOwnReview(reviewId);
       await loadMaterials();
       await loadAllReviews();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Delete failed');
+      toast.error(e?.response?.data?.message || e?.message || 'Delete failed');
     }
   };
 
@@ -231,8 +233,6 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
                     Write a review
                   </button>
                 </div>
-
-                {error ? <div className="p-5 text-sm text-red-700 bg-red-50 border-b border-red-100">{error}</div> : null}
 
                 <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3 flex-wrap">
                   <div className="inline-flex rounded-2xl bg-gray-100 p-1">

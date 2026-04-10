@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { authService } from '../services/authService';
+import { toast } from '../lib/toast';
 import AuthShell from '../components/AuthShell';
 
 export default function ForgotPassword() {
@@ -9,27 +10,22 @@ export default function ForgotPassword() {
 
   const [email, setEmail] = React.useState('');
   const [busy, setBusy] = React.useState(false);
-  const [error, setError] = React.useState('');
-  const [info, setInfo] = React.useState('');
-
   const onSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setInfo('');
 
     const trimmed = String(email || '').trim();
     if (!trimmed) {
-      setError('Email is required.');
+      toast.error('Email is required.');
       return;
     }
 
     setBusy(true);
     try {
       const res = await authService.forgotPassword({ email: trimmed });
-      setInfo(res?.message || 'If an account exists, a reset code has been sent.');
+      toast.success(res?.message || 'If an account exists, a reset code has been sent.');
       navigate(`/reset-password?email=${encodeURIComponent(trimmed)}`);
     } catch (err) {
-      setError(err?.response?.data?.message || 'Failed to send reset code');
+      toast.error(err?.response?.data?.message || 'Failed to send reset code');
     } finally {
       setBusy(false);
     }
@@ -54,11 +50,7 @@ export default function ForgotPassword() {
         <div>
           <input
             id="email"
-            className={`w-full rounded-lg border px-4 py-3 text-sm text-slate-900 outline-none transition ${
-              error
-                ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-100'
-                : 'border-slate-200 bg-slate-100 focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100'
-            }`}
+            className="w-full rounded-lg border border-slate-200 bg-slate-100 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             type="email"
@@ -66,18 +58,6 @@ export default function ForgotPassword() {
             autoComplete="email"
           />
         </div>
-
-        {error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        ) : null}
-
-        {info ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            {info}
-          </div>
-        ) : null}
 
         <button
           type="submit"

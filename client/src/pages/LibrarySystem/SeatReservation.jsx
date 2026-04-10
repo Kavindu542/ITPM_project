@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import api from '../../services/api';
+import { toast } from '../../lib/toast';
+import { confirmDialog } from '../../lib/dialog';
 import { Clock, Check, X } from 'lucide-react';
 
 const SEATS = Array.from({ length: 40 }, (_, i) => ({
@@ -75,22 +77,30 @@ export default function SeatReservation() {
             setShowModal(false);
             fetchSeatAvailability();
             fetchMyReservations();
-            alert('Seat booked successfully!');
+            toast.success('Seat booked successfully!');
         } catch (err) {
-            alert('Failed to book seat: ' + (err.response?.data?.message || err.message));
+            toast.error('Failed to book seat: ' + (err.response?.data?.message || err.message));
         } finally {
             setLoading(false);
         }
     };
 
     const handleDeleteBooking = async (id) => {
-        if (!window.confirm('Are you sure you want to cancel this reservation?')) return;
+        const ok = await confirmDialog({
+            title: 'Cancel reservation',
+            message: 'Are you sure you want to cancel this reservation?',
+            confirmText: 'Yes, cancel',
+            cancelText: 'Keep',
+            variant: 'danger',
+        });
+        if (!ok) return;
         try {
             await api.delete(`/library/reservations/my-reservations/${id}`);
             fetchSeatAvailability();
             fetchMyReservations();
+            toast.success('Reservation cancelled.');
         } catch (err) {
-            alert('Failed to cancel reservation');
+            toast.error('Failed to cancel reservation');
         }
     };
 

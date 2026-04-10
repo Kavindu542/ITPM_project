@@ -1,8 +1,8 @@
 import React from 'react';
-import { Moon, Sun } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { authService } from '../services/authService';
+import { toast } from '../lib/toast';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -22,33 +22,29 @@ export default function ResetPassword() {
   const [showConfirm, setShowConfirm] = React.useState(false);
 
   const [busy, setBusy] = React.useState(false);
-  const [error, setError] = React.useState('');
-  const [info, setInfo] = React.useState('');
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setInfo('');
 
     const trimmedEmail = String(email || '').trim();
     if (!trimmedEmail) {
-      setError('Email is required.');
+      toast.error('Email is required.');
       return;
     }
 
     const otpValue = String(otp || '').trim();
     if (!/^\d{6}$/.test(otpValue)) {
-      setError('OTP must be 6 digits.');
+      toast.error('OTP must be 6 digits.');
       return;
     }
 
     if (!newPassword || newPassword.length < 6) {
-      setError('Password must be at least 6 characters.');
+      toast.error('Password must be at least 6 characters.');
       return;
     }
 
     if (String(newPassword) !== String(confirmPassword)) {
-      setError('Passwords do not match.');
+      toast.error('Passwords do not match.');
       return;
     }
 
@@ -60,10 +56,10 @@ export default function ResetPassword() {
         newPassword,
         confirmPassword,
       });
-      setInfo(res?.message || 'Password reset successful.');
+      toast.success(res?.message || 'Password reset successful.');
       setTimeout(() => navigate('/signin', { replace: true }), 800);
     } catch (err) {
-      setError(err?.response?.data?.message || 'Failed to reset password');
+      toast.error(err?.response?.data?.message || 'Failed to reset password');
     } finally {
       setBusy(false);
     }
@@ -95,9 +91,7 @@ export default function ResetPassword() {
                 </label>
                 <input
                   id="email"
-                  className={`mt-2 w-full bg-transparent border-b px-1 py-2 text-sm text-gray-900 outline-none transition-colors ${
-                    error ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-blue-600'
-                  }`}
+                  className="mt-2 w-full border-b border-gray-200 bg-transparent px-1 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-blue-600"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   type="email"
@@ -112,9 +106,7 @@ export default function ResetPassword() {
                 </label>
                 <input
                   id="otp"
-                  className={`mt-2 w-full bg-transparent border-b px-1 py-2 text-sm text-gray-900 outline-none transition-colors ${
-                    error ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-blue-600'
-                  }`}
+                  className="mt-2 w-full border-b border-gray-200 bg-transparent px-1 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-blue-600"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                   inputMode="numeric"
@@ -130,9 +122,7 @@ export default function ResetPassword() {
                 <div className="relative">
                   <input
                     id="newPassword"
-                    className={`mt-2 w-full bg-transparent border-b px-1 py-2 pr-10 text-sm text-gray-900 outline-none transition-colors ${
-                      error ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-blue-600'
-                    }`}
+                    className="mt-2 w-full border-b border-gray-200 bg-transparent px-1 py-2 pr-10 text-sm text-gray-900 outline-none transition-colors focus:border-blue-600"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     type={showNew ? 'text' : 'password'}
@@ -157,9 +147,7 @@ export default function ResetPassword() {
                 <div className="relative">
                   <input
                     id="confirmPassword"
-                    className={`mt-2 w-full bg-transparent border-b px-1 py-2 pr-10 text-sm text-gray-900 outline-none transition-colors ${
-                      error ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-blue-600'
-                    }`}
+                    className="mt-2 w-full border-b border-gray-200 bg-transparent px-1 py-2 pr-10 text-sm text-gray-900 outline-none transition-colors focus:border-blue-600"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     type={showConfirm ? 'text' : 'password'}
@@ -176,18 +164,6 @@ export default function ResetPassword() {
                   </button>
                 </div>
               </div>
-
-              {error ? (
-                <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-                  {error}
-                </div>
-              ) : null}
-
-              {info ? (
-                <div className="rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800">
-                  {info}
-                </div>
-              ) : null}
 
               <button
                 type="submit"

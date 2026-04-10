@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
+import { toast } from '../lib/toast';
 import { clubService } from '../services/clubService';
 import { api } from '../services/api';
 import {
@@ -18,7 +19,6 @@ import {
 export default function Home({ user, onLoggedOut }) {
   const navigate = useNavigate();
   const [busy, setBusy] = React.useState(false);
-  const [error, setError] = React.useState('');
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
 
   // ── real-time stats ────────────────────────────────────────────
@@ -45,13 +45,12 @@ export default function Home({ user, onLoggedOut }) {
   }, [fetchStats]);
 
   const handleLogout = async () => {
-    setError('');
     setBusy(true);
     try {
       await authService.logout();
       onLoggedOut?.();
     } catch (e) {
-      setError(e?.response?.data?.message || 'Logout failed. Please try again.');
+      toast.error(e?.response?.data?.message || 'Logout failed. Please try again.');
     } finally {
       setBusy(false);
       setShowLogoutConfirm(false);
@@ -669,12 +668,6 @@ export default function Home({ user, onLoggedOut }) {
               </div>
 
               <p className="text-gray-600 mb-6">Are you sure you want to logout from your account? You'll need to sign in again to access your dashboard.</p>
-
-              {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm mb-4">
-                  {error}
-                </div>
-              )}
 
               <div className="flex justify-end gap-3">
                 <button

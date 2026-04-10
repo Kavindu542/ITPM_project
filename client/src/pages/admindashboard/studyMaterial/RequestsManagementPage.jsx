@@ -2,22 +2,21 @@ import React from 'react';
 import { UploadCloud } from 'lucide-react';
 
 import { studyMaterialService } from '../../../services/studyMaterialService';
+import { toast } from '../../../lib/toast';
 
 export default function RequestsManagementPage() {
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
   const [items, setItems] = React.useState([]);
   const [feedbackById, setFeedbackById] = React.useState({});
   const [fileById, setFileById] = React.useState({});
 
   const load = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const res = await studyMaterialService.adminListRequests();
       setItems(res?.items ?? []);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load requests');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load requests');
     } finally {
       setLoading(false);
     }
@@ -30,12 +29,11 @@ export default function RequestsManagementPage() {
   const markInProgress = async (id) => {
     if (loading) return;
     setLoading(true);
-    setError('');
     try {
       await studyMaterialService.adminMarkRequestInProgress(id);
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to update status');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to update status');
     } finally {
       setLoading(false);
     }
@@ -45,7 +43,7 @@ export default function RequestsManagementPage() {
     if (loading) return;
     const file = fileById[id];
     if (!file) {
-      setError('Select a file to fulfill this request');
+      toast.error('Select a file to fulfill this request');
       return;
     }
 
@@ -54,14 +52,13 @@ export default function RequestsManagementPage() {
     fd.append('feedback', feedbackById[id] || 'Completed: requested material uploaded.');
 
     setLoading(true);
-    setError('');
     try {
       await studyMaterialService.adminFulfillRequest(id, fd);
       setFileById((p) => ({ ...p, [id]: null }));
       setFeedbackById((p) => ({ ...p, [id]: '' }));
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to fulfill request');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to fulfill request');
     } finally {
       setLoading(false);
     }
@@ -71,18 +68,17 @@ export default function RequestsManagementPage() {
     if (loading) return;
     const reason = String(feedbackById[id] || '').trim();
     if (!reason) {
-      setError('Reason is required for rejection');
+      toast.error('Reason is required for rejection');
       return;
     }
 
     setLoading(true);
-    setError('');
     try {
       await studyMaterialService.adminRejectRequest(id, reason);
       setFeedbackById((p) => ({ ...p, [id]: '' }));
       await load();
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to reject request');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to reject request');
     } finally {
       setLoading(false);
     }
@@ -101,8 +97,6 @@ export default function RequestsManagementPage() {
 
   return (
     <div className="space-y-6">
-      {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-2xl border border-gray-200 bg-white p-5">
           <div className="text-sm text-gray-500">Total requests</div>

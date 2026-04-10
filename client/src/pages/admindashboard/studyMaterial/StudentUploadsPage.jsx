@@ -2,16 +2,15 @@ import React from 'react';
 import { Download, Eye, RefreshCw } from 'lucide-react';
 
 import { studyMaterialService } from '../../../services/studyMaterialService';
+import { toast } from '../../../lib/toast';
 
 export default function StudentUploadsPage() {
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
   const [items, setItems] = React.useState([]);
   const [status, setStatus] = React.useState('published');
 
   const load = React.useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
       const res = await studyMaterialService.adminListMaterials({
         status,
@@ -20,7 +19,7 @@ export default function StudentUploadsPage() {
       });
       setItems(res?.items ?? []);
     } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load student uploads');
+      toast.error(e?.response?.data?.message || e?.message || 'Failed to load student uploads');
     } finally {
       setLoading(false);
     }
@@ -66,10 +65,6 @@ export default function StudentUploadsPage() {
           </button>
         </div>
       </div>
-
-      {error ? (
-        <div className="px-6 py-3 text-sm text-red-700 bg-red-50 border-b border-red-100">{error}</div>
-      ) : null}
 
       <div className="overflow-x-auto">
         <table className="w-full">

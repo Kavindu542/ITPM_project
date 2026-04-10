@@ -1,7 +1,10 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../../../../services/authService';
-import UserMenu from '../../../../components/UserMenu';
+import AdminLibraryShell, {
+  AdminSidebarNavButton,
+  AdminSidebarNavLinkItem,
+} from '../../../../components/admin/AdminLibraryShell';
 import { Store, Building2, ClipboardList } from 'lucide-react';
 
 export default function HostelMealsShopDashboard({ user, onLoggedOut }) {
@@ -110,72 +113,44 @@ export default function HostelMealsShopDashboard({ user, onLoggedOut }) {
   }, [activeSection]);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
-      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-sm">
-        <div className="mx-auto flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="rounded-2xl bg-blue-50 px-3 py-2 border border-blue-100">
-              <div className="flex items-center gap-2">
-                <img src="/campuscore-logo.png" alt="CampusCore" className="h-10 w-auto object-contain" />
-                <div className="text-xs font-bold text-blue-800">Admin</div>
-              </div>
-            </div>
-            <div className="text-gray-900">
-              <div className="text-sm font-bold">Hostel (Meals Shop)</div>
-              <div className="text-xs text-gray-500 font-medium">Dashboard</div>
-            </div>
-          </div>
-
-          <UserMenu
-            user={user}
-            onProfile={() => navigate('/profile')}
-            onLogout={logout}
-            theme="light"
-            idLabel="ID"
+    <AdminLibraryShell
+      user={user}
+      productSubtitle="Meals Shop Admin"
+      headerTitle="Hostel (Meals Shop)"
+      headerSubtitle="Meals shop dashboard"
+      roleLabel="Meals shop"
+      onLogout={logout}
+      onProfile={() => navigate('/profile')}
+      sidebarNav={({ collapsed }) => (
+        <div className="space-y-1">
+          <AdminSidebarNavButton
+            collapsed={collapsed}
+            active={activeSection === 'meal-shop'}
+            onClick={() => setActiveSection('meal-shop')}
+            icon={Store}
+            label="Meal shop"
+            description="Profile & menu"
+          />
+          <AdminSidebarNavButton
+            collapsed={collapsed}
+            active={activeSection === 'orders'}
+            onClick={() => setActiveSection('orders')}
+            icon={ClipboardList}
+            label="Orders"
+            description="Student orders"
+          />
+          <AdminSidebarNavLinkItem
+            collapsed={collapsed}
+            to="/admin/hostel"
+            end
+            icon={Building2}
+            label="Hostel services"
+            description="Back to hub"
           />
         </div>
-      </header>
-
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-64 bg-blue-900 border-r border-blue-800 p-4 flex flex-col z-10 hidden md:flex shadow-inner">
-          <div className="text-blue-300 text-xs font-bold tracking-wider uppercase mb-4 px-2 mt-2">Meals Shop Menu</div>
-          <nav className="space-y-2">
-            <button
-              type="button"
-              onClick={() => setActiveSection('meal-shop')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm border ${
-                activeSection === 'meal-shop'
-                  ? 'bg-blue-700 text-white border-blue-600'
-                  : 'text-blue-100 hover:bg-blue-800 border-transparent'
-              }`}
-            >
-              <Store size={18} />
-              <span className="font-medium text-sm">Meal Shop</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveSection('orders')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm border ${
-                activeSection === 'orders'
-                  ? 'bg-blue-700 text-white border-blue-600'
-                  : 'text-blue-100 hover:bg-blue-800 border-transparent'
-              }`}
-            >
-              <ClipboardList size={18} />
-              <span className="font-medium text-sm">Order</span>
-            </button>
-            <Link
-              to="/admin/hostel"
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all shadow-sm text-blue-100 hover:bg-blue-800 border border-transparent"
-            >
-              <Building2 size={18} />
-              <span className="font-medium text-sm">Hostel services</span>
-            </Link>
-          </nav>
-        </div>
-
-        <main className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 lg:px-8 bg-gray-50">
-          <div className="mx-auto max-w-7xl">
+      )}
+    >
+      <div className="mx-auto max-w-7xl">
             <div className="mb-8">
               <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Meals Shop Dashboard</h2>
               <p className="mt-2 text-sm text-gray-500">
@@ -454,8 +429,6 @@ export default function HostelMealsShopDashboard({ user, onLoggedOut }) {
             )}
 
           </div>
-        </main>
-      </div>
-    </div>
+    </AdminLibraryShell>
   );
 }

@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import ToastProvider from './components/ToastProvider.jsx';
+import DialogProvider from './components/DialogProvider.jsx';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -12,7 +14,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         v7_relativeSplatPath: true,
       }}
     >
-      <App />
+      <ToastProvider>
+        <DialogProvider>
+          <App />
+        </DialogProvider>
+      </ToastProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

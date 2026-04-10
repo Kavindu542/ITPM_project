@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
+import { toast } from '../lib/toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import AuthShell from '../components/AuthShell';
 
@@ -14,12 +15,9 @@ export default function SignUp({ onSignedIn }) {
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [pendingEmail, setPendingEmail] = React.useState('');
   const [otp, setOtp] = React.useState('');
-  const [otpError, setOtpError] = React.useState('');
-  const [otpInfo, setOtpInfo] = React.useState('');
   const [otpBusy, setOtpBusy] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
-  const [error, setError] = React.useState('');
   const [fieldErrors, setFieldErrors] = React.useState({ studentId: '', name: '', email: '', password: '', confirmPassword: '' });
   const [touched, setTouched] = React.useState({ studentId: false, name: false, email: false, password: false, confirmPassword: false });
   const [busy, setBusy] = React.useState(false);
@@ -80,8 +78,6 @@ export default function SignUp({ onSignedIn }) {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
     const nextTouched = { studentId: true, name: true, email: true, password: true, confirmPassword: true };
     setTouched(nextTouched);
     const errs = validate({ studentId, name, email, password, confirmPassword });
@@ -100,11 +96,10 @@ export default function SignUp({ onSignedIn }) {
       });
       setPendingEmail(data?.email || email.trim());
       setOtp('');
-      setOtpError('');
-      setOtpInfo('We sent a 6-digit OTP to your campus email.');
+      toast.success('We sent a 6-digit OTP to your campus email.');
       setStep('otp');
     } catch (err) {
-      setError(err?.response?.data?.message || 'Sign up failed');
+      toast.error(err?.response?.data?.message || 'Sign up failed');
     } finally {
       setBusy(false);
     }
@@ -112,12 +107,9 @@ export default function SignUp({ onSignedIn }) {
 
   const onVerifyOtp = async (e) => {
     e.preventDefault();
-    setOtpError('');
-    setOtpInfo('');
-
     const otpValue = String(otp || '').trim();
     if (!/^\d{6}$/.test(otpValue)) {
-      setOtpError('Enter the 6-digit OTP.');
+      toast.error('Enter the 6-digit OTP.');
       return;
     }
 
@@ -130,21 +122,19 @@ export default function SignUp({ onSignedIn }) {
       onSignedIn?.(data.user);
       navigate('/', { replace: true });
     } catch (err) {
-      setOtpError(err?.response?.data?.message || 'OTP verification failed');
+      toast.error(err?.response?.data?.message || 'OTP verification failed');
     } finally {
       setOtpBusy(false);
     }
   };
 
   const onResendOtp = async () => {
-    setOtpError('');
-    setOtpInfo('');
     setOtpBusy(true);
     try {
       await authService.resendEmailOtp({ email: pendingEmail });
-      setOtpInfo('OTP resent. Check your inbox.');
+      toast.success('OTP resent. Check your inbox.');
     } catch (err) {
-      setOtpError(err?.response?.data?.message || 'Failed to resend OTP');
+      toast.error(err?.response?.data?.message || 'Failed to resend OTP');
     } finally {
       setOtpBusy(false);
     }
@@ -189,11 +179,7 @@ export default function SignUp({ onSignedIn }) {
           <div>
             <input
               id="otp"
-              className={`w-full rounded-lg border px-4 py-3 text-sm text-slate-900 outline-none transition ${
-                otpError
-                  ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-100'
-                  : 'border-slate-200 bg-slate-100 focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100'
-              }`}
+              className="w-full rounded-lg border border-slate-200 bg-slate-100 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-2 focus:ring-violet-100"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               type="text"
@@ -201,10 +187,7 @@ export default function SignUp({ onSignedIn }) {
               autoComplete="one-time-code"
               placeholder="6-digit code"
               maxLength={6}
-              aria-invalid={Boolean(otpError)}
             />
-            {otpError ? <p className="mt-2 text-xs text-red-500">{otpError}</p> : null}
-            {otpInfo ? <p className="mt-2 text-xs text-emerald-600">{otpInfo}</p> : null}
           </div>
 
           <button
@@ -355,8 +338,6 @@ export default function SignUp({ onSignedIn }) {
             </div>
             {touched.confirmPassword && fieldErrors.confirmPassword ? <p className="mt-2 text-xs text-red-500">{fieldErrors.confirmPassword}</p> : null}
           </div>
-
-          {error ? <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
 
           <button
             type="submit"
