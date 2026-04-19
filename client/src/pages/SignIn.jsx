@@ -8,6 +8,14 @@ import AuthShell from '../components/AuthShell';
 export default function SignIn({ onSignedIn }) {
 	const navigate = useNavigate();
 	const location = useLocation();
+	const queryEmail = React.useMemo(() => {
+		try {
+			const value = new URLSearchParams(location.search).get('email');
+			return value ? value.trim() : '';
+		} catch {
+			return '';
+		}
+	}, [location.search]);
 
 	const [email, setEmail] = React.useState('');
 	const [password, setPassword] = React.useState('');
@@ -17,6 +25,10 @@ export default function SignIn({ onSignedIn }) {
 	const [touched, setTouched] = React.useState({ email: false, password: false });
 	const [busy, setBusy] = React.useState(false);
 
+	React.useEffect(() => {
+		if (queryEmail && !email) setEmail(queryEmail);
+	}, [queryEmail]);
+
 	const validate = React.useCallback(({ email: nextEmail, password: nextPassword }) => {
 		const errors = { email: '', password: '' };
 
@@ -25,8 +37,6 @@ export default function SignIn({ onSignedIn }) {
 			errors.email = 'Email is required.';
 		} else if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
 			errors.email = 'Enter a valid email address.';
-		} else if (!trimmedEmail.toLowerCase().endsWith('@my.sliit.lk')) {
-			errors.email = 'Use your campus email (@my.sliit.lk).';
 		}
 
 		if (!nextPassword) {
@@ -62,7 +72,11 @@ export default function SignIn({ onSignedIn }) {
 			const data = await authService.login({ email: email.trim(), password });
 			onSignedIn?.(data.user);
 			const from = typeof location?.state?.from === 'string' ? location.state.from : '/';
-			navigate(from || '/', { replace: true });
+			// If the logged-in user is a module admin, always take them to the
+			// role dashboard (via '/' auto-redirect) instead of a previously
+			// requested student route.
+			const nextPath = data?.user?.module ? '/' : from || '/';
+			navigate(nextPath, { replace: true });
 		} catch (err) {
 			toast.error(err?.response?.data?.message || 'Sign in failed');
 		} finally {

@@ -152,7 +152,7 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
       }
       setMealShopForm({ email: '', password: '', name: '', contactNumber: '', description: '' });
       setShopLogo(null);
-      navigate(`/admin/hostel/meals-shop/signin?email=${encodeURIComponent(createdEmail)}`);
+      navigate(`/signin?email=${encodeURIComponent(createdEmail)}`);
 
       setTimeout(() => setMealShopSuccess(''), 4000);
     } catch (e) {
@@ -557,7 +557,7 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
                       <p>{mealShopSuccess}</p>
                       {createdMealShopEmail ? (
                         <Link
-                          to={`/admin/hostel/meals-shop/signin?email=${encodeURIComponent(createdMealShopEmail)}`}
+                          to={`/signin?email=${encodeURIComponent(createdMealShopEmail)}`}
                           className="inline-flex mt-2 font-semibold text-green-700 hover:text-green-800 underline"
                         >
                           Open Meals Shop sign-in
@@ -699,7 +699,7 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
                       <p>{laundrySuccess}</p>
                       {createdLaundryEmail ? (
                         <Link
-                          to={`/admin/hostel/laundry/signin?email=${encodeURIComponent(createdLaundryEmail)}`}
+                          to={`/signin?email=${encodeURIComponent(createdLaundryEmail)}`}
                           className="inline-flex mt-2 font-semibold text-green-700 hover:text-green-800 underline"
                         >
                           Open Laundry sign-in

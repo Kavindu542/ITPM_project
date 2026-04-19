@@ -49,7 +49,7 @@ export default function LibraryAdminLayout({ user, onLoggedOut }) {
   const logout = async () => {
     await authService.logout();
     onLoggedOut?.();
-    navigate('/admin/signin', { replace: true });
+    navigate('/signin', { replace: true });
   };
 
   return (

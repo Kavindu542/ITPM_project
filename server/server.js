@@ -35,10 +35,15 @@ app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 app.use(cookieParser());
 
+const normalizeOrigin = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/\/+$/, "");
+
 const clientOriginRaw = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 const allowedOrigins = clientOriginRaw
   .split(",")
-  .map((s) => s.trim())
+  .map((s) => normalizeOrigin(s))
   .filter(Boolean);
 
 const isLocalDevOrigin = (origin) =>
@@ -57,12 +62,16 @@ if (!allowedOrigins.includes("https://itpm-project-orpin.vercel.app"))
 if (!allowedOrigins.includes("https://itpm-project-jd11.vercel.app"))
   allowedOrigins.push("https://itpm-project-jd11.vercel.app");
 
+if (!allowedOrigins.includes("https://itpm-project-di6f.vercel.app"))
+  allowedOrigins.push("https://itpm-project-di6f.vercel.app");
+
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (isLocalDevOrigin(origin)) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      const originNorm = normalizeOrigin(origin);
+      if (isLocalDevOrigin(originNorm)) return callback(null, true);
+      if (allowedOrigins.includes(originNorm)) return callback(null, true);
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
