@@ -70,6 +70,15 @@ const userSchema = new mongoose.Schema(
       default: "student",
       index: true,
     },
+    // For module admins (role: 'admin'), indicates which module dashboard they manage.
+    // Examples: 'study-material', 'library', 'club-and-society', 'hostel-warden',
+    // 'hostel-laundry', 'hostel-meals-shop'
+    adminModule: {
+      type: String,
+      default: null,
+      trim: true,
+      index: true,
+    },
     department: {
       type: String,
       trim: true,
@@ -86,14 +95,16 @@ const userSchema = new mongoose.Schema(
     },
     club: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Club',
+      ref: "Club",
       default: null, // if user is a leader
     },
-    clubs: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Club',
-      default: [], // memberships
-    }],
+    clubs: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Club",
+        default: [], // memberships
+      },
+    ],
     semester: {
       type: Number,
       default: null,

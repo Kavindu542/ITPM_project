@@ -20,9 +20,6 @@ import StudyRooms from './pages/LibrarySystem/StudyRooms.jsx';
 import Clubs from './pages/Clubs/Clubs.jsx';
 import LeaderDashboard from './pages/Leader/LeaderDashboard.jsx';
 import AttendanceScan from './pages/Attendance/AttendanceScan.jsx';
-import AdminSignIn from './pages/admin/AdminSignIn.jsx';
-import AdminModuleSignIn from './pages/admin/AdminModuleSignIn.jsx';
-import HostelAdmins from './pages/admin/HostelAdmins.jsx';
 import HostelTermsAndConditions from './pages/Hostel/TermsAndConditions.jsx';
 import AboutUs from './pages/AboutUs.jsx';
 import ContactUs from './pages/ContactUs.jsx';
@@ -67,10 +64,18 @@ function RequireAuth({ user, children }) {
 }
 
 // RequireModuleAuth Component
-function RequireModuleAuth({ user, moduleKey, redirectTo = '/admin/signin', children }) {
-  if (!user || user.module !== moduleKey) {
-    return <Navigate to={redirectTo} replace />;
+function RequireModuleAuth({ user, moduleKey, children }) {
+  const location = useLocation();
+
+  if (!user) {
+    const from = `${location.pathname || '/'}${location.search || ''}`;
+    return <Navigate to="/signin" replace state={{ from }} />;
   }
+
+  if (!moduleKey || user.module !== moduleKey) {
+    return <Navigate to="/" replace />;
+  }
+
   return children;
 }
 
@@ -107,13 +112,6 @@ export default function App() {
   const [loading, setLoading] = React.useState(true);
   const [postLogoutRedirect, setPostLogoutRedirect] = React.useState(null);
   const navigate = useNavigate();
-  const lastCreatedMealShopEmail = React.useMemo(() => {
-    try {
-      return localStorage.getItem('cc_last_meal_shop_email') || '';
-    } catch {
-      return '';
-    }
-  }, [user?.email, user?.module]);
 
   const adminDashboardForModule = React.useCallback((moduleKey) => {
     const map = {
@@ -124,7 +122,7 @@ export default function App() {
       'hostel-laundry': '/admin/hostel/laundry/dashboard',
       'hostel-meals-shop': '/admin/hostel/meals-shop/dashboard',
     };
-    return map[moduleKey] || '/admin/signin';
+    return map[moduleKey] || '/';
   }, []);
 
   React.useEffect(() => {
@@ -160,7 +158,7 @@ export default function App() {
   }, []);
 
   const requestLogout = React.useCallback(
-    async (redirectTo = '/admin/signin') => {
+    async (redirectTo = '/signin') => {
       setPostLogoutRedirect(redirectTo);
       try {
         await authService.logout();
@@ -442,101 +440,16 @@ export default function App() {
       />
 
       {/* Admin SignIn Routes */}
-      <Route path="/admin" element={<Navigate to="/admin/signin" replace />} />
-      <Route path="/admin/login" element={<Navigate to="/admin/signin" replace />} />
-
-      <Route
-        path="/admin/study-material/signin"
-        element={
-          user ? (
-            <Navigate to="/admin/signin" replace />
-          ) : (
-            <AdminModuleSignIn title="Study Material" moduleKey="study-material" onSignedIn={(u) => setUser(u)} />
-          )
-        }
-      />
-
-      <Route path="/admin/hostel" element={<HostelAdmins />} />
-
-      <Route
-        path="/admin/hostel/warden/signin"
-        element={
-          user ? (
-            <Navigate to="/admin/hostel/warden/dashboard" replace />
-          ) : (
-            <AdminModuleSignIn title="Warden" moduleKey="hostel-warden" onSignedIn={(u) => setUser(u)} />
-          )
-        }
-      />
-
-      <Route
-        path="/admin/hostel/laundry/signin"
-        element={
-          user?.module === 'hostel-laundry' ? (
-            <Navigate to="/admin/hostel/laundry/dashboard" replace />
-          ) : (
-            <AdminModuleSignIn
-              title="Laundry"
-              moduleKey="hostel-laundry"
-              onSignedIn={(u) => setUser(u)}
-              initialEmail={user?.email}
-            />
-          )
-        }
-      />
-
-      <Route
-        path="/admin/hostel/meals-shop/signin"
-        element={
-          user?.module === 'hostel-meals-shop' ? (
-            <Navigate to="/admin/hostel/meals-shop/dashboard" replace />
-          ) : (
-            <AdminModuleSignIn
-              title="Meals Shop"
-              moduleKey="hostel-meals-shop"
-              onSignedIn={(u) => setUser(u)}
-              initialEmail={lastCreatedMealShopEmail || user?.email}
-            />
-          )
-        }
-      />
-
-      <Route
-        path="/admin/library/signin"
-        element={
-          user ? (
-            <Navigate to="/admin/signin" replace />
-          ) : (
-            <AdminModuleSignIn title="Library" moduleKey="library" onSignedIn={(u) => setUser(u)} />
-          )
-        }
-      />
-
-      <Route
-        path="/admin/club-and-society/signin"
-        element={
-          user ? (
-            <Navigate to="/admin/signin" replace />
-          ) : (
-            <AdminModuleSignIn title="Club and Society" moduleKey="club-and-society" onSignedIn={(u) => setUser(u)} />
-          )
-        }
-      />
-
-      <Route
-        path="/admin/signin"
-        element={
-          user ? (
-            user.module ? (
-              <Navigate to={adminDashboardForModule(user.module)} replace />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          ) : (
-            <AdminSignIn onSignedIn={(u) => setUser(u)} />
-          )
-        }
-      />
+      <Route path="/admin" element={<Navigate to="/signin" replace />} />
+      <Route path="/admin/login" element={<Navigate to="/signin" replace />} />
+      <Route path="/admin/signin" element={<Navigate to="/signin" replace />} />
+      <Route path="/admin/hostel" element={<Navigate to="/signin" replace />} />
+      <Route path="/admin/study-material/signin" element={<Navigate to="/signin" replace />} />
+      <Route path="/admin/library/signin" element={<Navigate to="/signin" replace />} />
+      <Route path="/admin/club-and-society/signin" element={<Navigate to="/signin" replace />} />
+      <Route path="/admin/hostel/warden/signin" element={<Navigate to="/signin" replace />} />
+      <Route path="/admin/hostel/laundry/signin" element={<Navigate to="/signin" replace />} />
+      <Route path="/admin/hostel/meals-shop/signin" element={<Navigate to="/signin" replace />} />
 
       {/* Auth Routes */}
       <Route

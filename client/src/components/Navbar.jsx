@@ -129,7 +129,7 @@ export default function Navbar({ user, onLoggedOut, onProfile }) {
                     <div className="flex items-center gap-3">
                         <UserMenu
                             user={user}
-                            onLogout={() => onLoggedOut?.('/admin/signin')}
+                            onLogout={() => onLoggedOut?.('/signin')}
                             onProfile={onProfile}
                         />
 

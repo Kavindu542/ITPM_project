@@ -33,6 +33,43 @@ const normalizeEmail = (v) =>
     .toLowerCase()
     .trim();
 
+const csvEmails = (raw) =>
+  String(raw || "")
+    .split(",")
+    .map((v) => normalizeEmail(v))
+    .filter(Boolean);
+
+const inferAdminModuleFromEnv = (email) => {
+  const emailNorm = normalizeEmail(email);
+  if (!emailNorm) return null;
+
+  const checks = [
+    {
+      moduleKey: "study-material",
+      env: "MODULE_ADMIN_STUDY_MATERIAL_EMAILS",
+    },
+    {
+      moduleKey: "library",
+      env: "MODULE_ADMIN_LIBRARY_EMAILS",
+    },
+    {
+      moduleKey: "club-and-society",
+      env: "MODULE_ADMIN_CLUB_AND_SOCIETY_EMAILS",
+    },
+    {
+      moduleKey: "hostel-warden",
+      env: "MODULE_ADMIN_HOSTEL_WARDEN_EMAILS",
+    },
+  ];
+
+  for (const { moduleKey, env } of checks) {
+    const list = csvEmails(process.env[env]);
+    if (list.includes(emailNorm)) return moduleKey;
+  }
+
+  return null;
+};
+
 const getEnvInt = (name, fallback) => {
   const raw = process.env[name];
   const n = Number(raw);
@@ -93,11 +130,9 @@ const register = async (req, res) => {
     await sendEmailOtp({ to: user.email, otp, ttlMinutes });
   } catch (err) {
     console.error("Failed to send verification OTP:", err);
-    return res
-      .status(500)
-      .json({
-        message: "Failed to send verification code. Check SMTP settings.",
-      });
+    return res.status(500).json({
+      message: "Failed to send verification code. Check SMTP settings.",
+    });
   }
 
   return res.status(201).json({
@@ -184,11 +219,9 @@ const resendEmailOtp = async (req, res) => {
     await sendEmailOtp({ to: user.email, otp, ttlMinutes });
   } catch (err) {
     console.error("Failed to resend verification OTP:", err);
-    return res
-      .status(500)
-      .json({
-        message: "Failed to send verification code. Check SMTP settings.",
-      });
+    return res.status(500).json({
+      message: "Failed to send verification code. Check SMTP settings.",
+    });
   }
 
   return res.json({ message: "OTP resent" });
@@ -230,11 +263,9 @@ const resetPassword = async (req, res) => {
   const confirmPassword = String(req.body?.confirmPassword || "");
 
   if (!email || !otp || !newPassword || !confirmPassword) {
-    return res
-      .status(400)
-      .json({
-        message: "email, otp, newPassword, confirmPassword are required",
-      });
+    return res.status(400).json({
+      message: "email, otp, newPassword, confirmPassword are required",
+    });
   }
   if (!/^\d{6}$/.test(otp)) {
     return res.status(400).json({ message: "OTP must be 6 digits" });
@@ -278,7 +309,15 @@ const login = async (req, res) => {
   if (!user) return res.status(401).json({ message: "Invalid credentials" });
   const ok = await bcrypt.compare(String(password), user.passwordHash);
   if (!ok) return res.status(401).json({ message: "Invalid credentials" });
-  const token = signToken(user);
+  const moduleKey =
+    user?.role === "admin"
+      ? String(user?.adminModule || "").trim() ||
+        inferAdminModuleFromEnv(user?.email)
+      : null;
+
+  const token = moduleKey
+    ? signToken(user, { mod: moduleKey, module: moduleKey })
+    : signToken(user);
   res.cookie("token", token, cookieOptions());
   return res.json({
     user: {
@@ -292,7 +331,7 @@ const login = async (req, res) => {
       enrolledModules: Array.isArray(user.enrolledModules)
         ? user.enrolledModules
         : [],
-      module: null,
+      module: moduleKey,
     },
   });
 };
@@ -308,13 +347,30 @@ const moduleLogin = async (req, res) => {
   if (!user) return res.status(401).json({ message: "Invalid credentials" });
   const ok = await bcrypt.compare(String(password), user.passwordHash);
   if (!ok) return res.status(401).json({ message: "Invalid credentials" });
+
+  const requestedModule = String(module).trim();
+  const boundModule =
+    user?.role === "admin"
+      ? String(user?.adminModule || "").trim() ||
+        inferAdminModuleFromEnv(user?.email)
+      : null;
+
+  if (boundModule && boundModule !== requestedModule) {
+    return res
+      .status(403)
+      .json({
+        message: "Forbidden: this account is not assigned to that module",
+      });
+  }
+
+  const moduleKey = boundModule || requestedModule;
   const token = signToken(user, {
-    mod: String(module).trim(),
-    module: String(module).trim(),
+    mod: moduleKey,
+    module: moduleKey,
   });
   res.cookie("token", token, cookieOptions());
   return res.json({
-    module: String(module).trim(),
+    module: moduleKey,
     token,
     user: {
       id: user._id,
@@ -327,7 +383,7 @@ const moduleLogin = async (req, res) => {
       enrolledModules: Array.isArray(user.enrolledModules)
         ? user.enrolledModules
         : [],
-      module: String(module).trim(),
+      module: moduleKey,
     },
   });
 };
@@ -406,12 +462,9 @@ const updateProfile = async (req, res) => {
 const updatePassword = async (req, res) => {
   const { currentPassword, newPassword, confirmPassword } = req.body || {};
   if (!currentPassword || !newPassword || !confirmPassword) {
-    return res
-      .status(400)
-      .json({
-        message:
-          "currentPassword, newPassword and confirmPassword are required",
-      });
+    return res.status(400).json({
+      message: "currentPassword, newPassword and confirmPassword are required",
+    });
   }
   if (String(newPassword) !== String(confirmPassword)) {
     return res.status(400).json({ message: "Passwords do not match" });

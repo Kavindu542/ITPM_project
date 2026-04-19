@@ -21,7 +21,7 @@ function normalizeEmail(value) {
     .trim();
 }
 
-async function upsertAdmin({ email, password, name }) {
+async function upsertAdmin({ email, password, name, adminModule }) {
   const emailNorm = normalizeEmail(email);
   const passwordHash = await bcrypt.hash(String(password), 10);
 
@@ -34,6 +34,7 @@ async function upsertAdmin({ email, password, name }) {
         passwordHash,
         isEmailVerified: true,
         role: "admin",
+        adminModule: adminModule ? String(adminModule).trim() : null,
         emailOtpHash: "",
         emailOtpExpiresAt: null,
         emailOtpSentAt: null,
@@ -67,24 +68,28 @@ async function main() {
     email: studyEmail,
     password: studyPassword,
     name: "Study Material Admin",
+    adminModule: "study-material",
   });
 
   await upsertAdmin({
     email: libraryEmail,
     password: libraryPassword,
     name: "Library Admin",
+    adminModule: "library",
   });
 
   await upsertAdmin({
     email: clubEmail,
     password: clubPassword,
     name: "Club and Society Admin",
+    adminModule: "club-and-society",
   });
 
   await upsertAdmin({
     email: hostelWardenEmail,
     password: hostelWardenPassword,
     name: "Hostel Warden Admin",
+    adminModule: "hostel-warden",
   });
 
   // eslint-disable-next-line no-console

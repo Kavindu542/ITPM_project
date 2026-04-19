@@ -50,7 +50,7 @@ export default function StudyMaterialDashboard({ user, onLoggedOut }) {
   const logout = async () => {
     await authService.logout();
     onLoggedOut?.();
-    navigate('/admin/signin', { replace: true });
+    navigate('/signin', { replace: true });
   };
 
   const refreshAll = React.useCallback(async () => {
