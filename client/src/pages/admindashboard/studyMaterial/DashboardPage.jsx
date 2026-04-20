@@ -71,8 +71,8 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-500">Popular modules</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">{popularModules.length}</p>
               </div>
-              <div className="p-3 bg-[#25f194]/20 rounded-xl">
-                <BarChart3 className="h-6 w-6 text-[#25f194]" />
+              <div className="p-3 bg-blue-500/20 rounded-xl">
+                <BarChart3 className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </div>

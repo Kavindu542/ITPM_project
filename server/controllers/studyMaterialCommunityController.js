@@ -659,11 +659,30 @@ const ensureNotBanned = async (userId) => {
   return !ban;
 };
 
+const toPublicUploadUrl = (filePath) => {
+  const raw = String(filePath || "").trim();
+  if (!raw) return "";
+  const normalized = raw.replace(/\\/g, "/");
+  if (normalized.startsWith("/")) return normalized;
+  return `/${normalized}`;
+};
+
+const mapAttachments = (attachments = []) =>
+  (Array.isArray(attachments) ? attachments : [])
+    .map((a) => ({
+      url: toPublicUploadUrl(a?.filePath),
+      originalName: a?.originalName,
+      mimeType: a?.mimeType,
+      sizeBytes: a?.sizeBytes,
+    }))
+    .filter((a) => a.url);
+
 const mapThread = (thread, currentUserId) => {
   const myId = String(currentUserId);
   const replies = (thread.replies || []).map((r) => ({
     id: r._id,
     body: r.body,
+    attachments: mapAttachments(r.attachments),
     createdBy: r.createdBy,
     upvoteCount: (r.upvotes || []).length,
     upvoted: (r.upvotes || []).some((id) => String(id) === myId),
@@ -680,6 +699,7 @@ const mapThread = (thread, currentUserId) => {
     id: thread._id,
     title: thread.title,
     body: thread.body,
+    attachments: mapAttachments(thread.attachments),
     tags: thread.tags || [],
     moduleCode: thread.moduleCode,
     topic: thread.topic,
@@ -730,7 +750,9 @@ const adminCreateForumCategory = async (req, res) => {
 
 const adminDeleteForumCategory = async (req, res) => {
   await ensureDefaultForumCategories();
-  const slug = String(req.params.slug || "").trim().toLowerCase();
+  const slug = String(req.params.slug || "")
+    .trim()
+    .toLowerCase();
   if (!slug) return res.status(400).json({ message: "slug is required" });
   if (["general-queries"].includes(slug)) {
     return res.status(400).json({ message: "Cannot delete default category" });
@@ -813,6 +835,12 @@ const createForumThread = async (req, res) => {
   const created = await StudyMaterialForumThread.create({
     title,
     body,
+    attachments: (req.files || []).map((f) => ({
+      filePath: path.relative(path.join(__dirname, ".."), f.path),
+      originalName: f.originalname,
+      mimeType: f.mimetype,
+      sizeBytes: f.size,
+    })),
     tags: tags.slice(0, 20),
     moduleCode: String(req.body.moduleCode || "").trim(),
     topic: String(req.body.topic || "").trim(),
@@ -845,7 +873,17 @@ const addForumReply = async (req, res) => {
     return res.status(400).json({ message: "Thread is locked" });
   }
 
-  thread.replies.push({ body, createdBy: req.user._id, upvotes: [] });
+  thread.replies.push({
+    body,
+    createdBy: req.user._id,
+    upvotes: [],
+    attachments: (req.files || []).map((f) => ({
+      filePath: path.relative(path.join(__dirname, ".."), f.path),
+      originalName: f.originalname,
+      mimeType: f.mimetype,
+      sizeBytes: f.size,
+    })),
+  });
   await thread.save();
 
   const notifiedUserIds = [

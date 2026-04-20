@@ -75,10 +75,12 @@ export default function ResetPassword() {
         backgroundAttachment: 'fixed',
       }}
     >
+      <div className="absolute inset-0 bg-slate-900/40" />
+
       {/* Removed dark mode toggle button */}
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-xl rounded-3xl shadow-xl overflow-hidden">
-          <div className="p-8 md:p-10 bg-white/20 border border-white/20">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden">
+          <div className="p-8 md:p-10 bg-white/95 backdrop-blur-xl border border-white/60">
             <h1 className="text-3xl font-bold text-gray-900 text-center">Reset password</h1>
             <p className="mt-2 text-center text-sm text-gray-600">
               Enter the reset code (OTP) sent to your email, then choose a new password.
@@ -91,7 +93,7 @@ export default function ResetPassword() {
                 </label>
                 <input
                   id="email"
-                  className="mt-2 w-full border-b border-gray-200 bg-transparent px-1 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-blue-600"
+                  className="mt-2 w-full rounded-xl border border-gray-200 bg-white/70 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   type="email"
@@ -106,7 +108,7 @@ export default function ResetPassword() {
                 </label>
                 <input
                   id="otp"
-                  className="mt-2 w-full border-b border-gray-200 bg-transparent px-1 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-blue-600"
+                  className="mt-2 w-full rounded-xl border border-gray-200 bg-white/70 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                   inputMode="numeric"
@@ -122,7 +124,7 @@ export default function ResetPassword() {
                 <div className="relative">
                   <input
                     id="newPassword"
-                    className="mt-2 w-full border-b border-gray-200 bg-transparent px-1 py-2 pr-10 text-sm text-gray-900 outline-none transition-colors focus:border-blue-600"
+                    className="mt-2 w-full rounded-xl border border-gray-200 bg-white/70 px-3 py-2 pr-11 text-sm text-gray-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     type={showNew ? 'text' : 'password'}
@@ -132,7 +134,7 @@ export default function ResetPassword() {
                   <button
                     type="button"
                     onClick={() => setShowNew((s) => !s)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-700"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-700"
                     aria-label={showNew ? 'Hide password' : 'Show password'}
                   >
                     {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -147,7 +149,7 @@ export default function ResetPassword() {
                 <div className="relative">
                   <input
                     id="confirmPassword"
-                    className="mt-2 w-full border-b border-gray-200 bg-transparent px-1 py-2 pr-10 text-sm text-gray-900 outline-none transition-colors focus:border-blue-600"
+                    className="mt-2 w-full rounded-xl border border-gray-200 bg-white/70 px-3 py-2 pr-11 text-sm text-gray-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     type={showConfirm ? 'text' : 'password'}
@@ -157,7 +159,7 @@ export default function ResetPassword() {
                   <button
                     type="button"
                     onClick={() => setShowConfirm((s) => !s)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-700"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-700"
                     aria-label={showConfirm ? 'Hide password' : 'Show password'}
                   >
                     {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -168,7 +170,7 @@ export default function ResetPassword() {
               <button
                 type="submit"
                 disabled={busy}
-                className="w-full mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#25f194] to-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-md hover:from-[#25f194] hover:to-blue-500 disabled:opacity-60"
+                className="w-full mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-md hover:from-blue-700 hover:to-blue-500 disabled:opacity-60"
               >
                 {busy ? (
                   <>

@@ -157,24 +157,21 @@ export default function RequestsCenter({ user, onLoggedOut }) {
                   <button
                     type="button"
                     onClick={() => setRequestModalOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white px-4 py-2 text-sm font-semibold"
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-2 text-sm font-semibold shadow-sm hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30"
                   >
                     New request
                   </button>
                 </div>
 
-                <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3 flex-wrap">
-                  <div className="text-sm text-gray-600">
-                    {requestsTab === 'open' ? 'Browse open requests and upvote what you need.' : 'Track your submitted requests and outcomes.'}
-                  </div>
-                  <div className="inline-flex rounded-2xl bg-gray-100 p-1">
+                <div className="p-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 flex-wrap">
+                  <div className="inline-flex items-center gap-1 p-1 rounded-2xl border border-gray-200 bg-gray-50">
                     <button
                       type="button"
                       onClick={() => setRequestsTab('open')}
-                      className={`px-4 py-2 rounded-2xl text-sm font-semibold transition-colors ${
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
                         requestsTab === 'open'
-                          ? 'bg-gradient-to-r from-[#25f194] to-blue-600 text-gray-900'
-                          : 'bg-white text-gray-700'
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
+                          : 'text-gray-700 hover:bg-white'
                       }`}
                     >
                       Open requests
@@ -182,14 +179,17 @@ export default function RequestsCenter({ user, onLoggedOut }) {
                     <button
                       type="button"
                       onClick={() => setRequestsTab('history')}
-                      className={`px-4 py-2 rounded-2xl text-sm font-semibold transition-colors ${
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
                         requestsTab === 'history'
-                          ? 'bg-gradient-to-r from-[#25f194] to-blue-600 text-gray-900'
-                          : 'bg-white text-gray-700'
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
+                          : 'text-gray-700 hover:bg-white'
                       }`}
                     >
                       My history
                     </button>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {requestsTab === 'open' ? 'Browse open requests and upvote what you need.' : 'Track your submitted requests and outcomes.'}
                   </div>
                 </div>
 
@@ -354,7 +354,7 @@ export default function RequestsCenter({ user, onLoggedOut }) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-2 text-sm font-semibold shadow-sm transition hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 disabled:opacity-60"
                   >
                     Submit Request
                   </button>

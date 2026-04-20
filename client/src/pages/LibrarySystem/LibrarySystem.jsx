@@ -158,8 +158,8 @@ function DashboardContent({ user, onBrowseLibrary, onBrowseDigital }) {
   const Button = ({ children, className = '', variant = 'default', ...props }) => {
     const baseStyles = 'inline-flex items-center justify-center font-bold rounded-lg transition-all duration-300 transform hover:scale-105 hover:-translate-y-1';
     const variants = {
-      default: 'bg-[#25f194] text-gray-900 hover:bg-emerald-500 shadow-lg hover:shadow-xl',
-      outline: 'border border-gray-300 text-gray-900 hover:bg-gray-50 hover:border-[#25f194]',
+      default: 'bg-blue-500 text-white hover:bg-blue-600 shadow-lg hover:shadow-xl',
+      outline: 'border border-gray-300 text-gray-900 hover:bg-gray-50 hover:border-blue-500',
     };
     return (
       <button className={`${baseStyles} px-6 py-3 ${variants[variant]} ${className}`} {...props}>

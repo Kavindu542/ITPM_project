@@ -748,7 +748,7 @@ export default function BookManagement() {
                             className="h-10 w-8 rounded-lg object-cover flex-shrink-0 shadow-sm border border-gray-100"
                           />
                         ) : (
-                          <div className="h-10 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-[#25f194] flex items-center justify-center flex-shrink-0">
+                          <div className="h-10 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center flex-shrink-0">
                             <BookOpen className="h-4 w-4 text-white" />
                           </div>
                         )}
