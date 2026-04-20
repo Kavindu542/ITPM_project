@@ -228,21 +228,21 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
                   <button
                     type="button"
                     onClick={() => setReviewModalOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white px-4 py-2 text-sm font-semibold"
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-2 text-sm font-semibold shadow-sm transition hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30"
                   >
                     Write a review
                   </button>
                 </div>
 
                 <div className="p-5 border-b border-gray-200 flex items-center justify-between gap-3 flex-wrap">
-                  <div className="inline-flex rounded-2xl bg-gray-100 p-1">
+                  <div className="inline-flex items-center gap-1 p-1 rounded-2xl border border-gray-200 bg-gray-50">
                     <button
                       type="button"
                       onClick={() => setReviewsTab('mine')}
-                      className={`px-4 py-2 rounded-2xl text-sm font-semibold transition-colors ${
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
                         reviewsTab === 'mine'
-                          ? 'bg-gradient-to-r from-[#25f194] to-blue-600 text-gray-900'
-                          : 'bg-white text-gray-700'
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
+                          : 'text-gray-700 hover:bg-white'
                       }`}
                     >
                       Your reviews
@@ -250,10 +250,10 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
                     <button
                       type="button"
                       onClick={() => setReviewsTab('others')}
-                      className={`px-4 py-2 rounded-2xl text-sm font-semibold transition-colors ${
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
                         reviewsTab === 'others'
-                          ? 'bg-gradient-to-r from-[#25f194] to-blue-600 text-gray-900'
-                          : 'bg-white text-gray-700'
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
+                          : 'text-gray-700 hover:bg-white'
                       }`}
                     >
                       Other reviews
@@ -449,7 +449,7 @@ export default function ReviewsCenter({ user, onLoggedOut }) {
                   <button
                     type="submit"
                     disabled={loading || !selectedMaterialId}
-                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-2 text-sm font-semibold shadow-sm transition hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 disabled:opacity-60"
                   >
                     Submit Review
                   </button>

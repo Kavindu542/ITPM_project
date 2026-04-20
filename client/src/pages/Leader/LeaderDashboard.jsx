@@ -360,7 +360,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                         onClick={() => setActiveTab(item.key)}
                         className={`w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
                           isActive
-                            ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm'
+                            ? 'bg-gradient-to-r from-blue-600 to-blue-500 border-transparent text-white shadow-sm'
                             : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-800'
                         }`}
                       >

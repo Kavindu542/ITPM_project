@@ -40,7 +40,7 @@ export default function StudyMaterialSidebar({ user }) {
               className={({ isActive }) =>
                 `w-full inline-flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold border transition-colors ${
                   isActive
-                    ? 'bg-gradient-to-r from-[#25f194] to-blue-600 border-transparent text-white shadow-sm'
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-500 border-transparent text-white shadow-sm hover:from-blue-700 hover:to-blue-600'
                     : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-800'
                 }`
               }
@@ -69,7 +69,7 @@ export default function StudyMaterialSidebar({ user }) {
               to={to}
               className={({ isActive }) =>
                 `w-full flex flex-col items-center rounded-2xl px-3 py-2 transition-colors ${
-                  isActive ? 'bg-white text-blue-700' : 'text-white/90 hover:bg-white/10'
+                  isActive ? 'bg-white text-blue-700 hover:bg-white/90' : 'text-white/90 hover:bg-white/10'
                 }`
               }
               title={label}

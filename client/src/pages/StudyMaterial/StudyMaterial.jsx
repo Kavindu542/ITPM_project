@@ -471,7 +471,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                 {tab !== 'contribute' ? (
                   <button
                     type="button"
-                    className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md"
+                    className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30"
                     onClick={() => navigate('/materials/contribute')}
                   >
                     <UploadCloud className="h-4 w-4" />
@@ -536,7 +536,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                       </div>
                       <button
                         type="button"
-                        className="px-3 py-1.5 rounded-xl bg-gray-900 text-white text-sm font-semibold"
+                        className="px-3 py-1.5 rounded-xl bg-gray-900 text-white text-sm font-semibold transition hover:bg-gray-800 disabled:opacity-60"
                         onClick={loadAll}
                         disabled={loading}
                       >
@@ -596,7 +596,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                             </button>
                             <button
                               type="button"
-                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-sm font-semibold"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm font-semibold transition hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30"
                               onClick={() => downloadFile(m)}
                             >
                               <Download className="h-4 w-4" />
@@ -721,7 +721,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                           </button>
                           <button
                             type="button"
-                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-sm font-semibold"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm font-semibold transition hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30"
                             onClick={() => downloadFile(m)}
                           >
                             <Download className="h-4 w-4" />
@@ -798,7 +798,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md disabled:opacity-60"
+                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 disabled:opacity-60"
                         onClick={() => setUploadModalOpen(true)}
                         disabled={loading}
                       >
@@ -816,47 +816,31 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                     </div>
                   </div>
 
-                  <div className="mt-5 flex items-center gap-3 flex-wrap">
-                    <button
-                      type="button"
-                      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                        uploadViewTab === 'pending'
-                          ? 'bg-gray-900 text-white shadow-sm'
-                          : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                      }`}
-                      onClick={() => setUploadViewTab('pending')}
-                    >
-                      Pending
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs ${
+                  <div className="mt-5 flex items-center justify-start gap-3 flex-wrap">
+                    <div className="inline-flex items-center gap-1 p-1 rounded-2xl border border-gray-200 bg-gray-50">
+                      <button
+                        type="button"
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
                           uploadViewTab === 'pending'
-                            ? 'bg-white/15 text-white'
-                            : 'bg-gray-100 text-gray-600'
+                            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
+                            : 'text-gray-700 hover:bg-white'
                         }`}
+                        onClick={() => setUploadViewTab('pending')}
                       >
-                        {pendingUploads.length}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                        uploadViewTab === 'approved'
-                          ? 'bg-green-600 text-white shadow-sm'
-                          : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                      }`}
-                      onClick={() => setUploadViewTab('approved')}
-                    >
-                      Approved
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs ${
+                        Pending ({pendingUploads.length})
+                      </button>
+                      <button
+                        type="button"
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
                           uploadViewTab === 'approved'
-                            ? 'bg-white/15 text-white'
-                            : 'bg-gray-100 text-gray-600'
+                            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600'
+                            : 'text-gray-700 hover:bg-white'
                         }`}
+                        onClick={() => setUploadViewTab('approved')}
                       >
-                        {approvedUploads.length}
-                      </span>
-                    </button>
+                        Approved ({approvedUploads.length})
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -912,7 +896,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
                             </button>
                             <button
                               type="button"
-                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 text-white text-sm font-semibold"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm font-semibold transition hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30"
                               onClick={() => downloadFile(m)}
                             >
                               <Download className="h-4 w-4" />
@@ -1058,7 +1042,7 @@ export default function StudyMaterial({ user, onLoggedOut }) {
 
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#25f194] to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 disabled:opacity-60"
                   disabled={loading || scanLoading}
                 >
                   <UploadCloud className="h-4 w-4" />

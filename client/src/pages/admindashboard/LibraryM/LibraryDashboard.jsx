@@ -234,7 +234,7 @@ export default function LibraryDashboard({ user }) {
           value={stats.totalStudyRooms}
           subtitle={`${studyRooms.filter(r => r.status === 'Available').length} available now`}
           icon={DoorOpen}
-          gradient="bg-gradient-to-br from-emerald-500 to-[#25f194]"
+          gradient="bg-gradient-to-br from-blue-500 to-blue-600"
         />
         <StatCard
           title="Today's Bookings"
@@ -399,7 +399,7 @@ export default function LibraryDashboard({ user }) {
           <div className="space-y-3">
             {popularBooks.map((book, i) => (
               <div key={i} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-indigo-500 to-[#25f194] rounded-lg flex items-center justify-center text-white text-xs font-black">
+                <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-xs font-black">
                   {i + 1}
                 </div>
                 <div className="flex-1 min-w-0">

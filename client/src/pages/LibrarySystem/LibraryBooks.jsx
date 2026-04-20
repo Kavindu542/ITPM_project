@@ -16,8 +16,8 @@ const styles = `
   }
   .premium-card:hover {
     transform: translateY(-15px);
-    border: 1px solid #25f194;
-    box-shadow: 0 30px 60px -15px rgba(37, 241, 148, 0.2);
+    border: 1px solid #3b82f6;
+    box-shadow: 0 30px 60px -15px rgba(59, 130, 246, 0.2);
   }
   .image-container {
     clip-path: polygon(0 0, 100% 0, 100% 92%, 0% 100%);
@@ -34,7 +34,7 @@ const styles = `
     .side-drawer { width: 420px; }
   }
   .bg-god-glass {
-    background: linear-gradient(135deg, rgba(37, 241, 148, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
     background-attachment: fixed;
   }
   @keyframes fadeInUp {
@@ -289,7 +289,7 @@ export default function LibraryBooks() {
               <img src={book.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
               <button
                 onClick={(e) => toggleFavorite(book, e)}
-                className={`absolute top-4 right-4 p-2.5 rounded-xl backdrop-blur-md transition-all ${favorites.includes(book.id) ? 'bg-[#25f194] text-slate-900' : 'bg-black/20 text-white hover:bg-[#25f194]'}`}
+                className={`absolute top-4 right-4 p-2.5 rounded-xl backdrop-blur-md transition-all ${favorites.includes(book.id) ? 'bg-blue-500 text-white' : 'bg-black/20 text-white hover:bg-blue-500'}`}
               >
                 <Heart size={18} fill={favorites.includes(book.id) ? "currentColor" : "none"} />
               </button>
@@ -307,13 +307,13 @@ export default function LibraryBooks() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setSelectedBook(book)}
-                  className="flex-1 bg-slate-900 text-white py-3 rounded-xl text-[11px] font-black uppercase tracking-wider hover:bg-emerald-600 transition-colors"
+                  className="flex-1 bg-slate-900 text-white py-3 rounded-xl text-[11px] font-black uppercase tracking-wider hover:bg-blue-700 transition-colors"
                 >
                   Details
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); handleDownload(book); }}
-                  className="bg-[#25f194] text-slate-900 p-3 rounded-xl hover:bg-emerald-400 transition-colors"
+                  className="bg-blue-500 text-white p-3 rounded-xl hover:bg-blue-600 transition-colors"
                 >
                   <Download size={18} />
                 </button>
@@ -373,7 +373,7 @@ export default function LibraryBooks() {
             <div className="p-8 bg-slate-50 mt-auto">
               <button
                 onClick={() => handleDownload(selectedBook)}
-                className="w-full py-5 rounded-2xl bg-[#25f194] text-slate-900 font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-emerald-400 transition-all shadow-lg"
+                className="w-full py-5 rounded-2xl bg-blue-500 text-white font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-blue-600 transition-all shadow-lg"
               >
                 Instant Download <Download size={20} />
               </button>

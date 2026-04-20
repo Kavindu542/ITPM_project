@@ -31,7 +31,7 @@ export default function UserMenu({
             <p className={`text-xs ${idClass}`}> </p>
           )}
         </div>
-        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-[#25f194] flex items-center justify-center text-white font-semibold cursor-pointer overflow-hidden">
+        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold cursor-pointer overflow-hidden">
           {avatarUrl && !avatarBroken ? (
             <img
               src={avatarUrl}

@@ -20,8 +20,8 @@ const styles = `
   }
   .premium-card:hover {
     transform: translateY(-15px);
-    border: 1px solid #25f194;
-    box-shadow: 0 30px 60px -15px rgba(37, 241, 148, 0.2);
+    border: 1px solid #3b82f6;
+    box-shadow: 0 30px 60px -15px rgba(59, 130, 246, 0.2);
   }
   .image-container {
     clip-path: polygon(0 0, 100% 0, 100% 92%, 0% 100%);
@@ -33,15 +33,15 @@ const styles = `
   .side-drawer { transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); width: 100%; }
   @media (min-width: 768px) { .side-drawer { width: 420px; } }
   .bg-god-glass {
-    background: linear-gradient(135deg, rgba(37, 241, 148, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
     background-attachment: fixed;
   }
   @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
   .ai-pulse { animation: pulse 2s infinite; }
-  .search-glow { box-shadow: 0 0 50px rgba(37, 241, 148, 0.3); }
+  .search-glow { box-shadow: 0 0 50px rgba(59, 130, 246, 0.3); }
   .suggestion-item { transition: all 0.2s ease; }
-  .suggestion-item:hover { background: rgba(37, 241, 148, 0.1); transform: translateX(8px); }
+  .suggestion-item:hover { background: rgba(59, 130, 246, 0.1); transform: translateX(8px); }
 `;
 
 export default function SearchBooks() {
@@ -256,7 +256,7 @@ export default function SearchBooks() {
 
       {/* ADVANCED HEADER */}
       <header className="max-w-7xl mx-auto mb-20 text-center">
-        <div className="inline-flex items-center gap-3 bg-gradient-to-r from-[#25f194]/20 to-blue-500/20 text-emerald-700 px-8 py-3 rounded-full text-sm font-black tracking-widest uppercase mb-8">
+        <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-500/20 to-blue-600/20 text-blue-700 px-8 py-3 rounded-full text-sm font-black tracking-widest uppercase mb-8">
           <Brain size={18} className="ai-pulse" />
           Premium Tech Library
           <Sparkles size={16} />
@@ -282,7 +282,7 @@ export default function SearchBooks() {
                 key={mode.id}
                 onClick={() => setSearchMode(mode.id)}
                 className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all ${searchMode === mode.id
-                  ? 'bg-[#25f194] text-slate-900 shadow-lg'
+                  ? 'bg-blue-500 text-white shadow-lg'
                   : 'bg-white/50 text-slate-600 hover:bg-white/80'
                   }`}
               >
@@ -294,11 +294,11 @@ export default function SearchBooks() {
 
           {/* Main Search Bar */}
           <div className="relative">
-            <div className={`absolute inset-0 bg-gradient-to-r from-[#25f194]/30 to-blue-500/30 blur-3xl rounded-full transition-all ${searchQuery ? 'search-glow' : ''}`} />
+            <div className={`absolute inset-0 bg-gradient-to-r from-blue-500/30 to-blue-600/30 blur-3xl rounded-full transition-all ${searchQuery ? 'search-glow' : ''}`} />
             <div className="relative flex items-center bg-white/80 backdrop-blur-2xl rounded-[40px] p-3 shadow-2xl border border-white/60">
               <div className="flex items-center gap-4 ml-6">
                 <Search className="text-slate-400" size={28} />
-                {isSearching && <div className="w-2 h-2 bg-[#25f194] rounded-full ai-pulse" />}
+                {isSearching && <div className="w-2 h-2 bg-blue-500 rounded-full ai-pulse" />}
               </div>
               <input
                 type="text"
@@ -350,7 +350,7 @@ export default function SearchBooks() {
                         <button
                           key={i}
                           onClick={() => handleSearch(search)}
-                          className="px-4 py-2 bg-slate-50 hover:bg-[#25f194]/20 rounded-xl text-sm font-medium text-slate-600 transition-colors"
+                          className="px-4 py-2 bg-slate-50 hover:bg-blue-500/20 rounded-xl text-sm font-medium text-slate-600 transition-colors"
                         >
                           {search}
                         </button>
@@ -392,7 +392,7 @@ export default function SearchBooks() {
               ))}
             </select>
 
-            <button className="bg-gradient-to-r from-[#25f194] to-emerald-400 text-slate-900 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:shadow-lg hover:scale-105 transition-all">
+            <button className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:shadow-lg hover:scale-105 transition-all">
               Apply Filters
             </button>
           </div>
@@ -426,7 +426,7 @@ export default function SearchBooks() {
               </div>
               <button
                 onClick={(e) => toggleFavorite(book, e)}
-                className={`absolute top-4 right-4 p-3 rounded-xl backdrop-blur-md transition-all ${favorites.includes(book.id) ? 'bg-[#25f194] text-slate-900' : 'bg-black/20 text-white hover:bg-[#25f194]'}`}
+                className={`absolute top-4 right-4 p-3 rounded-xl backdrop-blur-md transition-all ${favorites.includes(book.id) ? 'bg-blue-500 text-white' : 'bg-black/20 text-white hover:bg-blue-500'}`}
               >
                 <Heart size={18} fill={favorites.includes(book.id) ? "currentColor" : "none"} />
               </button>
@@ -453,13 +453,13 @@ export default function SearchBooks() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setSelectedBook(book)}
-                  className="flex-1 bg-slate-900 text-white py-3 rounded-xl text-[11px] font-black uppercase tracking-wider hover:bg-emerald-600 transition-colors"
+                  className="flex-1 bg-slate-900 text-white py-3 rounded-xl text-[11px] font-black uppercase tracking-wider hover:bg-blue-700 transition-colors"
                 >
                   Details
                 </button>
                 <button
                   onClick={() => handleDownload(book)}
-                  className="bg-[#25f194] text-slate-900 p-3 rounded-xl hover:bg-emerald-400 transition-colors"
+                  className="bg-blue-500 text-white p-3 rounded-xl hover:bg-blue-600 transition-colors"
                 >
                   <Download size={18} />
                 </button>
@@ -480,7 +480,7 @@ export default function SearchBooks() {
               <button
                 key={suggestion}
                 onClick={() => handleSearch(suggestion)}
-                className="px-6 py-3 bg-white/70 backdrop-blur-xl rounded-2xl font-medium text-slate-700 hover:bg-[#25f194]/20 transition-colors"
+                className="px-6 py-3 bg-white/70 backdrop-blur-xl rounded-2xl font-medium text-slate-700 hover:bg-blue-500/20 transition-colors"
               >
                 {suggestion}
               </button>
@@ -553,7 +553,7 @@ export default function SearchBooks() {
             <div className="p-6 bg-slate-50">
               <button
                 onClick={() => handleDownload(selectedBook)}
-                className="w-full py-4 rounded-xl bg-[#25f194] text-slate-900 font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-emerald-400 transition-all shadow-lg"
+                className="w-full py-4 rounded-xl bg-blue-500 text-white font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-blue-600 transition-all shadow-lg"
               >
                 Download Resource <Download size={20} />
               </button>

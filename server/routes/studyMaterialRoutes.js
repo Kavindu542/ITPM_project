@@ -87,11 +87,17 @@ router.delete("/reviews/:reviewId", requireAuth, community.deleteOwnReview);
 // Forum (student)
 router.get("/forum/categories", requireAuth, community.listForumCategories);
 router.get("/forum/threads", requireAuth, community.listForumThreads);
-router.post("/forum/threads", requireAuth, community.createForumThread);
+router.post(
+  "/forum/threads",
+  requireAuth,
+  upload.array("attachments", 10),
+  community.createForumThread,
+);
 router.get("/forum/threads/:threadId", requireAuth, community.getForumThread);
 router.post(
   "/forum/threads/:threadId/replies",
   requireAuth,
+  upload.array("attachments", 10),
   community.addForumReply,
 );
 router.post(

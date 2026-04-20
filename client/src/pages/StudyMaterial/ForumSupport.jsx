@@ -4,10 +4,12 @@ import {
   BookOpen,
   Clock,
   Download,
+  FileText,
   FolderOpen,
   Heart,
   MessageSquare,
   MessagesSquare,
+  Paperclip,
   Search,
   Star,
   UploadCloud,
@@ -25,8 +27,6 @@ export default function ForumSupport({ user, onLoggedOut }) {
 
   const [categories, setCategories] = React.useState([]);
   const [threads, setThreads] = React.useState([]);
-  const [query, setQuery] = React.useState('');
-  const [category, setCategory] = React.useState('');
 
   const [threadForm, setThreadForm] = React.useState({
     title: '',
@@ -35,9 +35,13 @@ export default function ForumSupport({ user, onLoggedOut }) {
     moduleCode: '',
     topic: '',
     categorySlug: 'general-queries',
+    attachments: [],
   });
 
   const [replyBodyByThread, setReplyBodyByThread] = React.useState({});
+  const [replyAttachmentsByThread, setReplyAttachmentsByThread] = React.useState({});
+
+  const [threadView, setThreadView] = React.useState('mine');
 
   const [showThreadModal, setShowThreadModal] = React.useState(false);
 
@@ -46,7 +50,7 @@ export default function ForumSupport({ user, onLoggedOut }) {
     try {
       const [cRes, tRes] = await Promise.all([
         studyMaterialService.listForumCategories(),
-        studyMaterialService.listForumThreads({ q: query || undefined, category: category || undefined }),
+        studyMaterialService.listForumThreads(),
       ]);
       const c = cRes?.items ?? [];
       setCategories(c);
@@ -60,7 +64,7 @@ export default function ForumSupport({ user, onLoggedOut }) {
     } finally {
       setLoading(false);
     }
-  }, [query, category, threadForm.categorySlug]);
+  }, [threadForm.categorySlug]);
 
   React.useEffect(() => {
     load();
@@ -76,7 +80,7 @@ export default function ForumSupport({ user, onLoggedOut }) {
     setLoading(true);
     try {
       await studyMaterialService.createForumThread(threadForm);
-      setThreadForm((p) => ({ ...p, title: '', body: '', tags: '', moduleCode: '', topic: '' }));
+      setThreadForm((p) => ({ ...p, title: '', body: '', tags: '', moduleCode: '', topic: '', attachments: [] }));
       await load();
     } catch (e2) {
       toast.error(e2?.response?.data?.message || e2?.message || 'Failed to post thread');
@@ -88,11 +92,15 @@ export default function ForumSupport({ user, onLoggedOut }) {
   const submitReply = async (threadId) => {
     const body = String(replyBodyByThread[threadId] || '').trim();
     if (!body) return;
+    const attachments = Array.isArray(replyAttachmentsByThread[threadId])
+      ? replyAttachmentsByThread[threadId]
+      : [];
 
     setLoading(true);
     try {
-      await studyMaterialService.createForumReply(threadId, body);
+      await studyMaterialService.createForumReply(threadId, { body, attachments });
       setReplyBodyByThread((p) => ({ ...p, [threadId]: '' }));
+      setReplyAttachmentsByThread((p) => ({ ...p, [threadId]: [] }));
       await load();
     } catch (e) {
       toast.error(e?.response?.data?.message || e?.message || 'Failed to add reply');
@@ -100,6 +108,109 @@ export default function ForumSupport({ user, onLoggedOut }) {
       setLoading(false);
     }
   };
+
+  const formatBytes = (value) => {
+    const bytes = Number(value || 0);
+    if (!Number.isFinite(bytes) || bytes <= 0) return '';
+
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let unitIndex = 0;
+    let v = bytes;
+    while (v >= 1024 && unitIndex < units.length - 1) {
+      v /= 1024;
+      unitIndex += 1;
+    }
+    const digits = unitIndex === 0 ? 0 : v >= 10 ? 0 : 1;
+    return `${v.toFixed(digits)} ${units[unitIndex]}`;
+  };
+
+  const renderAttachments = (attachments = [], { tone = 'other' } = {}) => {
+    const items = Array.isArray(attachments) ? attachments : [];
+    if (!items.length) return null;
+
+    const isMineTone = tone === 'mine';
+    const imageItems = items.filter((a) => /^image\//i.test(String(a?.mimeType || '')));
+    const fileItems = items.filter((a) => !/^image\//i.test(String(a?.mimeType || '')));
+
+    const thumbBorder = isMineTone ? 'border-white/20' : 'border-gray-200';
+    const fileCard = isMineTone
+      ? 'border-white/20 bg-white/10 text-white'
+      : 'border-gray-200 bg-white text-gray-800';
+    const fileMeta = isMineTone ? 'text-blue-100' : 'text-gray-500';
+
+    return (
+      <div className="mt-2 space-y-2">
+        {imageItems.length ? (
+          <div className={`grid ${imageItems.length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
+            {imageItems.map((a, idx) => {
+              const url = studyMaterialService.uploadsUrl(a?.url);
+              const label = String(a?.originalName || '').trim() || `Image ${idx + 1}`;
+
+              return (
+                <a
+                  key={`${url}-${idx}`}
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`block rounded-2xl overflow-hidden border ${thumbBorder}`}
+                  title={label}
+                >
+                  <img src={url} alt={label} className="w-full h-44 object-cover" loading="lazy" />
+                </a>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {fileItems.map((a, idx) => {
+          const url = studyMaterialService.uploadsUrl(a?.url);
+          const label = String(a?.originalName || '').trim() || `Attachment ${idx + 1}`;
+          const mime = String(a?.mimeType || '');
+          const isPdf = mime === 'application/pdf' || label.toLowerCase().endsWith('.pdf');
+          const size = formatBytes(a?.sizeBytes);
+
+          return (
+            <a
+              key={`${url}-${idx}`}
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className={`flex items-center gap-3 rounded-2xl border px-3 py-2 text-sm ${fileCard}`}
+              title={label}
+            >
+              <div
+                className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center border ${
+                  isMineTone ? 'border-white/20 bg-white/10' : 'border-gray-200 bg-gray-50'
+                }`}
+              >
+                {isPdf ? (
+                  <FileText className={`w-5 h-5 ${isMineTone ? 'text-white' : 'text-gray-700'}`} />
+                ) : (
+                  <Paperclip className={`w-5 h-5 ${isMineTone ? 'text-white' : 'text-gray-700'}`} />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className={`truncate font-semibold ${isMineTone ? 'text-white' : 'text-gray-900'}`}>{label}</div>
+                <div className={`text-xs ${fileMeta}`}>{size || 'File'}</div>
+              </div>
+              <div className={`text-xs font-semibold ${fileMeta}`}>Open</div>
+            </a>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const myThreads = threads.filter((t) => !!t.isMine);
+  const otherThreads = threads.filter((t) => !t.isMine);
+
+  React.useEffect(() => {
+    if (threadView === 'mine' && myThreads.length === 0 && otherThreads.length > 0) {
+      setThreadView('others');
+    }
+  }, [threadView, myThreads.length, otherThreads.length]);
+
+  const visibleThreads = threadView === 'mine' ? myThreads : otherThreads;
 
   const deleteOwnThread = async (threadId) => {
     try {
@@ -175,41 +286,11 @@ export default function ForumSupport({ user, onLoggedOut }) {
                 </div>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white px-4 py-2 text-sm font-semibold"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-2 text-sm font-semibold shadow-sm transition hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30"
                   onClick={() => setShowThreadModal(true)}
                 >
                   Post Thread
                 </button>
-              </div>
-
-              <div className="p-5 border-b border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search threads"
-                    className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-                  />
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-                  >
-                    <option value="">All categories</option>
-                    {categories.map((c) => (
-                      <option key={c._id || c.slug} value={c.slug}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={load}
-                    className="rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-800"
-                  >
-                    Search
-                  </button>
-                </div>
               </div>
 
               <div className="flex-1 min-h-0 overflow-auto no-scrollbar">
@@ -265,11 +346,48 @@ export default function ForumSupport({ user, onLoggedOut }) {
                         className="md:col-span-2 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm min-h-24"
                         placeholder="Write your question"
                       />
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Attachments (images or documents)</label>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                          className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-900 file:text-white file:px-3 file:py-2 file:text-xs file:font-semibold"
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            setThreadForm((p) => ({ ...p, attachments: files }));
+                          }}
+                        />
+                        {Array.isArray(threadForm.attachments) && threadForm.attachments.length ? (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {threadForm.attachments.map((f, idx) => (
+                              <span
+                                key={`${f.name}-${idx}`}
+                                className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-700"
+                              >
+                                <span className="max-w-[240px] truncate">{f.name}</span>
+                                <button
+                                  type="button"
+                                  className="text-gray-500 hover:text-gray-700 font-bold"
+                                  onClick={() => {
+                                    setThreadForm((p) => ({
+                                      ...p,
+                                      attachments: p.attachments.filter((_, i) => i !== idx),
+                                    }));
+                                  }}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
                       <div className="md:col-span-2 flex justify-end">
                         <button
                           type="submit"
                           disabled={loading}
-                          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
+                          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-2 text-sm font-semibold shadow-sm transition hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 disabled:opacity-60"
                         >
                           Post Thread
                         </button>
@@ -280,8 +398,28 @@ export default function ForumSupport({ user, onLoggedOut }) {
                   )}
 
                   <div className="space-y-4">
-                    {threads.map((t) => (
-                      <div key={t.id} className="bg-white rounded-2xl border border-gray-200 p-5">
+                    <div className="flex items-center justify-start gap-3 flex-wrap">
+                      <div className="inline-flex items-center gap-1 p-1 rounded-2xl border border-gray-200 bg-gray-50">
+                        <button
+                          type="button"
+                          onClick={() => setThreadView('mine')}
+                          className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${threadView === 'mine' ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600' : 'text-gray-700 hover:bg-white'}`}
+                        >
+                          My posts ({myThreads.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setThreadView('others')}
+                          className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${threadView === 'others' ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-700 hover:to-blue-600' : 'text-gray-700 hover:bg-white'}`}
+                        >
+                          Other posts ({otherThreads.length})
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {visibleThreads.map((t) => (
+                        <div key={t.id} className="bg-white rounded-2xl border border-gray-200 p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
@@ -315,64 +453,167 @@ export default function ForumSupport({ user, onLoggedOut }) {
                     </div>
                   </div>
                   <p className="mt-2 text-sm text-gray-700">{t.body}</p>
-                  <div className="mt-3 space-y-2">
-                    {(t.replies || []).filter((r) => !r.removed).map((r) => {
-                      const isMine = !!r.isMine;
-                      const avatar =
-                        r.createdBy?.avatarUrl && String(r.createdBy.avatarUrl).trim() !== ''
-                          ? r.createdBy.avatarUrl
-                          : `https://ui-avatars.com/api/?name=${encodeURIComponent(r.createdBy?.name || 'Student')}&background=random`;
-                      return (
-                        <div key={r.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`flex items-end gap-2 max-w-[85%] ${isMine ? 'flex-row-reverse' : ''}`}>
-                            <img
-                              src={avatar}
-                              alt={r.createdBy?.name || 'Student'}
-                              className="w-8 h-8 rounded-full object-cover"
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.createdBy?.name || 'Student')}&background=random`;
-                              }}
-                            />
-                            <div className={`rounded-2xl px-3 py-2 border text-sm ${isMine ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-800 border-gray-200'}`}>
-                              <div>{r.body}</div>
-                              <div className={`mt-1 text-[11px] ${isMine ? 'text-blue-100' : 'text-gray-500'}`}>
-                                {r.accepted ? 'Accepted • ' : ''}{r.createdBy?.name || 'Student'} • {new Date(r.createdAt).toLocaleString()}
-                              </div>
-                              <div className="mt-1 flex items-center gap-2">
-                                <button type="button" onClick={() => upvoteReply(r.id)} className={`px-2.5 py-1 rounded-lg border text-xs font-semibold ${isMine ? 'border-blue-500/40 bg-blue-500/20 text-white' : 'border-gray-200 bg-white text-gray-700'}`}>Upvote ({r.upvoteCount || 0})</button>
-                                {t.isMine && !r.accepted ? (
-                                  <button type="button" onClick={() => acceptReply(r.id)} className="px-2.5 py-1 rounded-lg border border-green-200 bg-green-50 text-xs font-semibold text-green-700">Accept</button>
+                  {renderAttachments(t.attachments, { tone: 'other' })}
+                  <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50/60 p-3">
+                    <div className="space-y-3">
+                      {(t.replies || []).filter((r) => !r.removed).map((r) => {
+                        const isMine = !!r.isMine;
+                        const avatar =
+                          r.createdBy?.avatarUrl && String(r.createdBy.avatarUrl).trim() !== ''
+                            ? r.createdBy.avatarUrl
+                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(r.createdBy?.name || 'Student')}&background=random`;
+
+                        return (
+                          <div key={r.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`flex items-end gap-2 max-w-[90%] ${isMine ? 'flex-row-reverse' : ''}`}>
+                              <img
+                                src={avatar}
+                                alt={r.createdBy?.name || 'Student'}
+                                className="w-8 h-8 rounded-full object-cover ring-2 ring-white shadow-sm"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(r.createdBy?.name || 'Student')}&background=random`;
+                                }}
+                              />
+
+                              <div
+                                className={`rounded-2xl px-4 py-3 border text-sm shadow-sm ${
+                                  isMine
+                                    ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white border-transparent'
+                                    : 'bg-white text-gray-900 border-gray-200'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className={`text-[11px] font-semibold ${isMine ? 'text-white/90' : 'text-gray-700'}`}>
+                                    {isMine ? 'You' : r.createdBy?.name || 'Student'}
+                                  </div>
+                                  <div className={`text-[11px] ${isMine ? 'text-white/70' : 'text-gray-500'}`}>
+                                    {new Date(r.createdAt).toLocaleString()}
+                                  </div>
+                                </div>
+
+                                <div className="mt-1 whitespace-pre-wrap break-words">{r.body}</div>
+
+                                {Array.isArray(r.attachments) && r.attachments.length ? (
+                                  <div className="mt-2">{renderAttachments(r.attachments, { tone: isMine ? 'mine' : 'other' })}</div>
                                 ) : null}
+
+                                <div className="mt-2 flex items-center justify-between gap-3">
+                                  {r.accepted ? (
+                                    <span
+                                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold border ${
+                                        isMine
+                                          ? 'border-white/20 bg-white/10 text-white'
+                                          : 'border-green-200 bg-green-50 text-green-700'
+                                      }`}
+                                    >
+                                      Accepted
+                                    </span>
+                                  ) : (
+                                    <span className={`text-[11px] ${isMine ? 'text-white/70' : 'text-gray-500'}`}>
+                                      Reply
+                                    </span>
+                                  )}
+
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => upvoteReply(r.id)}
+                                      className={`px-2.5 py-1 rounded-xl border text-xs font-semibold ${
+                                        isMine
+                                          ? 'border-white/20 bg-white/10 text-white'
+                                          : 'border-gray-200 bg-white text-gray-700'
+                                      }`}
+                                    >
+                                      Upvote ({r.upvoteCount || 0})
+                                    </button>
+                                    {t.isMine && !r.accepted ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => acceptReply(r.id)}
+                                        className="px-2.5 py-1 rounded-xl border border-green-200 bg-green-50 text-xs font-semibold text-green-700"
+                                      >
+                                        Accept
+                                      </button>
+                                    ) : null}
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                   {!t.locked ? (
-                    <div className="mt-3 flex items-center gap-2">
-                      <input
-                        value={replyBodyByThread[t.id] || ''}
-                        onChange={(e) => setReplyBodyByThread((p) => ({ ...p, [t.id]: e.target.value }))}
-                        placeholder="Write a reply"
-                        className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => submitReply(t.id)}
-                        className="px-3 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold"
-                      >
-                        Reply
-                      </button>
+                    <div className="mt-3">
+                      {Array.isArray(replyAttachmentsByThread[t.id]) && replyAttachmentsByThread[t.id].length ? (
+                        <div className="mb-2 flex flex-wrap gap-2">
+                          {replyAttachmentsByThread[t.id].map((f, idx) => (
+                            <span
+                              key={`${f.name}-${idx}`}
+                              className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-700"
+                            >
+                              <span className="max-w-[240px] truncate">{f.name}</span>
+                              <button
+                                type="button"
+                                className="text-gray-500 hover:text-gray-700 font-bold"
+                                onClick={() => {
+                                  setReplyAttachmentsByThread((p) => ({
+                                    ...p,
+                                    [t.id]: (p[t.id] || []).filter((_, i) => i !== idx),
+                                  }));
+                                }}
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      <div className="flex items-center gap-2 flex-wrap rounded-2xl border border-gray-200 bg-white p-2">
+                        <input
+                          value={replyBodyByThread[t.id] || ''}
+                          onChange={(e) => setReplyBodyByThread((p) => ({ ...p, [t.id]: e.target.value }))}
+                          placeholder="Write a reply"
+                          className="flex-1 px-3 py-2 rounded-xl border border-transparent bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        />
+                        <label
+                          className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-gray-200 bg-white text-gray-700 cursor-pointer hover:bg-gray-50"
+                          title="Attach files"
+                        >
+                          <Paperclip className="w-5 h-5" />
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                            className="hidden"
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              setReplyAttachmentsByThread((p) => ({ ...p, [t.id]: files }));
+                            }}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => submitReply(t.id)}
+                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm font-semibold transition hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30"
+                        >
+                          Reply
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="mt-3 text-xs text-gray-500">Thread is locked.</div>
                   )}
-                      </div>
-                    ))}
-                    {!loading && threads.length === 0 ? <div className="text-sm text-gray-600">No threads found.</div> : null}
+                        </div>
+                      ))}
+
+                      {!loading && visibleThreads.length === 0 ? (
+                        <div className="text-sm text-gray-600">No posts yet.</div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </div>

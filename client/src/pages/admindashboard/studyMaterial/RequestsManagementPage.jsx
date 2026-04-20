@@ -158,14 +158,14 @@ export default function RequestsManagementPage() {
 
                   <div className="md:col-span-3 flex flex-wrap gap-2">
                     {r.status === 'pending' ? (
-                      <button type="button" onClick={() => markInProgress(r.id)} disabled={loading} className="px-3 py-2 rounded-xl border border-blue-200 bg-blue-50 text-sm font-semibold text-blue-700 disabled:opacity-60">
+                      <button type="button" onClick={() => markInProgress(r.id)} disabled={loading} className="px-3 py-2 rounded-xl border border-blue-200 bg-blue-50 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 disabled:opacity-60">
                         Mark In Progress
                       </button>
                     ) : null}
-                    <button type="button" onClick={() => fulfill(r.id)} disabled={loading} className="px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white text-sm font-semibold disabled:opacity-60">
+                    <button type="button" onClick={() => fulfill(r.id)} disabled={loading} className="px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm font-semibold transition hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 disabled:opacity-60">
                       Fulfill & Notify
                     </button>
-                    <button type="button" onClick={() => reject(r.id)} disabled={loading} className="px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-sm font-semibold text-red-700 disabled:opacity-60">
+                    <button type="button" onClick={() => reject(r.id)} disabled={loading} className="px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60">
                       Reject with Feedback
                     </button>
                   </div>

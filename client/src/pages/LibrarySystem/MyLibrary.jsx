@@ -11,8 +11,8 @@ const styles = `
   }
   .premium-card:hover {
     transform: translateY(-15px);
-    border: 1px solid #25f194;
-    box-shadow: 0 30px 60px -15px rgba(37, 241, 148, 0.2);
+    border: 1px solid #3b82f6;
+    box-shadow: 0 30px 60px -15px rgba(59, 130, 246, 0.2);
   }
   .image-container {
     clip-path: polygon(0 0, 100% 0, 100% 92%, 0% 100%);
@@ -22,7 +22,7 @@ const styles = `
     clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
   }
   .bg-god-glass {
-    background: linear-gradient(135deg, rgba(37, 241, 148, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
     background-attachment: fixed;
   }
   @keyframes fadeInUp {
@@ -52,8 +52,8 @@ const Button = ({ children, className = '', variant = 'default', size = 'md', ..
   const baseStyles = 'font-bold rounded-2xl transition-all duration-300 flex items-center justify-center gap-2';
 
   const variants = {
-    default: 'bg-slate-900 text-white hover:bg-emerald-600 hover:shadow-lg',
-    primary: 'bg-[#25f194] text-slate-900 hover:bg-emerald-400 hover:shadow-xl hover:scale-105',
+    default: 'bg-slate-900 text-white hover:bg-blue-700 hover:shadow-lg',
+    primary: 'bg-blue-500 text-white hover:bg-blue-600 hover:shadow-xl hover:scale-105',
     secondary: 'bg-white/70 text-slate-700 hover:bg-white border border-white/50 backdrop-blur-md',
     ghost: 'text-slate-600 hover:bg-slate-100',
     danger: 'bg-red-500 text-white hover:bg-red-600'
@@ -144,7 +144,7 @@ export default function MyLibrary() {
 
       {/* HERO HEADER */}
       <header className="max-w-7xl mx-auto mb-16 text-center">
-        <div className="inline-flex items-center gap-3 bg-gradient-to-r from-[#25f194]/20 to-blue-500/20 text-emerald-700 px-8 py-3 rounded-full text-sm font-black tracking-widest uppercase mb-8">
+        <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-500/20 to-blue-600/20 text-blue-700 px-8 py-3 rounded-full text-sm font-black tracking-widest uppercase mb-8">
           <Brain size={18} className="ai-pulse" />
           Personal Library
           <Sparkles size={16} />
@@ -180,7 +180,7 @@ export default function MyLibrary() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-bold transition-all relative ${activeTab === tab.id
-                  ? 'bg-[#25f194] text-slate-900 shadow-lg'
+                  ? 'bg-blue-500 text-white shadow-lg'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                   }`}
               >
@@ -208,7 +208,7 @@ export default function MyLibrary() {
               placeholder="Search your library..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white/80 backdrop-blur-xl px-16 py-4 rounded-2xl border border-white/50 outline-none text-slate-800 placeholder-slate-400 shadow-lg focus:border-[#25f194] focus:shadow-xl transition-all"
+              className="w-full bg-white/80 backdrop-blur-xl px-16 py-4 rounded-2xl border border-white/50 outline-none text-slate-800 placeholder-slate-400 shadow-lg focus:border-blue-500 focus:shadow-xl transition-all"
             />
             {searchQuery && (
               <button

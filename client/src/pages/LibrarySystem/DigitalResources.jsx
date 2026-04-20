@@ -11,8 +11,8 @@ const styles = `
   }
   .premium-card:hover {
     transform: translateY(-15px);
-    border: 1px solid #25f194;
-    box-shadow: 0 30px 60px -15px rgba(37, 241, 148, 0.2);
+    border: 1px solid #3b82f6;
+    box-shadow: 0 30px 60px -15px rgba(59, 130, 246, 0.2);
   }
   .image-container {
     clip-path: polygon(0 0, 100% 0, 100% 92%, 0% 100%);
@@ -22,7 +22,7 @@ const styles = `
     clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
   }
   .bg-god-glass {
-    background: linear-gradient(135deg, rgba(37, 241, 148, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
     background-attachment: fixed;
   }
   @keyframes fadeInUp {
@@ -37,13 +37,13 @@ const styles = `
     animation: pulse 2s infinite;
   }
   .search-glow {
-    box-shadow: 0 0 50px rgba(37, 241, 148, 0.3);
+    box-shadow: 0 0 50px rgba(59, 130, 246, 0.3);
   }
   .suggestion-item {
     transition: all 0.2s ease;
   }
   .suggestion-item:hover {
-    background: rgba(37, 241, 148, 0.1);
+    background: rgba(59, 130, 246, 0.1);
     transform: translateX(8px);
   }
   .side-drawer {
@@ -59,8 +59,8 @@ const Button = ({ children, className = '', variant = 'default', size = 'md', ..
   const baseStyles = 'font-bold rounded-2xl transition-all duration-300 flex items-center justify-center gap-2';
 
   const variants = {
-    default: 'bg-slate-900 text-white hover:bg-emerald-600 hover:shadow-lg',
-    primary: 'bg-[#25f194] text-slate-900 hover:bg-emerald-400 hover:shadow-xl hover:scale-105',
+    default: 'bg-slate-900 text-white hover:bg-blue-700 hover:shadow-lg',
+    primary: 'bg-blue-500 text-white hover:bg-blue-600 hover:shadow-xl hover:scale-105',
     secondary: 'bg-white/70 text-slate-700 hover:bg-white border border-white/50 backdrop-blur-md',
     ghost: 'text-slate-600 hover:bg-slate-100'
   };
@@ -436,7 +436,7 @@ export default function DigitalResources() {
 
       {/* HERO HEADER */}
       <header className="max-w-7xl mx-auto mb-20 text-center">
-        <div className="inline-flex items-center gap-3 bg-gradient-to-r from-[#25f194]/20 to-blue-500/20 text-emerald-700 px-8 py-3 rounded-full text-sm font-black tracking-widest uppercase mb-8">
+        <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-500/20 to-blue-600/20 text-blue-700 px-8 py-3 rounded-full text-sm font-black tracking-widest uppercase mb-8">
           <Brain size={18} className="ai-pulse" />
           Digital Knowledge Hub
           <Sparkles size={16} />
@@ -452,7 +452,7 @@ export default function DigitalResources() {
         {/* ADVANCED SEARCH */}
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="relative">
-            <div className={`absolute inset-0 bg-gradient-to-r from-[#25f194]/30 to-blue-500/30 blur-3xl rounded-full transition-all ${query ? 'search-glow' : ''}`} />
+            <div className={`absolute inset-0 bg-gradient-to-r from-blue-500/30 to-blue-600/30 blur-3xl rounded-full transition-all ${query ? 'search-glow' : ''}`} />
             <div className="relative flex items-center bg-white/80 backdrop-blur-2xl rounded-[40px] p-3 shadow-2xl border border-white/60">
               <div className="flex items-center gap-4 ml-6">
                 <Search className="text-slate-400" size={28} />
@@ -537,8 +537,8 @@ export default function DigitalResources() {
                 <button
                   onClick={() => toggleFavorite(resource)}
                   className={`absolute bottom-4 right-4 p-3 rounded-xl backdrop-blur-md transition-all ${favorites.includes(resource.id)
-                    ? 'bg-[#25f194] text-slate-900'
-                    : 'bg-black/20 text-white hover:bg-[#25f194] hover:text-slate-900'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-black/20 text-white hover:bg-blue-500'
                     }`}
                 >
                   <Heart size={18} fill={favorites.includes(resource.id) ? "currentColor" : "none"} />

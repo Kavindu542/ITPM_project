@@ -82,7 +82,7 @@ export default function UploadDocumentsPage() {
                       href={downloadUrl(m)}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-[#25f194] text-white text-sm font-semibold"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white text-sm font-semibold transition hover:from-blue-700 hover:to-blue-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30"
                     >
                       <Download className="h-4 w-4" />
                       Download

@@ -107,7 +107,7 @@ export default function Home({ user, onLoggedOut }) {
       icon: GraduationCap,
       image: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
       label: 'Library',
-      color: 'from-[#25f194] to-[#25f194]',
+      color: 'from-blue-500 to-blue-600',
       path: '/library',
       description: 'Browse books, reserve, and check due dates'
     },

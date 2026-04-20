@@ -25,6 +25,17 @@ const getBase = () => {
 };
 
 export const studyMaterialService = {
+  uploadsUrl(pathOrUrl) {
+    const raw = String(pathOrUrl || "").trim();
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw)) return raw;
+
+    const base = getBase();
+    const normalized = raw.replace(/\\/g, "/");
+    if (normalized.startsWith("/")) return `${base}${normalized}`;
+    return `${base}/${normalized}`;
+  },
+
   // URLs for opening preview/download in a new tab (cookie auth)
   fileUrl(materialId, { versionId, disposition = "inline" } = {}) {
     const base = getBase();
@@ -293,14 +304,71 @@ export const studyMaterialService = {
   },
 
   async createForumThread(payload) {
-    const res = await api.post("/study-material/forum/threads", payload);
+    if (payload instanceof FormData) {
+      const res = await api.post("/study-material/forum/threads", payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return res.data;
+    }
+
+    const hasAttachments = Array.isArray(payload?.attachments)
+      ? payload.attachments.length > 0
+      : false;
+
+    if (!hasAttachments) {
+      const res = await api.post("/study-material/forum/threads", payload);
+      return res.data;
+    }
+
+    const formData = new FormData();
+    Object.entries(payload || {}).forEach(([key, value]) => {
+      if (key === "attachments") return;
+      if (value === undefined || value === null) return;
+      formData.append(key, value);
+    });
+    payload.attachments.forEach((file) => formData.append("attachments", file));
+
+    const res = await api.post("/study-material/forum/threads", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return res.data;
   },
 
-  async createForumReply(threadId, body) {
+  async createForumReply(threadId, payload) {
+    if (payload instanceof FormData) {
+      const res = await api.post(
+        `/study-material/forum/threads/${threadId}/replies`,
+        payload,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
+      return res.data;
+    }
+
+    const body = String(payload?.body || "");
+    const attachments = Array.isArray(payload?.attachments)
+      ? payload.attachments
+      : [];
+
+    if (!attachments.length) {
+      const res = await api.post(
+        `/study-material/forum/threads/${threadId}/replies`,
+        { body },
+      );
+      return res.data;
+    }
+
+    const formData = new FormData();
+    formData.append("body", body);
+    attachments.forEach((file) => formData.append("attachments", file));
+
     const res = await api.post(
       `/study-material/forum/threads/${threadId}/replies`,
-      { body },
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      },
     );
     return res.data;
   },

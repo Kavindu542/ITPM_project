@@ -12,8 +12,8 @@ const styles = `
   }
   .premium-card:hover {
     transform: translateY(-15px);
-    border: 1px solid #25f194;
-    box-shadow: 0 30px 60px -15px rgba(37, 241, 148, 0.2);
+    border: 1px solid #3b82f6;
+    box-shadow: 0 30px 60px -15px rgba(59, 130, 246, 0.2);
   }
   .image-container {
     clip-path: polygon(0 0, 100% 0, 100% 92%, 0% 100%);
@@ -23,7 +23,7 @@ const styles = `
     clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
   }
   .bg-god-glass {
-    background: linear-gradient(135deg, rgba(37, 241, 148, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
     background-attachment: fixed;
   }
   @keyframes fadeInUp {
@@ -46,16 +46,16 @@ const styles = `
   }
   .glass-input:focus {
     background: rgba(255, 255, 255, 0.9);
-    border-color: #25f194;
-    box-shadow: 0 0 0 3px rgba(37, 241, 148, 0.1);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
   }
 `;
 
 const Button = ({ children, className = '', variant = 'default', size = 'md', ...props }) => {
   const baseStyles = 'font-bold rounded-2xl transition-all duration-300 flex items-center justify-center gap-2';
   const variants = {
-    default: 'bg-slate-900 text-white hover:bg-emerald-600 hover:shadow-lg',
-    primary: 'bg-[#25f194] text-slate-900 hover:bg-emerald-400 hover:shadow-xl hover:scale-105',
+    default: 'bg-slate-900 text-white hover:bg-blue-700 hover:shadow-lg',
+    primary: 'bg-blue-500 text-white hover:bg-blue-600 hover:shadow-xl hover:scale-105',
     secondary: 'bg-white/70 text-slate-700 hover:bg-white border border-white/50 backdrop-blur-md',
     ghost: 'text-slate-600 hover:bg-slate-100'
   };
@@ -271,7 +271,7 @@ export default function StudyRooms() {
 
       {/* HERO HEADER */}
       <header className="max-w-7xl mx-auto mb-16 text-center">
-        <div className="inline-flex items-center gap-2 bg-[#25f194]/20 text-emerald-700 px-6 py-2 rounded-full text-sm font-black tracking-widest uppercase mb-8">
+        <div className="inline-flex items-center gap-2 bg-blue-500/20 text-blue-700 px-6 py-2 rounded-full text-sm font-black tracking-widest uppercase mb-8">
           <Zap size={16} className="ai-pulse" />
           Premium Study Spaces
         </div>
@@ -442,7 +442,7 @@ export default function StudyRooms() {
                       <div className="booking-modal rounded-3xl shadow-2xl border border-white/60 overflow-hidden">
                         <div className="p-4 md:p-5 border-b border-white/60 flex items-start justify-between gap-3">
                         <div>
-                          <div className="text-xs font-black text-emerald-700 bg-[#25f194]/20 inline-flex px-4 py-2 rounded-full uppercase tracking-widest">
+                          <div className="text-xs font-black text-blue-700 bg-blue-500/20 inline-flex px-4 py-2 rounded-full uppercase tracking-widest">
                             Study Room Booking
                           </div>
                           <h3 className="text-xl md:text-2xl font-black text-slate-900 mt-3">Reserve {selectedRoom?.name}</h3>
