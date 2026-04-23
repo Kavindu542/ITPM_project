@@ -11,6 +11,12 @@ const Attendance = require("../models/attendanceModel");
 
 const router = express.Router();
 
+const isValidYyyyMmDd = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').trim());
+const isValidYyyyMm = (value) => /^\d{4}-\d{2}$/.test(String(value || '').trim());
+
+const toUtcMidnightFromDateOnly = (yyyyMmDd) => new Date(`${String(yyyyMmDd).trim()}T00:00:00.000Z`);
+const toUtcMonthStart = (yyyyMm) => new Date(`${String(yyyyMm).trim()}-01T00:00:00.000Z`);
+
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(String(id || ""));
 
 router.get("/me/club", requireAuth, async (req, res) => {
@@ -32,6 +38,7 @@ router.get("/me/club", requireAuth, async (req, res) => {
         description: club.description || "",
         rules: club.rules || "",
         logoUrl: club.logoUrl || "",
+        monthlyReportEmailEnabled: !!club.monthlyReportEmailEnabled,
         leader: club.leader
           ? { id: club.leader._id, name: club.leader.name, email: club.leader.email }
           : null,
@@ -55,6 +62,32 @@ router.get("/me/club", requireAuth, async (req, res) => {
   }
 });
 
+// Leader: monthly report email settings
+router.patch('/report-settings', requireAuth, async (req, res) => {
+  try {
+    const club = await Club.findOne({ leader: req.user._id });
+    if (!club) {
+      return res.status(403).json({ message: 'You are not a club leader' });
+    }
+
+    const enabled = req.body?.monthlyReportEmailEnabled;
+    if (enabled === undefined) {
+      return res.status(400).json({ message: 'monthlyReportEmailEnabled is required' });
+    }
+
+    club.monthlyReportEmailEnabled = Boolean(enabled);
+    club.updatedAt = new Date();
+    await club.save();
+
+    return res.json({
+      message: 'Report settings updated',
+      monthlyReportEmailEnabled: !!club.monthlyReportEmailEnabled,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to update report settings' });
+  }
+});
+
 // Leader Meetings: list
 router.get("/meetings", requireAuth, async (req, res) => {
   try {
@@ -63,7 +96,7 @@ router.get("/meetings", requireAuth, async (req, res) => {
       return res.status(403).json({ message: "You are not a club leader" });
     }
     const now = new Date();
-    const items = await Meeting.find({ club: club._id, date: { $gte: now } })
+    const items = await Meeting.find({ club: club._id, isDeleted: { $ne: true }, date: { $gte: now } })
       .sort({ date: 1 })
       .lean();
     return res.json({
@@ -143,6 +176,198 @@ router.get("/attendance", requireAuth, async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({ message: "Failed to load attendance" });
+  }
+});
+
+// Leader Reports: weekly/monthly (max)
+router.get('/report', requireAuth, async (req, res) => {
+  try {
+    const club = await Club.findOne({ leader: req.user._id }).select('_id name').lean();
+    if (!club) {
+      return res.status(403).json({ message: 'You are not a club leader' });
+    }
+
+    const period = String(req.query?.period || '').trim().toLowerCase();
+
+    let start = null;
+    let end = null;
+
+    if (period === 'weekly') {
+      const weekStart = String(req.query?.weekStart || '').trim();
+      if (!isValidYyyyMmDd(weekStart)) {
+        return res.status(400).json({ message: 'weekStart (YYYY-MM-DD) is required for weekly reports' });
+      }
+      start = toUtcMidnightFromDateOnly(weekStart);
+      if (!Number.isFinite(start.getTime())) {
+        return res.status(400).json({ message: 'Invalid weekStart date' });
+      }
+      end = new Date(start);
+      end.setUTCDate(end.getUTCDate() + 7);
+    } else if (period === 'monthly') {
+      const month = String(req.query?.month || '').trim();
+      if (!isValidYyyyMm(month)) {
+        return res.status(400).json({ message: 'month (YYYY-MM) is required for monthly reports' });
+      }
+      start = toUtcMonthStart(month);
+      if (!Number.isFinite(start.getTime())) {
+        return res.status(400).json({ message: 'Invalid month value' });
+      }
+      end = new Date(start);
+      end.setUTCMonth(end.getUTCMonth() + 1);
+    } else {
+      return res.status(400).json({ message: "period must be 'weekly' or 'monthly'" });
+    }
+
+    // Reports are for understanding past activity.
+    // Clamp the end date to now so we don't include future items.
+    const now = new Date();
+    if (end.getTime() > now.getTime()) end = now;
+
+    // If the selected period is fully in the future, return an empty report.
+    if (start.getTime() >= end.getTime()) {
+      return res.json({
+        club: { id: club._id, name: club.name },
+        period,
+        start,
+        end,
+        totals: {
+          meetingsCount: 0,
+          eventsCount: 0,
+          totalAttendanceMarks: 0,
+          averageAttendancePerMeeting: 0,
+        },
+        meetings: [],
+        events: [],
+      });
+    }
+
+    const meetingFilter = {
+      club: club._id,
+      date: { $gte: start, $lt: end },
+      $or: [
+        // Not deleted
+        { isDeleted: { $ne: true } },
+        // Deleted after it occurred (cleanup) => still count as past activity
+        {
+          $and: [
+            { isDeleted: true },
+            { deletedAt: { $ne: null } },
+            { $expr: { $gte: ['$deletedAt', '$date'] } },
+          ],
+        },
+      ],
+    };
+
+    const meetings = await Meeting.find(meetingFilter)
+      .select('_id title date venue description')
+      .sort({ date: 1 })
+      .lean();
+
+    const eventFilter = {
+      club: club._id,
+      date: { $gte: start, $lt: end },
+      $or: [
+        { isDeleted: { $ne: true } },
+        {
+          $and: [
+            { isDeleted: true },
+            { deletedAt: { $ne: null } },
+            { $expr: { $gte: ['$deletedAt', '$date'] } },
+          ],
+        },
+      ],
+    };
+
+    const events = await Event.find(eventFilter)
+      .select('_id name date venue type')
+      .sort({ date: 1 })
+      .lean();
+
+    const meetingIds = meetings.map((m) => m._id);
+
+    const attendanceRows = meetingIds.length
+      ? await Attendance.find({ club: club._id, meeting: { $in: meetingIds } })
+          .select('_id meeting studentId markedAt')
+          .sort({ markedAt: 1 })
+          .lean()
+      : [];
+
+    const groupedAttendance = new Map();
+    for (const row of attendanceRows) {
+      const key = String(row.meeting);
+      if (!groupedAttendance.has(key)) groupedAttendance.set(key, []);
+      groupedAttendance.get(key).push(row);
+    }
+
+    const uniqueStudentIds = [
+      ...new Set(
+        attendanceRows
+          .map((r) => String(r.studentId || '').trim())
+          .filter(Boolean)
+          .flatMap((sid) => [sid, sid.toUpperCase(), sid.toLowerCase()])
+      ),
+    ];
+
+    const users = uniqueStudentIds.length
+      ? await User.find({ studentId: { $in: uniqueStudentIds } })
+          .select('studentId name email')
+          .lean()
+      : [];
+    const byStudentId = new Map(
+      users.map((u) => [String(u.studentId || '').trim().toUpperCase(), u])
+    );
+
+    const meetingItems = meetings.map((m) => {
+      const rows = groupedAttendance.get(String(m._id)) || [];
+      const attendees = rows.map((r) => {
+        const sid = String(r.studentId || '').trim().toUpperCase();
+        const u = byStudentId.get(sid);
+        return {
+          studentId: sid,
+          studentName: u?.name || null,
+          studentEmail: u?.email || null,
+          markedAt: r.markedAt,
+        };
+      });
+      return {
+        id: m._id,
+        title: m.title,
+        date: m.date,
+        venue: m.venue || '',
+        description: m.description || '',
+        attendanceCount: attendees.length,
+        attendees,
+      };
+    });
+
+    const eventItems = (events || []).map((e) => ({
+      id: e._id,
+      name: e.name,
+      date: e.date,
+      venue: e.venue || '',
+      type: e.type || 'Public',
+    }));
+
+    const totals = {
+      meetingsCount: meetingItems.length,
+      eventsCount: eventItems.length,
+      totalAttendanceMarks: attendanceRows.length,
+      averageAttendancePerMeeting: meetingItems.length
+        ? attendanceRows.length / meetingItems.length
+        : 0,
+    };
+
+    return res.json({
+      club: { id: club._id, name: club.name },
+      period,
+      start,
+      end,
+      totals,
+      meetings: meetingItems,
+      events: eventItems,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to generate report' });
   }
 });
 
@@ -260,7 +485,11 @@ router.delete("/meetings/:id", requireAuth, async (req, res) => {
       return res.status(403).json({ message: "Not allowed" });
     }
 
-    await Meeting.deleteOne({ _id: id });
+    await Meeting.updateOne(
+      { _id: id },
+      { $set: { isDeleted: true, deletedAt: new Date(), updatedAt: new Date() } },
+    );
+
     return res.json({ message: "Meeting deleted" });
   } catch (err) {
     return res.status(500).json({ message: "Failed to delete meeting" });
@@ -275,7 +504,7 @@ router.get("/events", requireAuth, async (req, res) => {
       return res.status(403).json({ message: "You are not a club leader" });
     }
     const now = new Date();
-    const items = await Event.find({ club: club._id, date: { $gte: now } }).sort({ date: 1 }).lean();
+    const items = await Event.find({ club: club._id, isDeleted: { $ne: true }, date: { $gte: now } }).sort({ date: 1 }).lean();
     return res.json({
       events: items.map((e) => ({
         id: e._id,
@@ -416,7 +645,10 @@ router.delete("/events/:id", requireAuth, async (req, res) => {
       return res.status(403).json({ message: "Not allowed" });
     }
 
-    await Event.deleteOne({ _id: id });
+    await Event.updateOne(
+      { _id: id },
+      { $set: { isDeleted: true, deletedAt: new Date(), updatedAt: new Date() } },
+    );
     return res.json({ message: "Event deleted" });
   } catch (err) {
     return res.status(500).json({ message: "Failed to delete event" });

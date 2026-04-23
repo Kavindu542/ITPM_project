@@ -35,7 +35,11 @@ const errorHandler = (err, req, res, next) => {
   const status = err.statusCode || (isDbUnavailable ? 503 : 500);
 
   // eslint-disable-next-line no-console
-  if (status >= 500 && !isDbUnavailable) console.error(err);
+  if (isDbUnavailable) {
+    console.warn("DB unavailable:", message);
+  } else if (status >= 500) {
+    console.error(err);
+  }
 
   res.status(status).json({
     message: isDbUnavailable

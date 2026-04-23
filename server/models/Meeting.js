@@ -7,13 +7,13 @@ const MeetingSchema = new mongoose.Schema({
   venue: { type: String, default: '' },
   description: { type: String, default: '' },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  isDeleted: { type: Boolean, default: false, index: true },
+  deletedAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
 
-// Auto-delete meetings after the scheduled date/time.
-// Note: MongoDB TTL cleanup runs periodically (not instantly).
-MeetingSchema.index({ date: 1 }, { expireAfterSeconds: 0 });
+MeetingSchema.index({ club: 1, isDeleted: 1, date: 1 });
 
 module.exports = mongoose.model('Meeting', MeetingSchema);
 

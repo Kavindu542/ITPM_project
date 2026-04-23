@@ -9,6 +9,7 @@ const mongoose = require("mongoose");
 const path = require("path");
 
 const { connectDB } = require("./config/db");
+const { maybeSendMonthEndReports } = require("./services/monthlyReportService");
 const authRoutes = require("./routes/authRoutes");
 const studyMaterialRoutes = require("./routes/studyMaterialRoutes");
 
@@ -177,6 +178,32 @@ if (require.main === module) {
   // Running directly (local dev): connect DB then start HTTP server
   connectDB(process.env.MONGODB_URI)
     .then(() => startListening())
+    .then(async () => {
+      if (String(process.env.ENABLE_MONTH_END_REPORT_EMAILS || '').toLowerCase() !== 'true') {
+        return;
+      }
+
+      const checkEveryMs = 60 * 60 * 1000; // hourly
+      // eslint-disable-next-line no-console
+      console.log('Month-end report emails: enabled');
+
+      const tick = async () => {
+        try {
+          const res = await maybeSendMonthEndReports({ now: new Date() });
+          if (res?.ran) {
+            // eslint-disable-next-line no-console
+            console.log(`Month-end reports sent=${res.sent} skipped=${res.skipped} total=${res.total}`);
+          }
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.warn('Month-end report job error:', e?.message || e);
+        }
+      };
+
+      // Run once at startup, then hourly.
+      tick();
+      setInterval(tick, checkEveryMs).unref?.();
+    })
     .catch((err) => {
       console.error("Failed to start server:", err.message);
       console.warn(

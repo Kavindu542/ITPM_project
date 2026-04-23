@@ -214,9 +214,24 @@ async function sendPasswordResetEmail({ to, token, ttlMinutes = 30 }) {
   });
 }
 
+async function sendEmail({ to, subject, text, html }) {
+  const from = requireEnv("SMTP_FROM");
+  const transporter = getTransport();
+  await verifyTransport(transporter);
+
+  await transporter.sendMail({
+    from,
+    to,
+    subject,
+    text,
+    html,
+  });
+}
+
 module.exports = {
   sendEmailOtp,
   sendPasswordResetOtp,
   sendPasswordResetEmail,
+  sendEmail,
   sendBulkEmail,
 };
