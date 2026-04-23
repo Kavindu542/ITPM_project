@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, CalendarDays, PlusCircle, FileText, LayoutDashboard } from 'lucide-react';
+import { ArrowLeft, Users, CalendarDays, PlusCircle, FileText, LayoutDashboard, BarChart3 } from 'lucide-react';
 import { clubService } from '../../services/clubService';
 import QRCodeGenerator from '../../components/Clubs/QRCodeGenerator.jsx';
 import { attendanceService } from '../../services/attendanceService';
@@ -37,6 +37,74 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
   const [attendanceOpenMeetingId, setAttendanceOpenMeetingId] = React.useState(null);
   const [attendanceLoadingMeetingId, setAttendanceLoadingMeetingId] = React.useState(null);
   const [attendanceByMeetingId, setAttendanceByMeetingId] = React.useState({});
+
+  const toDateInputValue = React.useCallback((value) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (!Number.isFinite(d.getTime())) return '';
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 10);
+  }, []);
+
+  const defaultMonthValue = React.useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  }, []);
+
+  const defaultWeekStartValue = React.useMemo(() => {
+    const now = new Date();
+    const dayIndex = (now.getDay() + 6) % 7; // Monday=0
+    const start = new Date(now);
+    start.setDate(now.getDate() - dayIndex);
+    return toDateInputValue(start);
+  }, [toDateInputValue]);
+
+  const [reportPeriod, setReportPeriod] = React.useState('monthly');
+  const [reportWeekStart, setReportWeekStart] = React.useState(defaultWeekStartValue);
+  const [reportMonth, setReportMonth] = React.useState(defaultMonthValue);
+  const [reportShowAttendancePercent, setReportShowAttendancePercent] = React.useState(true);
+  const [reportLoading, setReportLoading] = React.useState(false);
+  const [reportError, setReportError] = React.useState('');
+  const [reportData, setReportData] = React.useState(null);
+
+  const [monthlyEmailEnabled, setMonthlyEmailEnabled] = React.useState(false);
+  const [monthlyEmailSaving, setMonthlyEmailSaving] = React.useState(false);
+
+  const reportMemberCount = React.useMemo(() => {
+    return Array.isArray(members) ? members.length : 0;
+  }, [members]);
+
+  const formatAttendancePercent = React.useCallback(
+    (attendanceCount) => {
+      const count = Number(attendanceCount);
+      if (!Number.isFinite(count) || count < 0) return 'N/A';
+      if (!reportMemberCount) return 'N/A';
+      const pct = (count / reportMemberCount) * 100;
+      if (!Number.isFinite(pct)) return 'N/A';
+      return `${pct.toFixed(0)}%`;
+    },
+    [reportMemberCount]
+  );
+
+  const generateReport = React.useCallback(async () => {
+    setReportError('');
+    setReportData(null);
+    setReportLoading(true);
+    try {
+      const data = await clubService.leaderGetReport({
+        period: reportPeriod,
+        weekStart: reportWeekStart,
+        month: reportMonth,
+      });
+      setReportData(data || null);
+    } catch (err) {
+      setReportError(err?.response?.data?.message || 'Failed to generate report');
+    } finally {
+      setReportLoading(false);
+    }
+  }, [reportMonth, reportPeriod, reportWeekStart]);
 
   const toggleMeetingAttendance = React.useCallback(
     async (meetingId) => {
@@ -111,6 +179,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
         if (cancelled) return;
         const c = data?.club || null;
         setClub(c);
+        setMonthlyEmailEnabled(Boolean(c?.monthlyReportEmailEnabled));
         setMembers(Array.isArray(c?.members) ? c.members : []);
         try {
           const m = await clubService.leaderListMeetings();
@@ -145,6 +214,24 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
       cancelled = true;
     };
   }, []);
+
+  const saveMonthlyEmailSetting = React.useCallback(async () => {
+    if (!club) return;
+    setMonthlyEmailSaving(true);
+    try {
+      const res = await clubService.leaderUpdateReportSettings({
+        monthlyReportEmailEnabled: monthlyEmailEnabled,
+      });
+      const enabled = Boolean(res?.monthlyReportEmailEnabled);
+      setMonthlyEmailEnabled(enabled);
+      setClub((prev) => (prev ? { ...prev, monthlyReportEmailEnabled: enabled } : prev));
+      toast.success(res?.message || 'Report settings updated');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to update report settings');
+    } finally {
+      setMonthlyEmailSaving(false);
+    }
+  }, [club, monthlyEmailEnabled]);
 
   const openAddMember = async () => {
     setShowAddMember(true);
@@ -328,6 +415,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
       { key: 'members', icon: Users, label: 'Members' },
       { key: 'meetings', icon: CalendarDays, label: 'Meetings' },
       { key: 'events', icon: PlusCircle, label: 'Events' },
+      { key: 'reports', icon: BarChart3, label: 'Reports' },
       { key: 'applications', icon: FileText, label: 'Applications' },
     ],
     []
@@ -694,6 +782,215 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                             ))}
                           </ul>
                         )}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {activeTab === 'reports' ? (
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
+                      <div className="p-6 border-b border-gray-200">
+                        <h1 className="text-2xl font-bold text-gray-900">Report Generator</h1>
+                        <p className="text-sm text-gray-500 mt-1">Generate a weekly or monthly report (max: monthly)</p>
+                      </div>
+
+                      <div className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                          <div className="md:col-span-4">
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Period</label>
+                            <select
+                              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
+                              value={reportPeriod}
+                              onChange={(e) => setReportPeriod(e.target.value)}
+                            >
+                              <option value="weekly">Weekly</option>
+                              <option value="monthly">Monthly</option>
+                            </select>
+                          </div>
+
+                          <div className="md:col-span-3">
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Attendance %</label>
+                            <div className="h-[38px] rounded-xl border border-gray-200 bg-white px-3 py-2 flex items-center">
+                              <label className="inline-flex items-center gap-2 text-sm text-gray-800">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4"
+                                  checked={reportShowAttendancePercent}
+                                  onChange={(e) => setReportShowAttendancePercent(e.target.checked)}
+                                />
+                                Show attendance percentage
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="md:col-span-3">
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Monthly email</label>
+                            <div className="h-[38px] rounded-xl border border-gray-200 bg-white px-3 py-2 flex items-center justify-between gap-3">
+                              <label className="inline-flex items-center gap-2 text-sm text-gray-800 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4"
+                                  checked={monthlyEmailEnabled}
+                                  onChange={(e) => setMonthlyEmailEnabled(e.target.checked)}
+                                />
+                                <span className="truncate">Email me monthly report</span>
+                              </label>
+                              <button
+                                type="button"
+                                onClick={saveMonthlyEmailSetting}
+                                disabled={monthlyEmailSaving}
+                                className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-60"
+                              >
+                                {monthlyEmailSaving ? 'Saving…' : 'Save'}
+                              </button>
+                            </div>
+                          </div>
+
+                          {reportPeriod === 'weekly' ? (
+                            <div className="md:col-span-3">
+                              <label className="block text-xs font-semibold text-gray-700 mb-1">Week starting</label>
+                              <input
+                                type="date"
+                                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
+                                value={reportWeekStart}
+                                onChange={(e) => setReportWeekStart(e.target.value)}
+                              />
+                            </div>
+                          ) : (
+                            <div className="md:col-span-3">
+                              <label className="block text-xs font-semibold text-gray-700 mb-1">Month</label>
+                              <input
+                                type="month"
+                                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
+                                value={reportMonth}
+                                onChange={(e) => setReportMonth(e.target.value)}
+                              />
+                            </div>
+                          )}
+
+                          <div className="md:col-span-2">
+                            <button
+                              type="button"
+                              onClick={generateReport}
+                              disabled={reportLoading}
+                              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-indigo-200 bg-white text-sm font-semibold text-indigo-700 hover:bg-indigo-50 disabled:opacity-60"
+                            >
+                              <BarChart3 className="h-4 w-4" />
+                              {reportLoading ? 'Generating...' : 'Generate'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {reportError ? (
+                          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                            {reportError}
+                          </div>
+                        ) : null}
+
+                        {reportData ? (
+                          <div className="mt-6 space-y-6">
+                            <div className="rounded-2xl border border-gray-200 bg-white p-5">
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                  <div className="text-sm font-bold text-gray-900">{reportData?.club?.name || club?.name || 'Club'}</div>
+                                  <div className="text-xs text-gray-600 mt-1">
+                                    {new Date(reportData.start).toLocaleDateString()} — {new Date(reportData.end).toLocaleDateString()}
+                                  </div>
+                                  {reportShowAttendancePercent ? (
+                                    <div className="text-xs text-gray-500 mt-1">Member count: {reportMemberCount || 'N/A'}</div>
+                                  ) : null}
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+                                    <div className="text-xs text-gray-500">Meetings</div>
+                                    <div className="text-sm font-bold text-gray-900">{reportData?.totals?.meetingsCount ?? 0}</div>
+                                  </div>
+                                  <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+                                    <div className="text-xs text-gray-500">Events</div>
+                                    <div className="text-sm font-bold text-gray-900">{reportData?.totals?.eventsCount ?? 0}</div>
+                                  </div>
+                                  <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+                                    <div className="text-xs text-gray-500">Attendance marks</div>
+                                    <div className="text-sm font-bold text-gray-900">{reportData?.totals?.totalAttendanceMarks ?? 0}</div>
+                                  </div>
+                                  {reportShowAttendancePercent ? (
+                                    <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+                                      <div className="text-xs text-gray-500">Avg attendance %</div>
+                                      <div className="text-sm font-bold text-gray-900">
+                                        {reportMemberCount
+                                          ? `${(((Number(reportData?.totals?.averageAttendancePerMeeting) || 0) / reportMemberCount) * 100).toFixed(0)}%`
+                                          : 'N/A'}
+                                      </div>
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+                              <div className="p-5 border-b border-gray-200">
+                                <div className="text-sm font-bold text-gray-900">Past Meeting Attendance</div>
+                                <div className="text-xs text-gray-500 mt-1">Meetings within the selected period</div>
+                              </div>
+                              <div className="p-5">
+                                {(reportData?.meetings || []).length === 0 ? (
+                                  <div className="text-sm text-gray-500">No meetings found for this period.</div>
+                                ) : (
+                                  <ul className="divide-y divide-gray-200">
+                                    {(reportData.meetings || []).map((m) => (
+                                      <li key={m.id} className="py-4">
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div className="min-w-0">
+                                            <div className="font-medium text-gray-900 break-words">{m.title}</div>
+                                            <div className="text-xs text-gray-600">
+                                              {new Date(m.date).toLocaleString()} • {m.venue || 'TBD'}
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                              Attendance:{' '}
+                                              <span className="font-semibold text-gray-800">{m.attendanceCount ?? 0}</span>
+                                              {reportShowAttendancePercent ? (
+                                                <span className="text-gray-500"> ({formatAttendancePercent(m.attendanceCount)})</span>
+                                              ) : null}
+                                            </div>
+                                            {(m.attendees || []).length ? (
+                                              <div className="mt-2 text-xs text-gray-600">
+                                                {(m.attendees || [])
+                                                  .map((a) => a.studentName || a.studentId)
+                                                  .filter(Boolean)
+                                                  .join(', ')}
+                                              </div>
+                                            ) : null}
+                                          </div>
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+                              <div className="p-5 border-b border-gray-200">
+                                <div className="text-sm font-bold text-gray-900">Past Events Held By Club</div>
+                                <div className="text-xs text-gray-500 mt-1">Events within the selected period</div>
+                              </div>
+                              <div className="p-5">
+                                {(reportData?.events || []).length === 0 ? (
+                                  <div className="text-sm text-gray-500">No events found for this period.</div>
+                                ) : (
+                                  <ul className="divide-y divide-gray-200">
+                                    {(reportData.events || []).map((ev) => (
+                                      <li key={ev.id} className="py-4">
+                                        <div className="font-medium text-gray-900 break-words">{ev.name}</div>
+                                        <div className="text-xs text-gray-600">{new Date(ev.date).toLocaleString()} • {ev.venue || 'TBD'}</div>
+                                        <div className="text-xs text-gray-500 mt-1">{ev.type || 'Public'}</div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   ) : null}

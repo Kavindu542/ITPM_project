@@ -20,7 +20,7 @@ router.get("/my/meetings", requireAuth, async (req, res) => {
     const hasMembership = clubIds.size > 0;
     if (!hasMembership) return res.json({ hasMembership: false, meetings: [] });
     const now = new Date();
-    const meetings = await Meeting.find({ club: { $in: Array.from(clubIds) }, date: { $gte: now } })
+    const meetings = await Meeting.find({ club: { $in: Array.from(clubIds) }, isDeleted: { $ne: true }, date: { $gte: now } })
       .sort({ date: 1 })
       .populate("club", "_id name")
       .lean();
@@ -52,7 +52,7 @@ router.get("/my/events", requireAuth, async (req, res) => {
     ].filter(Boolean));
     if (clubIds.size === 0) return res.json({ events: [] });
     const now = new Date();
-    const events = await Event.find({ club: { $in: Array.from(clubIds) }, date: { $gte: now } })
+    const events = await Event.find({ club: { $in: Array.from(clubIds) }, isDeleted: { $ne: true }, date: { $gte: now } })
       .sort({ date: 1 })
       .populate("club", "_id name")
       .lean();
@@ -75,7 +75,7 @@ router.get("/my/events", requireAuth, async (req, res) => {
 router.get("/public/events", async (req, res) => {
   try {
     const now = new Date();
-    const events = await Event.find({ type: "Public", date: { $gte: now } })
+    const events = await Event.find({ type: "Public", isDeleted: { $ne: true }, date: { $gte: now } })
       .sort({ date: 1 })
       .populate("club", "_id name")
       .lean();

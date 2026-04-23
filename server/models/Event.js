@@ -6,12 +6,12 @@ const EventSchema = new mongoose.Schema({
   date: { type: Date, required: true },
   venue: { type: String },
   type: { type: String, enum: ['Members-only', 'Public'], default: 'Public' },
+  isDeleted: { type: Boolean, default: false, index: true },
+  deletedAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
 
-// Auto-delete events after the scheduled date/time.
-// Note: MongoDB TTL cleanup runs periodically (not instantly).
-EventSchema.index({ date: 1 }, { expireAfterSeconds: 0 });
+EventSchema.index({ club: 1, isDeleted: 1, date: 1 });
 
 module.exports = mongoose.model('Event', EventSchema);

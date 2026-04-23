@@ -50,6 +50,21 @@ export const clubService = {
     const res = await api.get("/leader/events");
     return res.data;
   },
+
+  async leaderUpdateReportSettings({ monthlyReportEmailEnabled } = {}) {
+    const res = await api.patch('/leader/report-settings', {
+      monthlyReportEmailEnabled: Boolean(monthlyReportEmailEnabled),
+    });
+    return res.data;
+  },
+
+  async leaderGetReport({ period, weekStart, month } = {}) {
+    const params = { period };
+    if (period === 'weekly') params.weekStart = weekStart;
+    if (period === 'monthly') params.month = month;
+    const res = await api.get('/leader/report', { params });
+    return res.data;
+  },
   async leaderListMembershipApplications() {
     const res = await api.get("/leader/membership-applications");
     return res.data;
