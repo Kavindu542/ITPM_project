@@ -63,6 +63,7 @@ router.get("/my/events", requireAuth, async (req, res) => {
         date: e.date,
         venue: e.venue || "",
         type: e.type || "Public",
+        posterUrl: e.posterUrl || "",
         club: { id: e.club?._id, name: e.club?.name },
       })),
     });
@@ -86,6 +87,7 @@ router.get("/public/events", async (req, res) => {
         date: e.date,
         venue: e.venue || "",
         type: e.type || "Public",
+        posterUrl: e.posterUrl || "",
         club: { id: e.club?._id, name: e.club?.name },
       })),
     });

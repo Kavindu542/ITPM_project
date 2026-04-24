@@ -8,6 +8,7 @@ const Meeting = require("../models/Meeting");
 const Event = require("../models/Event");
 const ClubMembershipApplication = require("../models/ClubMembershipApplication");
 const Attendance = require("../models/attendanceModel");
+const eventPosterUpload = require("../middleware/eventPosterUpload");
 
 const router = express.Router();
 
@@ -521,6 +522,7 @@ router.get("/events", requireAuth, async (req, res) => {
         date: e.date,
         venue: e.venue || "",
         type: e.type || "Public",
+        posterUrl: e.posterUrl || "",
       })),
     });
   } catch (err) {
@@ -529,7 +531,7 @@ router.get("/events", requireAuth, async (req, res) => {
 });
 
 // Leader Events: create
-router.post("/events", requireAuth, async (req, res) => {
+router.post("/events", requireAuth, eventPosterUpload.single('poster'), async (req, res) => {
   try {
     const { name, date, venue, type } = req.body || {};
     const club = await Club.findOne({ leader: req.user._id }).lean();
@@ -553,6 +555,7 @@ router.post("/events", requireAuth, async (req, res) => {
       date: dt,
       venue: String(venue || "").trim(),
       type: cleanType,
+      posterUrl: req.file?.filename ? `/uploads/events/${req.file.filename}` : "",
     });
     return res.status(201).json({
       message: "Event created",
@@ -562,6 +565,7 @@ router.post("/events", requireAuth, async (req, res) => {
         date: saved.date,
         venue: saved.venue || "",
         type: saved.type || "Public",
+        posterUrl: saved.posterUrl || "",
       },
     });
   } catch (err) {
@@ -570,7 +574,7 @@ router.post("/events", requireAuth, async (req, res) => {
 });
 
 // Leader Events: update
-router.patch("/events/:id", requireAuth, async (req, res) => {
+router.patch("/events/:id", requireAuth, eventPosterUpload.single('poster'), async (req, res) => {
   try {
     const { id } = req.params || {};
     if (!id || !isValidId(id)) {
@@ -616,6 +620,10 @@ router.patch("/events/:id", requireAuth, async (req, res) => {
       event.type = cleanType;
     }
 
+    if (req.file?.filename) {
+      event.posterUrl = `/uploads/events/${req.file.filename}`;
+    }
+
     const saved = await event.save();
     return res.json({
       message: "Event updated",
@@ -625,6 +633,7 @@ router.patch("/events/:id", requireAuth, async (req, res) => {
         date: saved.date,
         venue: saved.venue || "",
         type: saved.type || "Public",
+        posterUrl: saved.posterUrl || "",
       },
     });
   } catch (err) {
