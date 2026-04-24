@@ -14,8 +14,17 @@ const router = express.Router();
 const isValidYyyyMmDd = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').trim());
 const isValidYyyyMm = (value) => /^\d{4}-\d{2}$/.test(String(value || '').trim());
 
-const toUtcMidnightFromDateOnly = (yyyyMmDd) => new Date(`${String(yyyyMmDd).trim()}T00:00:00.000Z`);
-const toUtcMonthStart = (yyyyMm) => new Date(`${String(yyyyMm).trim()}-01T00:00:00.000Z`);
+const toLocalMidnightFromDateOnly = (yyyyMmDd) => {
+  const s = String(yyyyMmDd || '').trim();
+  const [y, m, d] = s.split('-').map((p) => Number(p));
+  return new Date(y, (m || 1) - 1, d || 1, 0, 0, 0, 0);
+};
+
+const toLocalMonthStart = (yyyyMm) => {
+  const s = String(yyyyMm || '').trim();
+  const [y, m] = s.split('-').map((p) => Number(p));
+  return new Date(y, (m || 1) - 1, 1, 0, 0, 0, 0);
+};
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(String(id || ""));
 
@@ -197,23 +206,23 @@ router.get('/report', requireAuth, async (req, res) => {
       if (!isValidYyyyMmDd(weekStart)) {
         return res.status(400).json({ message: 'weekStart (YYYY-MM-DD) is required for weekly reports' });
       }
-      start = toUtcMidnightFromDateOnly(weekStart);
+      start = toLocalMidnightFromDateOnly(weekStart);
       if (!Number.isFinite(start.getTime())) {
         return res.status(400).json({ message: 'Invalid weekStart date' });
       }
       end = new Date(start);
-      end.setUTCDate(end.getUTCDate() + 7);
+      end.setDate(end.getDate() + 7);
     } else if (period === 'monthly') {
       const month = String(req.query?.month || '').trim();
       if (!isValidYyyyMm(month)) {
         return res.status(400).json({ message: 'month (YYYY-MM) is required for monthly reports' });
       }
-      start = toUtcMonthStart(month);
+      start = toLocalMonthStart(month);
       if (!Number.isFinite(start.getTime())) {
         return res.status(400).json({ message: 'Invalid month value' });
       }
       end = new Date(start);
-      end.setUTCMonth(end.getUTCMonth() + 1);
+      end.setMonth(end.getMonth() + 1);
     } else {
       return res.status(400).json({ message: "period must be 'weekly' or 'monthly'" });
     }
