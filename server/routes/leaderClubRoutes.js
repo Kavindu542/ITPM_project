@@ -9,6 +9,10 @@ const Event = require("../models/Event");
 const ClubMembershipApplication = require("../models/ClubMembershipApplication");
 const Attendance = require("../models/attendanceModel");
 const eventPosterUpload = require("../middleware/eventPosterUpload");
+const {
+  notifyAllUsersNewEvent,
+  notifyClubMembersNewMeeting,
+} = require("../services/notificationService");
 
 const router = express.Router();
 
@@ -404,6 +408,27 @@ router.post("/meetings", requireAuth, async (req, res) => {
       description: String(description || "").trim(),
       createdBy: req.user._id,
     });
+
+    // Notify club members (only) about the new meeting.
+    setImmediate(() => {
+      Promise.resolve()
+        .then(async () => {
+          const memberIds = Array.isArray(club?.members) ? club.members : [];
+          if (!memberIds.length) return;
+          const members = await User.find({ _id: { $in: memberIds }, email: { $exists: true, $ne: '' } })
+            .select('email')
+            .lean();
+          const memberEmails = (members || []).map((u) => u.email).filter(Boolean);
+          await notifyClubMembersNewMeeting({
+            memberEmails,
+            meetingTitle: saved.title,
+            meetingDate: saved.date,
+            clubName: club?.name || '',
+          });
+        })
+        .catch(() => {});
+    });
+
     return res.status(201).json({
       message: "Meeting created",
       meeting: {
@@ -557,6 +582,18 @@ router.post("/events", requireAuth, eventPosterUpload.single('poster'), async (r
       type: cleanType,
       posterUrl: req.file?.filename ? `/uploads/events/${req.file.filename}` : "",
     });
+
+    // Notify all users about the new event.
+    setImmediate(() => {
+      Promise.resolve()
+        .then(() => notifyAllUsersNewEvent({
+          eventName: saved.name,
+          eventDate: saved.date,
+          clubName: club?.name || '',
+        }))
+        .catch(() => {});
+    });
+
     return res.status(201).json({
       message: "Event created",
       event: {
