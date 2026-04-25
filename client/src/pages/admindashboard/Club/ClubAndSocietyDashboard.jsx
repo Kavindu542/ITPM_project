@@ -672,7 +672,6 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Leader</th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Members</th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Events</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
                       </tr>
                     </thead>
@@ -689,11 +688,6 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600">{club.members}</td>
                           <td className="px-6 py-4 text-sm text-gray-600">{club.events}</td>
-                          <td className="px-6 py-4 text-sm">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${club.status === 'Active' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
-                              {club.status}
-                            </span>
-                          </td>
                           <td className="px-6 py-4 text-sm flex gap-2">
                             <button
                               onClick={() => handleEditClub(club)}
@@ -706,9 +700,6 @@ export default function ClubAndSocietyDashboard({ user, onLoggedOut }) {
                               className="text-red-600 hover:text-red-800 font-medium"
                             >
                               Delete
-                            </button>
-                            <button onClick={() => openAssignLeaderModal(club)} className="text-blue-600 hover:text-blue-800 font-medium">
-                              {club.leader ? 'Change Leader' : 'Assign Leader'}
                             </button>
                           </td>
                         </tr>
