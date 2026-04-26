@@ -30,6 +30,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
   const [eventModalMode, setEventModalMode] = React.useState('create');
   const [editingEventId, setEditingEventId] = React.useState(null);
   const [eventForm, setEventForm] = React.useState({ name: '', date: '', venue: '', type: 'Public' });
+  const [eventPosterFile, setEventPosterFile] = React.useState(null);
 
   const [qrMeetingId, setQrMeetingId] = React.useState(null);
 
@@ -348,7 +349,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
     }
     try {
       if (eventModalMode === 'edit') {
-        const res = await clubService.leaderUpdateEvent(editingEventId, eventForm);
+        const res = await clubService.leaderUpdateEvent(editingEventId, { ...eventForm, posterFile: eventPosterFile });
         const ev = res?.event;
         if (ev) {
           setEvents((prev) => sortByDateAsc(prev.map((x) => (String(x.id) === String(ev.id) ? ev : x))));
@@ -357,13 +358,15 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
         setEventModalMode('create');
         setEditingEventId(null);
         setEventForm({ name: '', date: '', venue: '', type: 'Public' });
+        setEventPosterFile(null);
         toast.success(res?.message || 'Event updated');
       } else {
-        const res = await clubService.leaderCreateEvent(eventForm);
+        const res = await clubService.leaderCreateEvent({ ...eventForm, posterFile: eventPosterFile });
         const ev = res?.event;
         if (ev) setEvents((prev) => sortByDateAsc([...prev, ev]));
         setShowAddEvent(false);
         setEventForm({ name: '', date: '', venue: '', type: 'Public' });
+        setEventPosterFile(null);
         toast.success(res?.message || 'Event created');
       }
     } catch (err) {
@@ -375,6 +378,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
     setEventModalMode('create');
     setEditingEventId(null);
     setEventForm({ name: '', date: '', venue: '', type: 'Public' });
+    setEventPosterFile(null);
     setShowAddEvent(true);
   };
 
@@ -387,6 +391,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
       venue: ev?.venue || '',
       type: ev?.type || 'Public',
     });
+    setEventPosterFile(null);
     setShowAddEvent(true);
   };
 
@@ -1022,7 +1027,19 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                                   <div className="min-w-0">
                                     <div className="font-medium text-gray-900 break-words">{ev.name}</div>
                                     <div className="text-xs text-gray-600">{new Date(ev.date).toLocaleString()} • {ev.venue || 'TBD'}</div>
-                                    <div className="text-xs text-gray-500 mt-1">{ev.type}</div>
+                                    <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                                      <span>{ev.type}</span>
+                                      {ev.posterUrl ? (
+                                        <a
+                                          href={ev.posterUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="text-pink-700 hover:underline"
+                                        >
+                                          Poster
+                                        </a>
+                                      ) : null}
+                                    </div>
                                   </div>
                                   <div className="shrink-0 flex items-center gap-2">
                                     <button
@@ -1270,6 +1287,18 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                   <option value="Members-only">Members-only (visible to club members)</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Poster (image)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setEventPosterFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm"
+                />
+                {eventPosterFile ? (
+                  <div className="text-xs text-gray-500 mt-1">Selected: {eventPosterFile.name}</div>
+                ) : null}
+              </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -1278,6 +1307,7 @@ export default function LeaderDashboard({ user, onLoggedOut }) {
                     setEventModalMode('create');
                     setEditingEventId(null);
                     setEventForm({ name: '', date: '', venue: '', type: 'Public' });
+                    setEventPosterFile(null);
                   }}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
                 >

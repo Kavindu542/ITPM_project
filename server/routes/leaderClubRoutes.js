@@ -8,14 +8,28 @@ const Meeting = require("../models/Meeting");
 const Event = require("../models/Event");
 const ClubMembershipApplication = require("../models/ClubMembershipApplication");
 const Attendance = require("../models/attendanceModel");
+const eventPosterUpload = require("../middleware/eventPosterUpload");
+const {
+  notifyAllUsersNewEvent,
+  notifyClubMembersNewMeeting,
+} = require("../services/notificationService");
 
 const router = express.Router();
 
 const isValidYyyyMmDd = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').trim());
 const isValidYyyyMm = (value) => /^\d{4}-\d{2}$/.test(String(value || '').trim());
 
-const toUtcMidnightFromDateOnly = (yyyyMmDd) => new Date(`${String(yyyyMmDd).trim()}T00:00:00.000Z`);
-const toUtcMonthStart = (yyyyMm) => new Date(`${String(yyyyMm).trim()}-01T00:00:00.000Z`);
+const toLocalMidnightFromDateOnly = (yyyyMmDd) => {
+  const s = String(yyyyMmDd || '').trim();
+  const [y, m, d] = s.split('-').map((p) => Number(p));
+  return new Date(y, (m || 1) - 1, d || 1, 0, 0, 0, 0);
+};
+
+const toLocalMonthStart = (yyyyMm) => {
+  const s = String(yyyyMm || '').trim();
+  const [y, m] = s.split('-').map((p) => Number(p));
+  return new Date(y, (m || 1) - 1, 1, 0, 0, 0, 0);
+};
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(String(id || ""));
 
@@ -197,23 +211,23 @@ router.get('/report', requireAuth, async (req, res) => {
       if (!isValidYyyyMmDd(weekStart)) {
         return res.status(400).json({ message: 'weekStart (YYYY-MM-DD) is required for weekly reports' });
       }
-      start = toUtcMidnightFromDateOnly(weekStart);
+      start = toLocalMidnightFromDateOnly(weekStart);
       if (!Number.isFinite(start.getTime())) {
         return res.status(400).json({ message: 'Invalid weekStart date' });
       }
       end = new Date(start);
-      end.setUTCDate(end.getUTCDate() + 7);
+      end.setDate(end.getDate() + 7);
     } else if (period === 'monthly') {
       const month = String(req.query?.month || '').trim();
       if (!isValidYyyyMm(month)) {
         return res.status(400).json({ message: 'month (YYYY-MM) is required for monthly reports' });
       }
-      start = toUtcMonthStart(month);
+      start = toLocalMonthStart(month);
       if (!Number.isFinite(start.getTime())) {
         return res.status(400).json({ message: 'Invalid month value' });
       }
       end = new Date(start);
-      end.setUTCMonth(end.getUTCMonth() + 1);
+      end.setMonth(end.getMonth() + 1);
     } else {
       return res.status(400).json({ message: "period must be 'weekly' or 'monthly'" });
     }
@@ -394,6 +408,27 @@ router.post("/meetings", requireAuth, async (req, res) => {
       description: String(description || "").trim(),
       createdBy: req.user._id,
     });
+
+    // Notify club members (only) about the new meeting.
+    setImmediate(() => {
+      Promise.resolve()
+        .then(async () => {
+          const memberIds = Array.isArray(club?.members) ? club.members : [];
+          if (!memberIds.length) return;
+          const members = await User.find({ _id: { $in: memberIds }, email: { $exists: true, $ne: '' } })
+            .select('email')
+            .lean();
+          const memberEmails = (members || []).map((u) => u.email).filter(Boolean);
+          await notifyClubMembersNewMeeting({
+            memberEmails,
+            meetingTitle: saved.title,
+            meetingDate: saved.date,
+            clubName: club?.name || '',
+          });
+        })
+        .catch(() => {});
+    });
+
     return res.status(201).json({
       message: "Meeting created",
       meeting: {
@@ -512,6 +547,7 @@ router.get("/events", requireAuth, async (req, res) => {
         date: e.date,
         venue: e.venue || "",
         type: e.type || "Public",
+        posterUrl: e.posterUrl || "",
       })),
     });
   } catch (err) {
@@ -520,7 +556,7 @@ router.get("/events", requireAuth, async (req, res) => {
 });
 
 // Leader Events: create
-router.post("/events", requireAuth, async (req, res) => {
+router.post("/events", requireAuth, eventPosterUpload.single('poster'), async (req, res) => {
   try {
     const { name, date, venue, type } = req.body || {};
     const club = await Club.findOne({ leader: req.user._id }).lean();
@@ -544,7 +580,20 @@ router.post("/events", requireAuth, async (req, res) => {
       date: dt,
       venue: String(venue || "").trim(),
       type: cleanType,
+      posterUrl: req.file?.filename ? `/uploads/events/${req.file.filename}` : "",
     });
+
+    // Notify all users about the new event.
+    setImmediate(() => {
+      Promise.resolve()
+        .then(() => notifyAllUsersNewEvent({
+          eventName: saved.name,
+          eventDate: saved.date,
+          clubName: club?.name || '',
+        }))
+        .catch(() => {});
+    });
+
     return res.status(201).json({
       message: "Event created",
       event: {
@@ -553,6 +602,7 @@ router.post("/events", requireAuth, async (req, res) => {
         date: saved.date,
         venue: saved.venue || "",
         type: saved.type || "Public",
+        posterUrl: saved.posterUrl || "",
       },
     });
   } catch (err) {
@@ -561,7 +611,7 @@ router.post("/events", requireAuth, async (req, res) => {
 });
 
 // Leader Events: update
-router.patch("/events/:id", requireAuth, async (req, res) => {
+router.patch("/events/:id", requireAuth, eventPosterUpload.single('poster'), async (req, res) => {
   try {
     const { id } = req.params || {};
     if (!id || !isValidId(id)) {
@@ -607,6 +657,10 @@ router.patch("/events/:id", requireAuth, async (req, res) => {
       event.type = cleanType;
     }
 
+    if (req.file?.filename) {
+      event.posterUrl = `/uploads/events/${req.file.filename}`;
+    }
+
     const saved = await event.save();
     return res.json({
       message: "Event updated",
@@ -616,6 +670,7 @@ router.patch("/events/:id", requireAuth, async (req, res) => {
         date: saved.date,
         venue: saved.venue || "",
         type: saved.type || "Public",
+        posterUrl: saved.posterUrl || "",
       },
     });
   } catch (err) {

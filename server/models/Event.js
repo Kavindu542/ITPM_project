@@ -6,6 +6,7 @@ const EventSchema = new mongoose.Schema({
   date: { type: Date, required: true },
   venue: { type: String },
   type: { type: String, enum: ['Members-only', 'Public'], default: 'Public' },
+  posterUrl: { type: String, default: '' },
   isDeleted: { type: Boolean, default: false, index: true },
   deletedAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },

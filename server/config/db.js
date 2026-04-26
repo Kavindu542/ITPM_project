@@ -1,14 +1,21 @@
 const mongoose = require("mongoose");
 
-const dropTtlIndexIfPresent = async (collection, indexName) => {
+const dropAllTtlIndexes = async (collection) => {
   try {
     const idx = await collection.indexes();
-    const found = (idx || []).find((i) => i?.name === indexName);
-    const hasTtl = found && Object.prototype.hasOwnProperty.call(found, "expireAfterSeconds");
-    if (!hasTtl) return;
-    await collection.dropIndex(indexName);
-    // eslint-disable-next-line no-console
-    console.log(`Dropped TTL index ${collection.collectionName}.${indexName}`);
+    const ttl = (idx || []).filter((i) => Object.prototype.hasOwnProperty.call(i || {}, "expireAfterSeconds"));
+    if (!ttl.length) return;
+
+    for (const i of ttl) {
+      if (!i?.name) continue;
+      try {
+        await collection.dropIndex(i.name);
+        // eslint-disable-next-line no-console
+        console.log(`Dropped TTL index ${collection.collectionName}.${i.name}`);
+      } catch {
+        // ignore
+      }
+    }
   } catch {
     // ignore (collection/index may not exist yet)
   }
@@ -38,8 +45,8 @@ const connectDB = async (mongoUri) => {
   try {
     const db = mongoose.connection.db;
     if (db) {
-      await dropTtlIndexIfPresent(db.collection("meetings"), "date_1");
-      await dropTtlIndexIfPresent(db.collection("events"), "date_1");
+      await dropAllTtlIndexes(db.collection("meetings"));
+      await dropAllTtlIndexes(db.collection("events"));
     }
   } catch {
     // ignore

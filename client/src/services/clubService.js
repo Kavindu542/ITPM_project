@@ -74,10 +74,34 @@ export const clubService = {
     return res.data;
   },
   async leaderCreateEvent(payload) {
+    const posterFile = payload?.posterFile;
+    if (posterFile instanceof File) {
+      const fd = new FormData();
+      fd.append('name', String(payload?.name || ''));
+      fd.append('date', String(payload?.date || ''));
+      fd.append('venue', String(payload?.venue || ''));
+      fd.append('type', String(payload?.type || 'Public'));
+      fd.append('poster', posterFile);
+      const res = await api.post("/leader/events", fd);
+      return res.data;
+    }
+
     const res = await api.post("/leader/events", payload);
     return res.data;
   },
   async leaderUpdateEvent(eventId, payload) {
+    const posterFile = payload?.posterFile;
+    if (posterFile instanceof File) {
+      const fd = new FormData();
+      if (payload?.name !== undefined) fd.append('name', String(payload?.name || ''));
+      if (payload?.date !== undefined) fd.append('date', String(payload?.date || ''));
+      if (payload?.venue !== undefined) fd.append('venue', String(payload?.venue || ''));
+      if (payload?.type !== undefined) fd.append('type', String(payload?.type || 'Public'));
+      fd.append('poster', posterFile);
+      const res = await api.patch(`/leader/events/${eventId}`, fd);
+      return res.data;
+    }
+
     const res = await api.patch(`/leader/events/${eventId}`, payload);
     return res.data;
   },

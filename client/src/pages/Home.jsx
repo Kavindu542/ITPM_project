@@ -21,6 +21,15 @@ export default function Home({ user, onLoggedOut }) {
   const [busy, setBusy] = React.useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
 
+  const toAssetUrl = React.useCallback((p) => {
+    if (!p) return '';
+    const s = String(p);
+    if (s.startsWith('http')) return s;
+    const base = String(api?.defaults?.baseURL || '').replace(/\/+api\/?$/, '');
+    const clean = s.replace(/^\/+/, '');
+    return `${base}/${clean}`;
+  }, []);
+
   // ── real-time stats ────────────────────────────────────────────
   const [liveStats, setLiveStats] = React.useState(null);
   const [statsLoading, setStatsLoading] = React.useState(true);
@@ -537,7 +546,7 @@ export default function Home({ user, onLoggedOut }) {
                     <div key={e.id} className="group bg-white rounded-[2.5rem] border border-slate-100 p-6 flex flex-col hover:shadow-xl transition-all">
                       <div className="relative h-48 rounded-2xl overflow-hidden mb-6">
                         <img
-                          src={e.imageUrl || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=600&q=80"}
+                          src={toAssetUrl(e.posterUrl) || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=600&q=80"}
                           alt={e.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
