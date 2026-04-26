@@ -28,6 +28,7 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
   const [mealShopSubmitting, setMealShopSubmitting] = React.useState(false);
   const [mealShopSuccess, setMealShopSuccess] = React.useState('');
   const [createdMealShopEmail, setCreatedMealShopEmail] = React.useState('');
+  const [mealShopSuccessModal, setMealShopSuccessModal] = React.useState({ open: false, signInEmail: '' });
   const [laundryForm, setLaundryForm] = React.useState({
     email: '',
     password: '',
@@ -142,9 +143,9 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
         description: mealShopForm.description,
       });
 
-      setMealShopSuccess('Meal shop account created successfully. You can now sign in to Meals Shop.');
       const createdEmail = String(mealShopForm.email || '').trim().toLowerCase();
       setCreatedMealShopEmail(createdEmail);
+      setMealShopSuccess('');
       try {
         localStorage.setItem('cc_last_meal_shop_email', createdEmail);
       } catch {
@@ -152,9 +153,7 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
       }
       setMealShopForm({ email: '', password: '', name: '', contactNumber: '', description: '' });
       setShopLogo(null);
-      navigate(`/signin?email=${encodeURIComponent(createdEmail)}`);
-
-      setTimeout(() => setMealShopSuccess(''), 4000);
+      setMealShopSuccessModal({ open: true, signInEmail: createdEmail });
     } catch (e) {
       setError(e?.message || 'Failed to create meal shop');
     } finally {
@@ -165,6 +164,14 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
   const handleMealShopChange = (e) => {
     const { name, value } = e.target;
     setMealShopForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const closeMealShopSuccessModal = () => {
+    const email = mealShopSuccessModal.signInEmail;
+    setMealShopSuccessModal({ open: false, signInEmail: '' });
+    if (email) {
+      navigate(`/signin?email=${encodeURIComponent(email)}`);
+    }
   };
 
   const handleLaundrySubmit = async (e) => {
@@ -827,6 +834,45 @@ export default function HostelWardenDashboard({ user, onLoggedOut }) {
               </div>
             )}
           </div>
+
+      {mealShopSuccessModal.open && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="meal-shop-success-title"
+          onClick={closeMealShopSuccessModal}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <CheckCircle className="h-8 w-8 shrink-0 text-green-600" aria-hidden />
+              <div>
+                <h3 id="meal-shop-success-title" className="text-lg font-semibold text-gray-900">
+                  Meal shop created
+                </h3>
+                <p className="mt-2 text-sm text-gray-600">
+                  Meal shop account created successfully. You can now sign in to Meals Shop
+                  {mealShopSuccessModal.signInEmail ? (
+                    <span className="block mt-1 font-medium text-gray-800">{mealShopSuccessModal.signInEmail}</span>
+                  ) : null}
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={closeMealShopSuccessModal}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLibraryShell>
   );
 }

@@ -6,6 +6,13 @@ const User = require("../models/User");
 const LaundryShop = require("../models/LaundryShop");
 const LaundryBooking = require("../models/LaundryBooking");
 
+/** JWT may expose the user id as _id, sub, or id depending on path */
+function getAuthUserId(req) {
+  const u = req.user;
+  if (!u) return null;
+  return u._id || u.sub || u.id || null;
+}
+
 // Student: submit application
 async function applyForHostel(req, res) {
   try {
@@ -286,7 +293,7 @@ async function adminUpdateApplicationStatus(req, res) {
 // Student: submit a complaint
 async function submitComplaint(req, res) {
   try {
-    const userId = req.user?._id;
+    const userId = getAuthUserId(req);
     if (!userId) return res.status(401).json({ message: "Not authenticated" });
 
     const { subject, category, description, urgency } = req.body || {};
@@ -317,7 +324,7 @@ async function submitComplaint(req, res) {
 // Student: get my complaints
 async function getMyComplaints(req, res) {
   try {
-    const userId = req.user?._id;
+    const userId = getAuthUserId(req);
     if (!userId) return res.status(401).json({ message: "Not authenticated" });
 
     const complaints = await HostelComplaint.find({ user: userId }).sort({
@@ -487,7 +494,7 @@ async function adminCreateLaundryShopAccount(req, res) {
 // Laundry admin: get current laundry shop profile
 async function adminGetLaundryShopProfile(req, res) {
   try {
-    const adminUser = req.user?._id;
+    const adminUser = getAuthUserId(req);
     if (!adminUser)
       return res.status(401).json({ message: "Not authenticated" });
 
@@ -504,7 +511,7 @@ async function adminGetLaundryShopProfile(req, res) {
 // Laundry admin: create or update laundry shop profile details
 async function adminUpsertLaundryShopProfile(req, res) {
   try {
-    const adminUser = req.user?._id;
+    const adminUser = getAuthUserId(req);
     if (!adminUser)
       return res.status(401).json({ message: "Not authenticated" });
 
@@ -579,7 +586,7 @@ async function listLaundryShops(_req, res) {
 // Student: create a laundry booking
 async function createLaundryBooking(req, res) {
   try {
-    const studentUser = req.user?._id;
+    const studentUser = getAuthUserId(req);
     if (!studentUser)
       return res.status(401).json({ message: "Not authenticated" });
 
@@ -633,7 +640,7 @@ async function createLaundryBooking(req, res) {
 // Student: get own laundry bookings
 async function getMyLaundryBookings(req, res) {
   try {
-    const studentUser = req.user?._id;
+    const studentUser = getAuthUserId(req);
     if (!studentUser)
       return res.status(401).json({ message: "Not authenticated" });
 
@@ -651,14 +658,16 @@ async function getMyLaundryBookings(req, res) {
 // Laundry admin: view student laundry bookings for own shop
 async function adminGetLaundryBookings(req, res) {
   try {
-    const adminUser = req.user?._id;
+    const adminUser = getAuthUserId(req);
     if (!adminUser)
       return res.status(401).json({ message: "Not authenticated" });
 
     const shop = await LaundryShop.findOne({ adminUser });
-    const filter = shop ? { shop: shop._id } : {};
+    if (!shop) {
+      return res.json([]);
+    }
 
-    const bookings = await LaundryBooking.find(filter)
+    const bookings = await LaundryBooking.find({ shop: shop._id })
       .sort({ createdAt: -1 })
       .populate("shop", "name")
       .select(
@@ -675,7 +684,7 @@ async function adminGetLaundryBookings(req, res) {
 // Laundry admin: update laundry booking status (pending approval action)
 async function adminUpdateLaundryBookingStatus(req, res) {
   try {
-    const adminUser = req.user?._id;
+    const adminUser = getAuthUserId(req);
     if (!adminUser)
       return res.status(401).json({ message: "Not authenticated" });
 
@@ -707,7 +716,7 @@ async function adminUpdateLaundryBookingStatus(req, res) {
 // Laundry admin: delete a booking row
 async function adminDeleteLaundryBooking(req, res) {
   try {
-    const adminUser = req.user?._id;
+    const adminUser = getAuthUserId(req);
     if (!adminUser)
       return res.status(401).json({ message: "Not authenticated" });
 
@@ -728,7 +737,7 @@ async function adminDeleteLaundryBooking(req, res) {
 // Laundry admin: update ready info (yes/no) for a booking
 async function adminUpdateLaundryBookingReady(req, res) {
   try {
-    const adminUser = req.user?._id;
+    const adminUser = getAuthUserId(req);
     if (!adminUser)
       return res.status(401).json({ message: "Not authenticated" });
 

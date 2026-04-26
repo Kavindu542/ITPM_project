@@ -11,7 +11,7 @@ import { Shirt, Building2 } from 'lucide-react';
 
 export default function HostelLaundryDashboard({ user, onLoggedOut }) {
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = React.useState('add-laundry');
+  const [activeSection, setActiveSection] = React.useState('view-laundry');
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -78,6 +78,19 @@ export default function HostelLaundryDashboard({ user, onLoggedOut }) {
   React.useEffect(() => {
     if (!['view-laundry', 'send-info'].includes(activeSection)) return;
     loadLaundryBookings();
+  }, [activeSection]);
+
+  React.useEffect(() => {
+    if (!['view-laundry', 'send-info'].includes(activeSection)) return;
+    const id = setInterval(() => {
+      loadLaundryBookings();
+    }, 8000);
+    const onFocus = () => loadLaundryBookings();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [activeSection]);
 
   React.useEffect(() => {

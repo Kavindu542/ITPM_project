@@ -1,11 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../../../services/authService';
-import AdminLibraryShell, {
-  AdminSidebarNavButton,
-  AdminSidebarNavLinkItem,
-} from '../../../../components/admin/AdminLibraryShell';
-import { Store, Building2, ClipboardList } from 'lucide-react';
+import AdminLibraryShell, { AdminSidebarNavButton } from '../../../../components/admin/AdminLibraryShell';
+import { Store, ClipboardList } from 'lucide-react';
 
 export default function HostelMealsShopDashboard({ user, onLoggedOut }) {
   const navigate = useNavigate();
@@ -106,6 +103,35 @@ export default function HostelMealsShopDashboard({ user, onLoggedOut }) {
     }
   };
 
+  const confirmMealOrder = (orderId) => {
+    if (!orderId) return;
+    try {
+      const raw = localStorage.getItem('hostelMealShopOrders');
+      const parsed = raw ? JSON.parse(raw) : [];
+      const list = Array.isArray(parsed) ? parsed : [];
+      const next = list.map((o) => (o.id === orderId ? { ...o, status: 'ordered' } : o));
+      localStorage.setItem('hostelMealShopOrders', JSON.stringify(next));
+      setOrders(next);
+    } catch (err) {
+      console.error('Failed to confirm meal order', err);
+    }
+  };
+
+  const deleteMealOrder = (orderId) => {
+    if (!orderId) return;
+    if (!window.confirm('Delete this order? This cannot be undone.')) return;
+    try {
+      const raw = localStorage.getItem('hostelMealShopOrders');
+      const parsed = raw ? JSON.parse(raw) : [];
+      const list = Array.isArray(parsed) ? parsed : [];
+      const next = list.filter((o) => o.id !== orderId);
+      localStorage.setItem('hostelMealShopOrders', JSON.stringify(next));
+      setOrders(next);
+    } catch (err) {
+      console.error('Failed to delete meal order', err);
+    }
+  };
+
   React.useEffect(() => {
     if (activeSection === 'orders') {
       loadMealOrders();
@@ -138,14 +164,6 @@ export default function HostelMealsShopDashboard({ user, onLoggedOut }) {
             icon={ClipboardList}
             label="Orders"
             description="Student orders"
-          />
-          <AdminSidebarNavLinkItem
-            collapsed={collapsed}
-            to="/admin/hostel"
-            end
-            icon={Building2}
-            label="Hostel services"
-            description="Back to hub"
           />
         </div>
       )}
@@ -385,6 +403,8 @@ export default function HostelMealsShopDashboard({ user, onLoggedOut }) {
                           <th className="px-4 py-3 font-semibold">Qty</th>
                           <th className="px-4 py-3 font-semibold">Total</th>
                           <th className="px-4 py-3 font-semibold">Ordered At</th>
+                          <th className="px-4 py-3 font-semibold">Action</th>
+                          <th className="px-4 py-3 font-semibold">Delete</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
@@ -418,6 +438,28 @@ export default function HostelMealsShopDashboard({ user, onLoggedOut }) {
                             </td>
                             <td className="px-4 py-3 text-gray-700">
                               {order.createdAt ? new Date(order.createdAt).toLocaleString() : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                              {order.status === 'ordered' ? (
+                                <span className="text-sm font-medium text-emerald-700">ordered</span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => confirmMealOrder(order.id)}
+                                  className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                                >
+                                  Confirm Order
+                                </button>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => deleteMealOrder(order.id)}
+                                className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
+                              >
+                                Delete
+                              </button>
                             </td>
                           </tr>
                         ))}

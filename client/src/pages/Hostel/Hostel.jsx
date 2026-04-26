@@ -18,6 +18,41 @@ import {
 import { hostelService } from '../../services/hostelService';
 import Complaints from './Complaints';
 
+const MEAL_ORDER_ADMIN_SEEN_KEY = 'hostelMealOrderAdminConfirmSeenIds';
+
+function readAdminMealOrderSeenIds() {
+  try {
+    const raw = localStorage.getItem(MEAL_ORDER_ADMIN_SEEN_KEY);
+    const a = raw ? JSON.parse(raw) : [];
+    return Array.isArray(a) ? a : [];
+  } catch {
+    return [];
+  }
+}
+
+function mealOrderBelongsToUser(order, currentUser) {
+  if (!currentUser) return false;
+  const uEmail = (currentUser.email || '').trim().toLowerCase();
+  const oEmail = (order?.studentEmail || '').trim().toLowerCase();
+  const uId = (currentUser.studentId || '').trim().toUpperCase();
+  const oId = (order?.studentId || '').trim().toUpperCase();
+  if (uEmail && oEmail && oEmail !== '-' && uEmail === oEmail) return true;
+  if (uId && oId && oId !== '-' && uId === oId) return true;
+  return false;
+}
+
+const COMPLAINT_RESOLVED_SEEN_KEY = 'hostelComplaintResolvedSeenIds';
+
+function readComplaintResolvedSeenIds() {
+  try {
+    const raw = localStorage.getItem(COMPLAINT_RESOLVED_SEEN_KEY);
+    const a = raw ? JSON.parse(raw) : [];
+    return Array.isArray(a) ? a.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function Hostel({ user, onLoggedOut }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -49,6 +84,12 @@ export default function Hostel({ user, onLoggedOut }) {
     roomNumber: '',
     notes: '',
   });
+  const [mealOrderDashboardBanner, setMealOrderDashboardBanner] = useState(false);
+  const [mealOrderAdminShopBanner, setMealOrderAdminShopBanner] = useState(false);
+  const [complaintResolvedBanner, setComplaintResolvedBanner] = useState(false);
+  const [complaintResolvedCount, setComplaintResolvedCount] = useState(0);
+  const [complaintResolvedSummaries, setComplaintResolvedSummaries] = useState([]);
+  const [mealItemRowConfirmed, setMealItemRowConfirmed] = useState({});
   const [selectedShop, setSelectedShop] = useState(null);
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [expandedShopId, setExpandedShopId] = useState('');
@@ -254,6 +295,142 @@ export default function Hostel({ user, onLoggedOut }) {
     return `${displayHour}:${mm} ${meridiem}`;
   };
 
+  const checkAdminMealOrderConfirmations = React.useCallback(() => {
+    if (applicationStatus !== 'approved' || !user) return;
+    let orders = [];
+    try {
+      const raw = localStorage.getItem('hostelMealShopOrders');
+      const parsed = raw ? JSON.parse(raw) : [];
+      orders = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return;
+    }
+    const seen = new Set(readAdminMealOrderSeenIds());
+    const hasUnacknowledged = orders.some(
+      (o) =>
+        o?.status === 'ordered' && o?.id && !seen.has(o.id) && mealOrderBelongsToUser(o, user),
+    );
+    setMealOrderAdminShopBanner(hasUnacknowledged);
+  }, [user, applicationStatus]);
+
+  const dismissMealOrderAdminShopBanner = React.useCallback(() => {
+    if (!user) {
+      setMealOrderAdminShopBanner(false);
+      return;
+    }
+    let orders = [];
+    try {
+      const raw = localStorage.getItem('hostelMealShopOrders');
+      const parsed = raw ? JSON.parse(raw) : [];
+      orders = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      setMealOrderAdminShopBanner(false);
+      return;
+    }
+    const seen = new Set(readAdminMealOrderSeenIds());
+    const toAdd = orders
+      .filter(
+        (o) =>
+          o?.status === 'ordered' && o?.id && !seen.has(o.id) && mealOrderBelongsToUser(o, user),
+      )
+      .map((o) => o.id);
+    if (toAdd.length > 0) {
+      const next = [...new Set([...readAdminMealOrderSeenIds(), ...toAdd])];
+      try {
+        localStorage.setItem(MEAL_ORDER_ADMIN_SEEN_KEY, JSON.stringify(next));
+      } catch (err) {
+        console.error('Failed to record meal order acknowledgement', err);
+      }
+    }
+    setMealOrderAdminShopBanner(false);
+  }, [user]);
+
+  useEffect(() => {
+    if (applicationStatus !== 'approved' || !user) return;
+    checkAdminMealOrderConfirmations();
+    const interval = setInterval(checkAdminMealOrderConfirmations, 4000);
+    const onStorage = (e) => {
+      if (e.key === 'hostelMealShopOrders' || e.key === MEAL_ORDER_ADMIN_SEEN_KEY) {
+        checkAdminMealOrderConfirmations();
+      }
+    };
+    const onFocus = () => checkAdminMealOrderConfirmations();
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [user, applicationStatus, checkAdminMealOrderConfirmations]);
+
+  const checkComplaintResolvedNotifications = React.useCallback(async () => {
+    if (applicationStatus !== 'approved' || !user) return;
+    try {
+      const list = await hostelService.getMyComplaints();
+      const complaints = Array.isArray(list) ? list : [];
+      const seen = new Set(readComplaintResolvedSeenIds());
+      const unack = complaints.filter(
+        (c) => c?.status === 'resolved' && c?._id && !seen.has(String(c._id)),
+      );
+      setComplaintResolvedBanner(unack.length > 0);
+      setComplaintResolvedCount(unack.length);
+      setComplaintResolvedSummaries(
+        unack.slice(0, 5).map((c) => ({
+          id: String(c._id),
+          subject: String(c.subject || '').trim() || 'Complaint',
+        })),
+      );
+    } catch {
+      // Background poll — ignore errors
+    }
+  }, [user, applicationStatus]);
+
+  const dismissComplaintResolvedBanner = React.useCallback(async () => {
+    if (!user) {
+      setComplaintResolvedBanner(false);
+      setComplaintResolvedCount(0);
+      setComplaintResolvedSummaries([]);
+      return;
+    }
+    try {
+      const list = await hostelService.getMyComplaints();
+      const complaints = Array.isArray(list) ? list : [];
+      const seen = new Set(readComplaintResolvedSeenIds());
+      const toAdd = complaints
+        .filter(
+          (c) => c?.status === 'resolved' && c?._id && !seen.has(String(c._id)),
+        )
+        .map((c) => String(c._id));
+      if (toAdd.length > 0) {
+        const next = [...new Set([...readComplaintResolvedSeenIds(), ...toAdd])];
+        localStorage.setItem(COMPLAINT_RESOLVED_SEEN_KEY, JSON.stringify(next));
+      }
+    } catch (err) {
+      console.error('Failed to record complaint notice acknowledgement', err);
+    }
+    setComplaintResolvedBanner(false);
+    setComplaintResolvedCount(0);
+    setComplaintResolvedSummaries([]);
+  }, [user]);
+
+  useEffect(() => {
+    if (applicationStatus !== 'approved' || !user) return;
+    let cancelled = false;
+    const run = () => {
+      if (!cancelled) checkComplaintResolvedNotifications();
+    };
+    run();
+    const interval = setInterval(run, 8000);
+    const onFocus = () => run();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [user, applicationStatus, checkComplaintResolvedNotifications]);
+
   const mealMenuItems = React.useMemo(() => {
     const rawItems = Array.isArray(mealShopProfile?.menuItems) ? mealShopProfile.menuItems : [];
     return rawItems
@@ -277,6 +454,10 @@ export default function Hostel({ user, onLoggedOut }) {
         return sum + (item.price * qty);
       }, 0);
   }, [mealMenuItems, selectedMealItems, mealItemQuantities]);
+
+  const confirmMealItemRow = (itemId) => {
+    setMealItemRowConfirmed((prev) => ({ ...prev, [itemId]: true }));
+  };
 
   const toggleMealItem = (itemId) => {
     setMealOrderMessage('');
@@ -353,10 +534,12 @@ export default function Hostel({ user, onLoggedOut }) {
       const safeOrders = Array.isArray(existingOrders) ? existingOrders : [];
       safeOrders.unshift(orderPayload);
       localStorage.setItem('hostelMealShopOrders', JSON.stringify(safeOrders));
-      setMealOrderMessage(`Order created successfully. Total: Rs. ${selectedMealTotal.toFixed(2)}`);
+      setMealOrderMessage('');
       setSelectedMealItems([]);
       setMealItemQuantities({});
       setMealOrderModalOpen(false);
+      setMealOrderDashboardBanner(true);
+      setActiveTab('dashboard');
     } catch (err) {
       console.error('Failed to save meal order', err);
       setMealOrderMessage('Failed to place order. Please try again.');
@@ -379,12 +562,13 @@ export default function Hostel({ user, onLoggedOut }) {
 
   const submitLaundryBooking = async (e) => {
     e.preventDefault();
-    if (!selectedShop?._id) return;
+    const shopId = selectedShop?._id || selectedShop?.id;
+    if (!shopId) return;
     setLaundryError('');
     setBookingSubmitting(true);
     try {
       await hostelService.createLaundryBooking({
-        shopId: selectedShop._id,
+        shopId,
         studentName: bookingForm.studentName,
         contactNumber: bookingForm.contactNumber,
         floor: bookingForm.floor,
@@ -426,12 +610,13 @@ export default function Hostel({ user, onLoggedOut }) {
   );
 
   const renderLaundryCard = (shop, compact = false) => {
-    const latestBooking = getLatestBookingForShop(shop._id);
+    const shopKey = shop._id || shop.id;
+    const latestBooking = getLatestBookingForShop(shopKey);
     const services = Array.isArray(shop.availableServices) ? shop.availableServices : [];
 
     return (
       <div
-        key={shop._id}
+        key={shopKey}
         className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:shadow-md"
       >
         <div className="mb-3 flex items-center justify-between">
@@ -482,7 +667,7 @@ export default function Hostel({ user, onLoggedOut }) {
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => setExpandedShopId(expandedShopId === shop._id ? '' : shop._id)}
+            onClick={() => setExpandedShopId(expandedShopId === shopKey ? '' : shopKey)}
             className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200"
           >
             View Details
@@ -502,7 +687,7 @@ export default function Hostel({ user, onLoggedOut }) {
           </a>
         </div>
 
-        {expandedShopId === shop._id && (
+        {expandedShopId === shopKey && (
           <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
             <div><strong>Laundry Shop Name:</strong> {shop.name}</div>
             <div><strong>Location / Address:</strong> {shop.location || '-'}</div>
@@ -1099,6 +1284,68 @@ export default function Hostel({ user, onLoggedOut }) {
                 </div>
 
                 <div className="p-6">
+                  {mealOrderDashboardBanner && (
+                    <div className="mb-6 flex items-start justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <CheckCircle className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-semibold text-emerald-900">Your order confirmed</p>
+                          <p className="mt-0.5 text-xs text-emerald-800">Your meal order was placed successfully.</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setMealOrderDashboardBanner(false)}
+                        className="shrink-0 rounded-lg border border-emerald-300/80 bg-white px-2.5 py-1 text-xs font-medium text-emerald-800 hover:bg-emerald-100/80"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  )}
+                  {mealOrderAdminShopBanner && (
+                    <div className="mb-6 flex items-start justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <CheckCircle className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-semibold text-emerald-900">Order confirmed</p>
+                          <p className="mt-0.5 text-xs text-emerald-800">The meal shop has confirmed your order.</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={dismissMealOrderAdminShopBanner}
+                        className="shrink-0 rounded-lg border border-emerald-300/80 bg-white px-2.5 py-1 text-xs font-medium text-emerald-800 hover:bg-emerald-100/80"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  )}
+                  {complaintResolvedBanner && (
+                    <div className="mb-6 flex items-start justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <CheckCircle className="h-5 w-5 text-sky-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-semibold text-sky-900">Complaint status: resolved</p>
+                          {complaintResolvedCount === 1 ? (
+                            <p className="mt-0.5 text-xs text-sky-800">
+                              Your complaint &ldquo;{complaintResolvedSummaries[0]?.subject}&rdquo; has been resolved by the hostel team.
+                            </p>
+                          ) : (
+                            <p className="mt-0.5 text-xs text-sky-800">
+                              {complaintResolvedCount} of your complaints have been resolved. Check the Complaints section for details.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={dismissComplaintResolvedBanner}
+                        className="shrink-0 rounded-lg border border-sky-300/80 bg-white px-2.5 py-1 text-xs font-medium text-sky-800 hover:bg-sky-100/80"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  )}
                   {/* Statistics */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <div className="p-4 bg-blue-50 rounded-lg">
@@ -1405,24 +1652,38 @@ export default function Hostel({ user, onLoggedOut }) {
                               <>
                                 <div className="space-y-2">
                                   {mealMenuItems.map((item) => (
-                                    <label
+                                    <div
                                       key={item.id}
-                                      className="flex items-center justify-between gap-3 rounded-lg bg-white border border-gray-200 px-3 py-2 cursor-pointer"
+                                      className="flex items-center justify-between gap-2 rounded-lg bg-white border border-gray-200 px-3 py-2"
                                     >
                                       <div className="flex items-center gap-2 min-w-0">
                                         <input
                                           type="checkbox"
                                           checked={selectedMealItems.includes(item.id)}
                                           onChange={() => toggleMealItem(item.id)}
-                                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                          className="h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                         />
                                         <span className="text-sm text-gray-800 truncate">{item.name}</span>
                                       </div>
-                                      <span className="text-sm font-semibold text-blue-700">
-                                        Rs. {item.price.toFixed(2)}
-                                      </span>
-                                    </label>
-                                    
+                                      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                                        <span className="text-sm font-semibold text-blue-700 whitespace-nowrap">
+                                          Rs. {item.price.toFixed(2)}
+                                        </span>
+                                        {mealItemRowConfirmed[item.id] ? (
+                                          <span className="text-xs font-semibold text-emerald-700 whitespace-nowrap">
+                                            Order confirmed
+                                          </span>
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            onClick={() => confirmMealItemRow(item.id)}
+                                            className="rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-700"
+                                          >
+                                            Confirm Order
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
                                   ))}
                                 </div>
 
